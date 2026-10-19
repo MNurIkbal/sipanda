@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+/* Force global font Plus Jakarta Sans to all elements */
+*, *::before, *::after, html, body, input, select, textarea, button {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Custom Badges & Card Styles */
+.card-stat {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-stat:hover {
+  border-color: #93c5fd;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  line-height: 1;
+}
+
+/* Status Badges */
+.badge-blue { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-amber { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.badge-red { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-emerald { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.badge-orange { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.badge-indigo { background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.badge-green { background-color: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-slate { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }

@@ -1,0 +1,306 @@
+// Schema Validasi Pendaftaran & Input Dokumen Pembayaran SIPANDU (Frontend)
+
+export interface SupportingDocumentInput {
+  id: string;
+  jenis_dokumen: string;
+  nomor_dokumen: string;
+  tanggal: string;
+  file: File | null;
+  existing_file_name?: string | null;
+  existing_file_path?: string | null;
+  existing_attachment_id?: number | null;
+}
+
+export interface DocumentFormInput {
+  nomor_surat: string;
+  jenis_dokumen: string;
+  perihal: string;
+  tanggal_dokumen: string;
+  tanggal_diterima: string;
+  pihak_eksternal: string;
+  unit_kerja: string;
+  ppk_name?: string;
+  nilai_pembayaran: string | number;
+  keterangan?: string;
+  supporting_docs?: SupportingDocumentInput[];
+  is_edit_mode?: boolean;
+}
+
+export interface SupportingDocItemError {
+  jenis_dokumen?: string;
+  nomor_dokumen?: string;
+  tanggal?: string;
+  file?: string;
+}
+
+export interface DocumentValidationError {
+  nomor_surat?: string;
+  jenis_dokumen?: string;
+  perihal?: string;
+  tanggal_dokumen?: string;
+  tanggal_diterima?: string;
+  pihak_eksternal?: string;
+  unit_kerja?: string;
+  ppk_name?: string;
+  nilai_pembayaran?: string;
+  keterangan?: string;
+  supporting_docs?: string;
+  supporting_doc_items?: Record<string, SupportingDocItemError>;
+}
+
+export interface DocumentValidationResult {
+  isValid: boolean;
+  errors: DocumentValidationError;
+  firstError?: string;
+}
+
+export const documentValidationSchema = {
+  // Aturan Validasi Nomor Dokumen / Surat (Wajib)
+  validateNomorSurat: (nomorSurat: string): string | null => {
+    if (!nomorSurat || !nomorSurat.trim()) {
+      return "Nomor Surat / Nomor Dokumen wajib diisi!";
+    }
+    const clean = nomorSurat.trim();
+    if (clean.length < 3) {
+      return "Nomor Dokumen minimal 3 karakter!";
+    }
+    if (clean.length > 100) {
+      return "Nomor Dokumen maksimal 100 karakter!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Jenis Dokumen (Wajib)
+  validateJenisDokumen: (jenisDokumen: string): string | null => {
+    if (!jenisDokumen || !jenisDokumen.trim()) {
+      return "Jenis Dokumen wajib dipilih atau diisi!";
+    }
+    if (jenisDokumen.trim().length > 100) {
+      return "Jenis Dokumen maksimal 100 karakter!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Perihal (Wajib)
+  validatePerihal: (perihal: string): string | null => {
+    if (!perihal || !perihal.trim()) {
+      return "Perihal wajib diisi!";
+    }
+    if (perihal.trim().length < 3) {
+      return "Perihal minimal 3 karakter!";
+    }
+    if (perihal.length > 255) {
+      return "Perihal maksimal 255 karakter!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Tanggal Dokumen (Wajib)
+  validateTanggalDokumen: (tanggal: string): string | null => {
+    if (!tanggal || !tanggal.trim()) {
+      return "Tanggal Dokumen wajib diisi!";
+    }
+    if (isNaN(Date.parse(tanggal))) {
+      return "Format tanggal dokumen tidak valid!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Tanggal Diterima (Wajib)
+  validateTanggalDiterima: (tanggal: string): string | null => {
+    if (!tanggal || !tanggal.trim()) {
+      return "Tanggal Diterima wajib diisi!";
+    }
+    if (isNaN(Date.parse(tanggal))) {
+      return "Format tanggal diterima tidak valid!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Pihak Eksternal (Wajib)
+  validatePihakEksternal: (pihak: string): string | null => {
+    if (!pihak || !pihak.trim()) {
+      return "Pihak Eksternal wajib diisi!";
+    }
+    if (pihak.trim().length < 2) {
+      return "Nama pihak eksternal minimal 2 karakter!";
+    }
+    if (pihak.trim().length > 150) {
+      return "Nama pihak eksternal maksimal 150 karakter!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Unit / PPK (Wajib)
+  validateUnitKerja: (unit: string): string | null => {
+    if (!unit || !unit.trim()) {
+      return "Unit / PPK wajib dipilih!";
+    }
+    if (unit.trim().length > 150) {
+      return "Unit / PPK maksimal 150 karakter!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Nilai Pembayaran (Wajib, angka positif)
+  validateNilaiPembayaran: (nilai: string | number): string | null => {
+    if (nilai === undefined || nilai === null || nilai === "" || String(nilai).trim() === "") {
+      return "Nilai Pembayaran (Rp) wajib diisi!";
+    }
+    // Jika berupa format rupiah string (misal: "1.500.000")
+    const cleanNumber = typeof nilai === "string" ? nilai.replace(/[^0-9]/g, "") : String(nilai);
+    if (!cleanNumber) {
+      return "Nilai Pembayaran wajib diisi dengan angka valid!";
+    }
+    const numericValue = Number(cleanNumber);
+    if (isNaN(numericValue)) {
+      return "Nilai pembayaran harus berupa angka valid!";
+    }
+    if (numericValue <= 0) {
+      return "Nilai pembayaran harus lebih besar dari 0!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Keterangan (Opsional)
+  validateKeterangan: (keterangan?: string): string | null => {
+    if (!keterangan || !keterangan.trim()) return null; // Opsional
+    if (keterangan.length > 1000) {
+      return "Keterangan maksimal 1000 karakter!";
+    }
+    return null;
+  },
+
+  // Aturan Validasi Dokumen Pendukung:
+  // - Pada Edit Mode: jika file sebelumnya sudah ada di database (existing_file_name/existing_file_path), upload file tidak wajib!
+  // - Jika salah satu kolom (jenis, nomor, tanggal, file) diisi atau telah terisi di db, maka kolom lainnya yang wajib diisi harus dilengkapi.
+  // - Jika keempat-empatnya kosong pada baris pertama (atau jika tidak ada dokumen sama sekali), baru muncul error schema required.
+  validateSupportingDocs: (
+    docs?: SupportingDocumentInput[],
+    requireAtLeastOne = true,
+    isEditMode = false
+  ): { summaryError: string | null; itemErrors: Record<string, SupportingDocItemError> } => {
+    const itemErrors: Record<string, SupportingDocItemError> = {};
+
+    if (!docs || docs.length === 0) {
+      return {
+        summaryError: "Pengajuan dokumen harus memiliki minimal 1 baris dokumen pendukung!",
+        itemErrors,
+      };
+    }
+
+    let hasAnyValidFile = false;
+    let anyIncompleteRow = false;
+
+    docs.forEach((doc, idx) => {
+      const hasJenis = Boolean(doc.jenis_dokumen && doc.jenis_dokumen.trim());
+      const hasNomor = Boolean(doc.nomor_dokumen && doc.nomor_dokumen.trim());
+      const hasTanggal = Boolean(doc.tanggal && doc.tanggal.trim());
+      // File dianggap ada jika user memilih file baru ATAU jika dalam mode edit dan berkas sudah ada sebelumnya di database
+      const hasFile = Boolean(doc.file || doc.existing_file_name || doc.existing_file_path);
+
+      if (hasFile) hasAnyValidFile = true;
+
+      // Apakah ada salah satu yang diisi pada baris ini?
+      const isPartiallyFilled = hasJenis || hasNomor || hasTanggal || hasFile;
+      const isCompletelyEmpty = !hasJenis && !hasNomor && !hasTanggal && !hasFile;
+
+      if (isPartiallyFilled) {
+        const rowErr: SupportingDocItemError = {};
+        if (!hasJenis) rowErr.jenis_dokumen = "Jenis dokumen wajib diisi!";
+        if (!hasNomor) rowErr.nomor_dokumen = "Nomor dokumen wajib diisi!";
+        if (!hasTanggal) rowErr.tanggal = "Tanggal dokumen wajib diisi!";
+        if (!hasFile) rowErr.file = "File lampiran wajib diunggah!";
+
+        if (Object.keys(rowErr).length > 0) {
+          itemErrors[doc.id] = rowErr;
+          anyIncompleteRow = true;
+        }
+      } else if (idx === 0 && requireAtLeastOne && isCompletelyEmpty) {
+        // Jika ke-4 inputan kosong sama sekali pada baris utama
+        itemErrors[doc.id] = {
+          jenis_dokumen: "Jenis dokumen wajib diisi!",
+          nomor_dokumen: "Nomor dokumen wajib diisi!",
+          tanggal: "Tanggal dokumen wajib diisi!",
+          file: "File lampiran wajib diunggah!",
+        };
+        anyIncompleteRow = true;
+      }
+    });
+
+    if (anyIncompleteRow) {
+      return {
+        summaryError: "Terdapat baris dokumen pendukung yang belum lengkap. Semua kolom (Jenis Dokumen, Nomor Dokumen, Tanggal, dan Upload File) harus diisi jika salah satunya telah diisi.",
+        itemErrors,
+      };
+    }
+
+    if (requireAtLeastOne && !hasAnyValidFile) {
+      return {
+        summaryError: "Wajib menyertakan minimal 1 berkas file dokumen pendukung (PDF/DOCX/JPG)!",
+        itemErrors,
+      };
+    }
+
+    return { summaryError: null, itemErrors };
+  },
+
+  // Validasi Form Penuh Berdasarkan Schema
+  validate: (
+    data: DocumentFormInput,
+    status: "draft" | "menunggu_verifikasi" = "menunggu_verifikasi"
+  ): DocumentValidationResult => {
+    const errors: DocumentValidationError = {};
+
+    const nomorSuratErr = documentValidationSchema.validateNomorSurat(data.nomor_surat);
+    if (nomorSuratErr) errors.nomor_surat = nomorSuratErr;
+
+    const jenisDokumenErr = documentValidationSchema.validateJenisDokumen(data.jenis_dokumen);
+    if (jenisDokumenErr) errors.jenis_dokumen = jenisDokumenErr;
+
+    const perihalErr = documentValidationSchema.validatePerihal(data.perihal);
+    if (perihalErr) errors.perihal = perihalErr;
+
+    const tanggalDokErr = documentValidationSchema.validateTanggalDokumen(data.tanggal_dokumen);
+    if (tanggalDokErr) errors.tanggal_dokumen = tanggalDokErr;
+
+    const tanggalTerimaErr = documentValidationSchema.validateTanggalDiterima(data.tanggal_diterima);
+    if (tanggalTerimaErr) errors.tanggal_diterima = tanggalTerimaErr;
+
+    const pihakEksternalErr = documentValidationSchema.validatePihakEksternal(data.pihak_eksternal);
+    if (pihakEksternalErr) errors.pihak_eksternal = pihakEksternalErr;
+
+    const unitKerjaErr = documentValidationSchema.validateUnitKerja(data.unit_kerja);
+    if (unitKerjaErr) errors.unit_kerja = unitKerjaErr;
+
+    const nilaiErr = documentValidationSchema.validateNilaiPembayaran(data.nilai_pembayaran);
+    if (nilaiErr) errors.nilai_pembayaran = nilaiErr;
+
+    const ketErr = documentValidationSchema.validateKeterangan(data.keterangan);
+    if (ketErr) errors.keterangan = ketErr;
+
+    const requireFile = status === "menunggu_verifikasi";
+    const docsValidation = documentValidationSchema.validateSupportingDocs(
+      data.supporting_docs,
+      requireFile,
+      Boolean(data.is_edit_mode)
+    );
+
+    if (docsValidation.summaryError) {
+      errors.supporting_docs = docsValidation.summaryError;
+    }
+    if (Object.keys(docsValidation.itemErrors).length > 0) {
+      errors.supporting_doc_items = docsValidation.itemErrors;
+    }
+
+    const errorKeys = Object.keys(errors) as (keyof DocumentValidationError)[];
+    const isValid = errorKeys.length === 0;
+    const firstError = !isValid ? (errors[errorKeys[0]] as string) : undefined;
+
+    return {
+      isValid,
+      errors,
+      firstError,
+    };
+  },
+};
