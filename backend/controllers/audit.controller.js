@@ -4,8 +4,8 @@ const { successResponse, errorResponse } = require('../utils/response.util');
 class AuditController {
   async getAuditLogs(req, res) {
     try {
-      const { document_id } = req.query;
-      const logs = await auditService.getLogs({ document_id });
+      const { document_id, search, page, limit } = req.query;
+      const logs = await auditService.getLogs({ document_id, search, page, limit });
       return successResponse(res, 'Berhasil memuat audit trail', logs);
     } catch (err) {
       return errorResponse(res, err.message, 500);

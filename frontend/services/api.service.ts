@@ -131,9 +131,15 @@ export const sipanduApi = {
   },
 
   // Audit Trail
-  getAuditTrail: async (documentId?: number) => {
-    const query = documentId ? `?document_id=${documentId}` : "";
-    const res = await fetch(`${API_BASE}/audit-trail${query}`);
+  getAuditTrail: async (params?: { document_id?: number | string; search?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.document_id) query.append("document_id", params.document_id.toString());
+    if (params?.search) query.append("search", params.search);
+    if (params?.page) query.append("page", params.page.toString());
+    if (params?.limit) query.append("limit", params.limit.toString());
+
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    const res = await fetch(`${API_BASE}/audit-trail${queryString}`);
     return res.json();
   },
 

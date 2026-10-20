@@ -187,13 +187,29 @@ class DocumentService {
 
     const prevStatus = doc.status;
 
-    const newAttachments = files.map((file) => ({
-      file_name: file.originalname,
-      file_path: `/uploads/${file.filename}`,
-      file_size: file.size,
-      mime_type: file.mimetype,
-      document_type: 'File Revisi',
-    }));
+    let attachmentMeta = [];
+    try {
+      if (arguments[1]?.attachment_meta) {
+        attachmentMeta = typeof arguments[1].attachment_meta === 'string'
+          ? JSON.parse(arguments[1].attachment_meta)
+          : arguments[1].attachment_meta;
+      }
+    } catch (e) {
+      attachmentMeta = [];
+    }
+
+    const newAttachments = files.map((file, idx) => {
+      const meta = attachmentMeta[idx] || {};
+      return {
+        file_name: file.originalname,
+        file_path: `/uploads/${file.filename}`,
+        file_size: file.size,
+        mime_type: file.mimetype,
+        document_type: meta.document_type || meta.jenis_dokumen || 'File Revisi',
+        nomor_dokumen: meta.nomor_dokumen || '',
+        tanggal_dokumen: meta.tanggal_dokumen || meta.tanggal || null,
+      };
+    });
 
     if (newAttachments.length > 0) {
       await documentRepository.addAttachments(id, newAttachments);
@@ -205,6 +221,7 @@ class DocumentService {
       status: 'menunggu_verifikasi_ulang',
       legend_status: 'Menunggu Verifikasi Ulang',
       legend_color: 'orange',
+      catatan_revisi: null,
     };
 
     if (nilai_pembayaran) {
@@ -219,7 +236,7 @@ class DocumentService {
       user_name: user_name || doc.ppk_name,
       user_role: user_role || 'petugas',
       action: 'REVISE_DOCUMENT',
-      description: `Petugas memperbarui dokumen dan mengunggah ${newAttachments.length} file revisi baru. Catatan: ${catatan_perbaikan || 'Sudah disesuaikan.'}`,
+      description: `PPK memperbarui dokumen dan mengunggah ${newAttachments.length} file revisi baru. Catatan: ${catatan_perbaikan || 'Sudah disesuaikan.'}`,
       previous_status: prevStatus,
       new_status: 'menunggu_verifikasi_ulang',
     });

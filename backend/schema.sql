@@ -81,8 +81,24 @@ CREATE TABLE IF NOT EXISTS audit_trails (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 5. Tabel Notifikasi (Untuk Biro 01 & PPK)
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    document_id INT REFERENCES payment_documents(id) ON DELETE CASCADE,
+    nomor_surat VARCHAR(100) NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL, -- 'new_submission', 'resubmission', 'approved', 'rejected'
+    target_role VARCHAR(30) NOT NULL, -- 'biro_01', 'ppk', 'all'
+    target_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexing
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_payment_documents_status ON payment_documents(status);
 CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_trails(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_attachments_doc_id ON document_attachments(document_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_role ON notifications(target_role, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);

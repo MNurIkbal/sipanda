@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   FileText,
@@ -13,20 +13,68 @@ import {
   Building2,
   Calendar,
   Layers,
-  FileCheck
+  FileCheck,
+  XCircle,
+  AlertTriangle,
+  RotateCcw,
+  Send,
+  Check
 } from "lucide-react";
-import { PaymentDocument } from "@/types/sipandu.types";
+import { PaymentDocument, User, AuditTrail } from "@/types/sipandu.types";
 import { formatDateID, formatDateTimeID } from "@/lib/dateFormat";
+import { sipanduApi } from "@/services/api.service";
 
 interface DocumentDetailModalProps {
   document: PaymentDocument;
+  currentUser?: User | null;
+  auditLogs?: AuditTrail[];
   onClose: () => void;
+  onVerify?: (action: "approve" | "reject", message: string) => Promise<boolean>;
+  onAdvanceStage?: (nextStage: string, stageLabel: string) => Promise<boolean>;
 }
 
 export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
   document,
+  currentUser,
+  auditLogs: propAuditLogs,
   onClose,
 }) => {
+  const [docAuditLogs, setDocAuditLogs] = useState<AuditTrail[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLogs = async () => {
+      try {
+        setLoadingAudit(true);
+        const res = await sipanduApi.getAuditTrail({ document_id: document.id });
+        if (res.success && res.data && isMounted) {
+          const logsData = Array.isArray(res.data) ? res.data : res.data.logs || [];
+          setDocAuditLogs(logsData);
+        } else if (propAuditLogs && isMounted) {
+          const filtered = propAuditLogs.filter(
+            (l) => l.document_id === document.id || l.nomor_surat === document.nomor_surat
+          );
+          setDocAuditLogs(filtered);
+        }
+      } catch (err) {
+        if (propAuditLogs && isMounted) {
+          const filtered = propAuditLogs.filter(
+            (l) => l.document_id === document.id || l.nomor_surat === document.nomor_surat
+          );
+          setDocAuditLogs(filtered);
+        }
+      } finally {
+        if (isMounted) setLoadingAudit(false);
+      }
+    };
+
+    fetchLogs();
+    return () => {
+      isMounted = false;
+    };
+  }, [document.id, propAuditLogs]);
+
   // Calculate Aging (days elapsed since tanggal_diterima or created_at)
   const calculateAging = () => {
     const baseDateStr = document.tanggal_diterima || document.created_at || document.tanggal_pengajuan;
@@ -51,7 +99,6 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
     { key: "pengajuan_kppn", label: "Pengajuan ke KPPN", date: null },
     { key: "menunggu_pencairan", label: "Menunggu Pencairan", date: null },
     { key: "dana_cair", label: "Dana Cair", date: null },
-    { key: "siap_digunakan", label: "Siap Digunakan", date: null },
   ];
 
   // Determine current step index based on document status
@@ -76,10 +123,9 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
       case "menunggu_pencairan":
         return 6;
       case "dana_cair":
-        return 7;
       case "selesai":
       case "siap_digunakan":
-        return 8;
+        return 7;
       default:
         return 1;
     }
@@ -298,27 +344,7 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
             {/* RIGHT COLUMN (4 cols): Aksi, Timeline Proses, Riwayat Status */}
             <div className="lg:col-span-4 space-y-6">
               
-              {/* Card 1: Aksi */}
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-5">
-                <h4 className="font-bold text-slate-800 text-xs mb-3">Aksi</h4>
-                <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed">
-                  Status dokumen dikelola oleh <span className="font-semibold text-slate-800">Biro 01 Keuangan</span>.
-                </p>
-                {document.catatan_revisi && (
-                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-xs">
-                    <div className="font-bold text-red-900 mb-1">Catatan Revisi:</div>
-                    <p>{document.catatan_revisi}</p>
-                  </div>
-                )}
-                {document.catatan_verifikasi && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 text-xs">
-                    <div className="font-bold text-blue-900 mb-1">Catatan Verifikasi:</div>
-                    <p>{document.catatan_verifikasi}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Card 2: Timeline Proses */}
+              {/* Card 1: Timeline Proses */}
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-5">
                 <h4 className="font-bold text-slate-800 text-xs mb-4">Timeline Proses</h4>
 
@@ -369,40 +395,136 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Card 3: Riwayat Status */}
+              {/* Card 2: Riwayat Status & Catatan Aktivitas Lengkap */}
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-5">
-                <h4 className="font-bold text-slate-800 text-xs mb-4">Riwayat Status</h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-slate-800 text-xs">Riwayat Status</h4>
+                  {loadingAudit && (
+                    <span className="text-[10px] text-slate-400">Memuat log...</span>
+                  )}
+                </div>
 
                 <div className="space-y-4">
-                  {/* Status 1: Menunggu Verifikasi */}
-                  <div className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                        Menunggu Verifikasi
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        {formatDateTimeID(document.tanggal_pengajuan || document.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
-                      Dokumen dikirim ke Biro 01 untuk verifikasi. — <span className="font-semibold text-slate-700">{document.ppk_name || "PPK"}</span>
-                    </p>
-                  </div>
+                  {docAuditLogs.length > 0 ? (
+                    docAuditLogs.map((log) => {
+                      // Tentukan warna badge dan label status berdasarkan new_status / action
+                      const statusLabel =
+                        log.new_status === "dikembalikan"
+                          ? "Dikembalikan untuk Perbaikan"
+                          : log.new_status === "lengkap_valid"
+                          ? "Lengkap / Valid"
+                          : log.new_status === "menunggu_verifikasi_ulang"
+                          ? "Menunggu Verifikasi Ulang"
+                          : log.new_status === "menunggu_verifikasi"
+                          ? "Menunggu Verifikasi"
+                          : log.new_status === "sedang_diverifikasi"
+                          ? "Sedang Diverifikasi"
+                          : log.new_status === "sedang_diproses"
+                          ? "Sedang Diproses"
+                          : log.new_status === "pengajuan_kppn"
+                          ? "Pengajuan ke KPPN"
+                          : log.new_status === "dana_cair"
+                          ? "Dana Cair"
+                          : log.new_status === "draft"
+                          ? "Draft"
+                          : log.action;
 
-                  {/* Status 2: Terdaftar */}
-                  <div className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                        Terdaftar
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        {formatDateTimeID(document.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
-                      Dokumen diregistrasi oleh PPK. — <span className="font-semibold text-slate-700">{document.ppk_name || "PPK"}</span>
-                    </p>
-                  </div>
+                      const isReturned =
+                        log.new_status === "dikembalikan" || log.action?.includes("REJECT");
+                      const isApproved =
+                        log.new_status === "lengkap_valid" || log.action?.includes("APPROVE");
+                      const isRevision =
+                        log.new_status === "menunggu_verifikasi_ulang" || log.action?.includes("REVISI");
+
+                      return (
+                        <div key={log.id} className="border-b border-slate-100 pb-3.5 last:border-0 last:pb-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                isReturned
+                                  ? "bg-rose-50 text-rose-800 border-rose-200"
+                                  : isApproved
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : isRevision
+                                  ? "bg-orange-50 text-orange-800 border-orange-200"
+                                  : "bg-blue-50 text-blue-700 border-blue-200"
+                              }`}
+                            >
+                              {statusLabel}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {formatDateTimeID(log.created_at)}
+                            </span>
+                          </div>
+
+                          {/* Jika ada pesan/deskripsi aktivitas */}
+                          {log.description ? (
+                            <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
+                              {log.description}
+                              <span className="block text-[10px] text-slate-400 font-semibold mt-1">
+                                Oleh: {log.user_name} ({log.user_role === "biro_01" ? "Biro 01" : log.user_role.toUpperCase()})
+                              </span>
+                            </p>
+                          ) : null}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    // Fallback jika belum ada audit log yang termuat dari backend
+                    <>
+                      {/* Status Terkini jika dikembalikan */}
+                      {document.status === "dikembalikan" && (
+                        <div className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                              Dikembalikan untuk Perbaikan
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {formatDateTimeID(document.tanggal_verifikasi || document.updated_at || document.created_at)}
+                            </span>
+                          </div>
+                          {document.catatan_revisi ? (
+                            <p className="text-[11px] text-rose-700 mt-1.5 leading-relaxed bg-rose-50/50 p-2.5 rounded-lg border border-rose-100">
+                              {document.catatan_revisi}
+                              <span className="block text-[10px] text-rose-500 font-semibold mt-1">
+                                Catatan dari Biro 01 Keuangan
+                              </span>
+                            </p>
+                          ) : null}
+                        </div>
+                      )}
+
+                      {/* Status Menunggu Verifikasi */}
+                      <div className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            Menunggu Verifikasi
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {formatDateTimeID(document.tanggal_pengajuan || document.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                          Dokumen dikirim ke Biro 01 untuk verifikasi. — <span className="font-semibold text-slate-700">{document.ppk_name || "PPK"}</span>
+                        </p>
+                      </div>
+
+                      {/* Status Terdaftar */}
+                      <div className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            Terdaftar
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {formatDateTimeID(document.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                          Dokumen diregistrasi oleh PPK. — <span className="font-semibold text-slate-700">{document.ppk_name || "PPK"}</span>
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

@@ -64,3 +64,33 @@ export interface AuditTrail {
   new_status?: string | null;
   created_at: string;
 }
+
+export interface MonitoringStats {
+  total: number;
+  menunggu: number;
+  diverifikasi?: number;
+  dikembalikan: number;
+  revisiUlang?: number;
+  lengkapValid: number;
+  sedangDiproses: number;
+  pengajuanKPPN: number;
+  menungguPencairan: number;
+  danaCair: number;
+  totalNilai: number;
+  aging?: {
+    [key: string]: number;
+  };
+}
+
+export interface AppNotification {
+  id: string;
+  document_id: number;
+  nomor_surat: string;
+  perihal?: string;
+  title: string;
+  message: string;
+  type: "new_submission" | "resubmission" | "approved" | "rejected" | "info";
+  timestamp: string;
+  read: boolean;
+  target_role: "biro_01" | "ppk" | "all";
+}

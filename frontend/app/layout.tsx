@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIPANDU - Platform Monitoring Dokumen Pembayaran",
-  description: "Sistem Informasi Pengelolaan dan Monitoring Dokumen Pembayaran – Biro 01 Keuangan",
+  title: "SIPANDA - Platform Monitoring Dokumen Pembayaran",
+  description: "Sistem Informasi Pengelolaan dan Monitoring Dokumen Pembayaran",
 };
 
 import { SipanduProvider } from "@/context/SipanduContext";

@@ -2,19 +2,71 @@ const AuditTrail = require('../models/audit.model');
 const db = require('../config/db');
 
 class AuditRepository {
-  async findAll({ document_id } = {}) {
-    let query = `SELECT * FROM audit_trails`;
+  async findAll({ document_id, search, page, limit } = {}) {
+    let baseWhere = `WHERE 1=1`;
     const params = [];
 
     if (document_id) {
       params.push(document_id);
-      query += ` WHERE document_id = $1`;
+      baseWhere += ` AND a.document_id = $${params.length}`;
     }
 
-    query += ` ORDER BY created_at DESC`;
+    if (search) {
+      params.push(`%${search.toLowerCase()}%`);
+      baseWhere += ` AND (
+        LOWER(a.user_name) LIKE $${params.length} OR
+        LOWER(a.user_role) LIKE $${params.length} OR
+        LOWER(a.action) LIKE $${params.length} OR
+        LOWER(a.description) LIKE $${params.length} OR
+        LOWER(COALESCE(d.nomor_surat, substring(a.description from 'Ref No: ([^\\)]+)'), '')) LIKE $${params.length}
+      )`;
+    }
+
+    // Hitung total log sesuai filter
+    const countQuery = `
+      SELECT COUNT(a.id) as total 
+      FROM audit_trails a 
+      LEFT JOIN payment_documents d ON a.document_id = d.id 
+      ${baseWhere}
+    `;
+    const countRes = await db.query(countQuery, params);
+    const total = parseInt(countRes.rows[0].total, 10);
+
+    let query = `
+      SELECT 
+        a.*,
+        COALESCE(d.nomor_surat, substring(a.description from 'Ref No: ([^\\)]+)'), '-') as nomor_surat
+      FROM audit_trails a
+      LEFT JOIN payment_documents d ON a.document_id = d.id
+      ${baseWhere}
+      ORDER BY a.created_at DESC
+    `;
+
+    if (limit && page) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const offset = (pageNum - 1) * limitNum;
+
+      params.push(limitNum);
+      query += ` LIMIT $${params.length}`;
+
+      params.push(offset);
+      query += ` OFFSET $${params.length}`;
+    }
 
     const res = await db.query(query, params);
-    return res.rows.map(row => new AuditTrail(row));
+    const logs = res.rows.map(row => new AuditTrail(row));
+
+    if (page || limit) {
+      return {
+        logs,
+        total,
+        page: parseInt(page, 10) || 1,
+        limit: parseInt(limit, 10) || 10,
+      };
+    }
+
+    return logs;
   }
 
   async create(auditData) {

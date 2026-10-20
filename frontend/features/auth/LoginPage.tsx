@@ -56,7 +56,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <ShieldCheck className="h-9 w-9 text-white" />
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center justify-center gap-2">
-            SIPANDU
+            SIPANDA
           </h1>
           <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
             Sistem Informasi Monitoring & Verifikasi Dokumen Pembayaran
@@ -175,11 +175,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Footer info */}
-        <div className="text-center text-[11px] text-slate-600 mt-6">
-          SIPANDU v2.0 • Keamanan Akun Terenkripsi
         </div>
       </div>
     </div>

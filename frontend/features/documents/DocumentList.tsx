@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
+  X,
+  CheckCircle2,
 } from "lucide-react";
 import { PaymentDocument, User } from "@/types/sipandu.types";
 import { AlertDialog } from "@/components/ui/AlertDialog";
@@ -50,10 +52,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const [apiLoading, setApiLoading] = useState(false);
 
   // Filter & Search states yang hit ke backend
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
 
   // Dropdown Action Menu (titik 3)
   const [openActionDropdownId, setOpenActionDropdownId] = useState<number | null>(null);
@@ -63,12 +66,28 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const [docToDelete, setDocToDelete] = useState<PaymentDocument | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Debounce search input (350ms) agar tidak memborbardir API pada setiap ketukan keyboard
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setPage(1); // Reset ke halaman 1 setiap kali query pencarian berubah
+    }, 350);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
   // Hit Backend API untuk Search, Status, Page, dan Size (Limit)
   const fetchDocumentsFromApi = async () => {
     try {
       setApiLoading(true);
+      console.log("[DocumentList] Fetching API documents:", {
+        search: debouncedSearch,
+        status: statusFilter,
+        page,
+        limit,
+      });
       const res = await sipanduApi.getDocuments({
-        search: searchTerm,
+        search: debouncedSearch,
         status: statusFilter,
         page,
         limit,
@@ -77,7 +96,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       if (res.success && res.data) {
         if (Array.isArray(res.data.documents)) {
           setDocuments(res.data.documents);
-          setTotalDocuments(res.data.total);
+          setTotalDocuments(res.data.total ?? 0);
         } else if (Array.isArray(res.data)) {
           setDocuments(res.data);
           setTotalDocuments(res.data.length);
@@ -92,7 +111,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   useEffect(() => {
     fetchDocumentsFromApi();
-  }, [searchTerm, statusFilter, page, limit]);
+  }, [debouncedSearch, statusFilter, page, limit]);
 
   const getBadgeClass = (color: string) => {
     switch (color) {
@@ -110,6 +129,21 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         return "bg-green-50 text-green-800 border border-green-300";
       default:
         return "bg-blue-50 text-blue-800 border border-blue-300";
+    }
+  };
+
+  const formatDateIndonesia = (dateStr?: string | null) => {
+    if (!dateStr) return "-";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
     }
   };
 
@@ -144,24 +178,29 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           {/* Tombol Refresh Data */}
           <button
             type="button"
-            onClick={() => onRefresh && onRefresh()}
-            disabled={loading}
+            onClick={() => {
+              fetchDocumentsFromApi();
+              if (onRefresh) onRefresh();
+            }}
+            disabled={loading || apiLoading}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition cursor-pointer disabled:opacity-50"
             title="Muat Ulang Data Dokumen"
           >
-            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${loading ? "animate-spin text-blue-600" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${loading || apiLoading ? "animate-spin text-blue-600" : ""}`} />
             <span>Refresh</span>
           </button>
 
-          {/* Tombol Input Dokumen Baru */}
-          <button
-            type="button"
-            onClick={onNavigateToUpload}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            Tambah
-          </button>
+          {/* Tombol Input Dokumen Baru (Hanya PPK & Superadmin, Biro 01 hanya verifikasi) */}
+          {currentUser?.role !== "biro_01" && (
+            <button
+              type="button"
+              onClick={onNavigateToUpload}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              Tambah
+            </button>
+          )}
         </div>
       </div>
 
@@ -173,14 +212,21 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             <Search className="h-4 w-4 absolute left-3.5 top-3 text-slate-500" />
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Cari nomor surat, uraian belanja, atau nama PPK..."
-              className="w-full pl-10 pr-4 py-2 text-sm rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 font-semibold transition shadow-2xs"
+              className="w-full pl-10 pr-9 py-2 text-sm rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 font-semibold transition shadow-2xs"
             />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                className="absolute right-3 top-2.5 p-0.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                title="Hapus pencarian"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -204,6 +250,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 <option value="lengkap_valid">Lengkap / Valid (Disetujui)</option>
                 <option value="sedang_diproses">Sedang Diproses</option>
                 <option value="pengajuan_kppn">Pengajuan ke KPPN</option>
+                <option value="menunggu_pencairan">Menunggu Pencairan</option>
                 <option value="dana_cair">Dana Cair</option>
               </select>
             </div>
@@ -235,8 +282,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             <thead>
               <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 uppercase tracking-wider font-black text-xs">
                 <th className="px-4 py-3.5 text-center w-12">No.</th>
-                <th className="px-5 py-3.5">Nomor Surat</th>
-                <th className="px-5 py-3.5">Jenis Dokumen</th>
+                <th className="px-5 py-3.5">Nomor Surat / Tanggal</th>
+                <th className="px-5 py-3.5">Jenis Dokumen / Perihal</th>
                 <th className="px-5 py-3.5">PPK / Unit Kerja</th>
                 <th className="px-5 py-3.5">Nilai Pembayaran</th>
                 <th className="px-5 py-3.5">Status</th>
@@ -286,13 +333,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         <div className="font-extrabold text-blue-700 tracking-tight group-hover:underline">
                           {doc.nomor_surat}
                         </div>
+                        <div className="text-xs text-slate-500 font-medium mt-0.5">
+                          {formatDateIndonesia(doc.tanggal_pengajuan)}
+                        </div>
                       </button>
                     </td>
 
                     <td className="px-5 py-3.5">
                       <div className="max-w-xs md:max-w-sm">
                         <div className="font-bold text-slate-900 leading-snug">{doc.jenis_dokumen}</div>
-                        {doc.catatan_revisi && (
+                        <div className="text-xs text-slate-600 font-medium">{doc.perihal}</div>
+                        {doc.status === "dikembalikan" && doc.catatan_revisi && (
                           <div className="mt-2 text-xs text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-200">
                             <strong className="block text-[10px] uppercase font-bold tracking-wider text-rose-800 mb-0.5">
                               Catatan Revisi Biro 01:
@@ -319,11 +370,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     {/* Status & Legenda */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold shadow-2xs ${getBadgeClass(
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold shadow-2xs ${getBadgeClass(
                           doc.legend_color
                         )}`}
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-current mr-1.5"></span>
+                        {doc.status === "dana_cair" || doc.status === "selesai" ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
+                        )}
                         {doc.legend_status}
                       </span>
                     </td>
@@ -362,8 +417,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                             }
                           }}
                           className={`p-2 rounded-xl border transition cursor-pointer ${openActionDropdownId === doc.id
-                              ? "bg-blue-50 border-blue-400 text-blue-600 shadow-xs"
-                              : "border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-400"
+                            ? "bg-blue-50 border-blue-400 text-blue-600 shadow-xs"
+                            : "border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-400"
                             }`}
                           title="Menu Aksi"
                         >
@@ -399,8 +454,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                 <span>Lihat Detail</span>
                               </button>
 
-                              {/* Edit Data Dokumen */}
-                              {onOpenEdit && (
+                              {/* Edit Data Dokumen (Hanya PPK & Superadmin) */}
+                              {currentUser?.role !== "biro_01" && onOpenEdit && (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -414,8 +469,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                 </button>
                               )}
 
-                              {/* Verifikasi (Biro 01) */}
-                              {currentUser?.role === "biro_01" && (
+                              {/* Verifikasi / Proses Alur Pembayaran (Biro 01 - Hanya jika dokumen tidak sedang dikembalikan untuk perbaikan) */}
+                              {currentUser?.role === "biro_01" && doc.status !== "dikembalikan" && (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -425,7 +480,18 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                   className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition cursor-pointer"
                                 >
                                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                                  <span>Verifikasi</span>
+                                  <span>
+                                    {[
+                                      "lengkap_valid",
+                                      "sedang_diproses",
+                                      "pengajuan_kppn",
+                                      "menunggu_pencairan",
+                                    ].includes(doc.status)
+                                      ? "Proses Alur"
+                                      : doc.status === "dana_cair" || doc.status === "siap_digunakan"
+                                        ? "Alur Selesai"
+                                        : "Verifikasi"}
+                                  </span>
                                 </button>
                               )}
 
@@ -445,18 +511,20 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                   </button>
                                 )}
 
-                              {/* Hapus Dokumen */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenActionDropdownId(null);
-                                  setDocToDelete(doc);
-                                }}
-                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4 text-rose-600" />
-                                <span>Hapus</span>
-                              </button>
+                              {/* Hapus Dokumen (Hanya PPK & Superadmin, Biro 01 tidak boleh CRUD) */}
+                              {currentUser?.role !== "biro_01" && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenActionDropdownId(null);
+                                    setDocToDelete(doc);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                >
+                                  <Trash2 className="h-4 w-4 text-rose-600" />
+                                  <span>Hapus</span>
+                                </button>
+                              )}
                             </div>
                           </>
                         )}

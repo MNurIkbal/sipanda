@@ -11,7 +11,7 @@ export default function LoginRoute() {
 
   useEffect(() => {
     if (!isInitializing && currentUser) {
-      router.push("/monitoring");
+      router.push("/dashboard");
     }
   }, [currentUser, isInitializing, router]);
 
@@ -20,7 +20,7 @@ export default function LoginRoute() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs text-slate-400 font-medium">Memuat SIPANDU...</span>
+          <span className="text-xs text-slate-400 font-medium">Memuat SIPANDA...</span>
         </div>
       </div>
     );

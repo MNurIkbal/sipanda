@@ -45,7 +45,7 @@ class DocumentController {
         action === 'approve'
           ? 'Dokumen berhasil disetujui (Lengkap/Valid)!'
           : action === 'reject'
-          ? 'Dokumen dikembalikan ke petugas dengan catatan revisi!'
+          ? 'Dokumen dikembalikan ke PPK dengan catatan revisi!'
           : 'Status dokumen berhasil diperbarui';
 
       return successResponse(res, message, doc);

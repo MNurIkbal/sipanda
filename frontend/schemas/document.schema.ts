@@ -304,3 +304,132 @@ export const documentValidationSchema = {
     };
   },
 };
+
+// ==========================================
+// SCHEMA VALIDASI VERIFIKASI DOKUMEN (BIRO 01)
+// ==========================================
+
+export interface VerifyDocumentInput {
+  action: "approve" | "reject";
+  pesan?: string;
+}
+
+export interface VerifyDocumentValidationResult {
+  isValid: boolean;
+  error?: string;
+}
+
+export const verifyDocumentSchema = {
+  validate: (input: VerifyDocumentInput): VerifyDocumentValidationResult => {
+    // Jika aksi adalah tolak / reject (decline), catatan wajib diisi
+    if (input.action === "reject") {
+      if (!input.pesan || !input.pesan.trim()) {
+        return {
+          isValid: false,
+          error: "Catatan atau alasan penolakan wajib diisi untuk mengembalikan dokumen!",
+        };
+      }
+      if (input.pesan.trim().length < 5) {
+        return {
+          isValid: false,
+          error: "Catatan penolakan terlalu singkat. Harap berikan penjelasan minimal 5 karakter.",
+        };
+      }
+    }
+
+    // Jika setuju / approve, catatan bersifat opsional
+    return {
+      isValid: true,
+    };
+  },
+};
+
+// ==========================================
+// SCHEMA VALIDASI REVISI DOKUMEN (PETUGAS / PPK)
+// ==========================================
+
+export interface RevisiSupportingDocItem {
+  id: string;
+  jenis_dokumen: string;
+  nomor_dokumen: string;
+  tanggal: string;
+  file: File | null;
+}
+
+export interface RevisiDocumentInput {
+  catatan_perbaikan: string;
+  supporting_docs?: RevisiSupportingDocItem[];
+  files?: File[];
+}
+
+export interface RevisiDocumentValidationResult {
+  isValid: boolean;
+  errors: {
+    catatan_perbaikan?: string;
+    supporting_docs?: string;
+    item_errors?: Record<string, { jenis_dokumen?: string; nomor_dokumen?: string; tanggal?: string; file?: string }>;
+    files?: string;
+  };
+  firstError?: string;
+}
+
+export const revisiDocumentSchema = {
+  validate: (input: RevisiDocumentInput): RevisiDocumentValidationResult => {
+    const errors: RevisiDocumentValidationResult["errors"] = {};
+    const item_errors: Record<string, { jenis_dokumen?: string; nomor_dokumen?: string; tanggal?: string; file?: string }> = {};
+
+    if (!input.catatan_perbaikan || !input.catatan_perbaikan.trim()) {
+      errors.catatan_perbaikan = "Penjelasan catatan perbaikan wajib diisi!";
+    } else if (input.catatan_perbaikan.trim().length < 5) {
+      errors.catatan_perbaikan = "Penjelasan catatan perbaikan minimal 5 karakter.";
+    }
+
+    if (input.supporting_docs && input.supporting_docs.length > 0) {
+      input.supporting_docs.forEach((doc, idx) => {
+        const itemErr: { jenis_dokumen?: string; nomor_dokumen?: string; tanggal?: string; file?: string } = {};
+        
+        if (!doc.jenis_dokumen || !doc.jenis_dokumen.trim()) {
+          itemErr.jenis_dokumen = `Jenis dokumen wajib diisi`;
+        }
+        if (!doc.nomor_dokumen || !doc.nomor_dokumen.trim()) {
+          itemErr.nomor_dokumen = `Nomor dokumen wajib diisi`;
+        }
+        if (!doc.tanggal || !doc.tanggal.trim()) {
+          itemErr.tanggal = `Tanggal dokumen wajib diisi`;
+        }
+        if (!doc.file) {
+          itemErr.file = `File berkas wajib diunggah`;
+        } else if (doc.file.size > 25 * 1024 * 1024) {
+          itemErr.file = `Ukuran file melebihi 25 MB`;
+        }
+
+        if (Object.keys(itemErr).length > 0) {
+          item_errors[doc.id] = itemErr;
+        }
+      });
+
+      if (Object.keys(item_errors).length > 0) {
+        errors.item_errors = item_errors;
+      }
+    }
+
+    if (input.files && input.files.length > 0) {
+      for (const file of input.files) {
+        if (file.size > 25 * 1024 * 1024) {
+          errors.files = `Ukuran file '${file.name}' melebihi batas maksimal 25 MB!`;
+          break;
+        }
+      }
+    }
+
+    const hasItemErrors = Object.keys(item_errors).length > 0;
+    const isValid = !errors.catatan_perbaikan && !errors.files && !hasItemErrors;
+    const firstError = errors.catatan_perbaikan || (hasItemErrors ? "Mohon lengkapi semua isian dokumen perbaikan yang ditambahkan!" : errors.files);
+
+    return {
+      isValid,
+      errors,
+      firstError,
+    };
+  },
+};

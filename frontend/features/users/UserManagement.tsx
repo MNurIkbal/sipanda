@@ -940,7 +940,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       <AlertDialog
         isOpen={Boolean(userToDelete)}
         title="Konfirmasi Hapus Pengguna"
-        description={`Apakah Anda yakin ingin menghapus akun pengguna "${userToDelete?.full_name}" (${userToDelete?.email})? Akun ini tidak akan dapat login lagi ke SIPANDU.`}
+        description={`Apakah Anda yakin ingin menghapus akun pengguna "${userToDelete?.full_name}" (${userToDelete?.email})? Akun ini tidak akan dapat login lagi ke SIPANDA.`}
         confirmText="Ya, Hapus Pengguna"
         cancelText="Batal"
         loading={deleteLoading}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FileCheck2,
   LogOut,
@@ -9,10 +9,18 @@ import {
   CheckCircle2,
   Lock,
   Mail,
-  UserCheck
+  UserCheck,
+  Bell,
+  Inbox,
+  FilePlus2,
+  RotateCw,
+  AlertCircle,
+  FileText
 } from "lucide-react";
 import { User as UserType } from "@/types/sipandu.types";
 import { sipanduApi } from "@/services/api.service";
+import { useSipandu } from "@/context/SipanduContext";
+import { formatDateTimeID } from "@/lib/dateFormat";
 
 interface HeaderProps {
   currentUser: UserType | null;
@@ -29,8 +37,36 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onShowToast,
 }) => {
+  const {
+    notifications,
+    unreadNotificationCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    clearNotifications,
+    documents,
+    openVerifyModal,
+    openRevisiModal,
+    openDetailModal,
+  } = useSipandu();
+
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 15) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Form Ganti Password
   const [currentPassword, setCurrentPassword] = useState("");
@@ -95,8 +131,24 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="fixed top-0 right-0 left-0 md:left-64 z-40 h-16 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-xs">
-        <div className="flex h-full items-center justify-between gap-4 px-4 md:px-7">
+      <header
+        className={`fixed top-0 right-0 left-0 md:left-64 z-50 h-16 transition-all duration-300 ${
+          isScrolled
+            ? "bg-white backdrop-blur-md border-b border-slate-200/80 shadow-md"
+            : "bg-white border-b border-slate-200/90 shadow-xs"
+        }`}
+      >
+        {/* Subtle Background Pattern Layer */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-[0.06] mix-blend-multiply"
+          style={{
+            backgroundImage: "url('/sidebar-pattern.jpg')",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+          }}
+        ></div>
+
+        <div className="relative z-10 flex h-full items-center justify-between gap-4 px-4 md:px-7">
           
           {/* Left Title / Greeting */}
           <div className="flex items-center gap-3">
@@ -104,27 +156,208 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-2 text-white shadow-xs">
                 <FileCheck2 className="h-4 w-4" />
               </div>
-              <span className="font-black text-slate-900 text-sm tracking-tight">SIPANDU</span>
+              <span className="font-black text-slate-900 text-sm tracking-tight">SIPANDA</span>
             </div>
 
             <div className="hidden md:block">
-              <h2 className="text-sm font-extrabold text-slate-800 tracking-tight">
-                Sistem Informasi Pengelolaan Dokumen Pembayaran
+              <h2 className="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                <span>Sistem Informasi Pengelolaan Dokumen Pembayaran</span>
               </h2>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Dashboard
-              </p>
             </div>
           </div>
 
-          {/* Right Action: Profile Trigger Dropdown */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            
+            {/* Notification Bell Dropdown Trigger */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNotificationMenu(!showNotificationMenu);
+                  if (showProfileMenu) setShowProfileMenu(false);
+                }}
+                className={`relative flex items-center justify-center h-10 w-10 rounded-2xl border transition shadow-2xs cursor-pointer ${
+                  showNotificationMenu
+                    ? "bg-blue-50 border-blue-300 text-blue-600"
+                    : "bg-white border-slate-200/90 text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                }`}
+                title="Notifikasi SIPANDA"
+                aria-label="Notifikasi SIPANDA"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white shadow-xs animate-pulse">
+                    {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Popover Dropdown */}
+              {showNotificationMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowNotificationMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                    
+                    {/* Header Popover */}
+                    <div className="p-3.5 bg-gradient-to-r from-slate-50 via-slate-50 to-blue-50/40 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-blue-100/80 text-blue-700">
+                          <Bell className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900 leading-tight">
+                            Notifikasi Dokumen
+                          </h4>
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            {unreadNotificationCount > 0
+                              ? `${unreadNotificationCount} belum dibaca`
+                              : "Semua sudah dibaca"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {notifications.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          {unreadNotificationCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => markAllNotificationsAsRead()}
+                              className="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition cursor-pointer"
+                            >
+                              Tandai Dibaca
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => clearNotifications()}
+                            className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                            title="Bersihkan Semua Notifikasi"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notification List Container */}
+                    <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+                      {notifications.length === 0 ? (
+                        <div className="py-10 px-4 text-center">
+                          <div className="mx-auto w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                            <Inbox className="h-5 w-5" />
+                          </div>
+                          <p className="text-xs font-bold text-slate-700">Belum ada notifikasi</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {currentUser?.role === "biro_01"
+                              ? "Notifikasi dokumen baru dari PPK dan revisi akan muncul di sini."
+                              : "Notifikasi dokumen disetujui atau dikembalikan akan muncul di sini."}
+                          </p>
+                        </div>
+                      ) : (
+                        notifications.map((notif) => {
+                          const isUnread = !notif.read;
+
+                          // Icon & Warna badge
+                          let iconNode = <FileText className="h-3.5 w-3.5 text-blue-600" />;
+                          let badgeBg = "bg-blue-50 border-blue-200/80 text-blue-700";
+
+                          if (notif.type === "new_submission") {
+                            iconNode = <FilePlus2 className="h-3.5 w-3.5 text-blue-600" />;
+                            badgeBg = "bg-blue-50 border-blue-200/80 text-blue-700";
+                          } else if (notif.type === "resubmission") {
+                            iconNode = <RotateCw className="h-3.5 w-3.5 text-amber-600" />;
+                            badgeBg = "bg-amber-50 border-amber-200/80 text-amber-700";
+                          } else if (notif.type === "approved") {
+                            iconNode = <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />;
+                            badgeBg = "bg-emerald-50 border-emerald-200/80 text-emerald-700";
+                          } else if (notif.type === "rejected") {
+                            iconNode = <AlertCircle className="h-3.5 w-3.5 text-rose-600" />;
+                            badgeBg = "bg-rose-50 border-rose-200/80 text-rose-700";
+                          }
+
+                          return (
+                            <div
+                              key={notif.id}
+                              onClick={() => {
+                                markNotificationAsRead(notif.id);
+                                const doc = documents.find((d) => d.id === notif.document_id || d.nomor_surat === notif.nomor_surat);
+                                if (doc) {
+                                  setShowNotificationMenu(false);
+                                  if (currentUser?.role === "biro_01" && (notif.type === "new_submission" || notif.type === "resubmission")) {
+                                    openVerifyModal(doc);
+                                  } else if (currentUser?.role === "ppk" && notif.type === "rejected") {
+                                    openRevisiModal(doc);
+                                  } else {
+                                    openDetailModal(doc);
+                                  }
+                                }
+                              }}
+                              className={`p-3.5 hover:bg-slate-50/80 transition cursor-pointer flex items-start gap-3 text-left relative ${
+                                isUnread ? "bg-blue-50/20" : "bg-white opacity-85"
+                              }`}
+                            >
+                              {/* Indicator Unread Dot */}
+                              {isUnread && (
+                                <span className="absolute top-4 right-3 h-2 w-2 rounded-full bg-blue-600"></span>
+                              )}
+
+                              {/* Icon */}
+                              <div className={`shrink-0 p-2 rounded-xl border ${badgeBg}`}>
+                                {iconNode}
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0 pr-2">
+                                <div className="flex items-center gap-1.5">
+                                  <h5 className={`text-xs truncate ${isUnread ? "font-black text-slate-900" : "font-bold text-slate-700"}`}>
+                                    {notif.title}
+                                  </h5>
+                                </div>
+                                <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-snug">
+                                  {notif.message}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {notif.nomor_surat}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 font-medium">
+                                    {formatDateTimeID(notif.timestamp, { format: "short" })}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {currentUser?.role === "biro_01"
+                          ? "Role: Biro 01 Keuangan"
+                          : currentUser?.role === "ppk"
+                          ? "Role: PPK Pengadaan"
+                          : "Role: Superadmin"}
+                      </span>
+                    </div>
+
+                  </div>
+                </>
+              )}
+            </div>
             
             {/* Profile Avatar Button Trigger */}
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                onClick={() => {
+                  setShowProfileMenu(!showProfileMenu);
+                  if (showNotificationMenu) setShowNotificationMenu(false);
+                }}
                 className="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl border border-slate-200/90 bg-white hover:bg-slate-50 transition shadow-2xs cursor-pointer group"
               >
                 {/* Avatar Initial */}
@@ -205,7 +438,7 @@ export const Header: React.FC<HeaderProps> = ({
                       className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
-                      <span>Keluar (Logout)</span>
+                      <span>Keluar</span>
                     </button>
                   </div>
                 </>

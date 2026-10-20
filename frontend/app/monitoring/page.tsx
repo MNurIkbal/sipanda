@@ -2,32 +2,17 @@
 
 import React from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { MonitoringDashboard } from "@/features/monitoring/MonitoringDashboard";
+import { MonitoringProcessView } from "@/features/monitoring/MonitoringProcessView";
 import { useSipandu } from "@/context/SipanduContext";
-import { useRouter } from "next/navigation";
 
 export default function MonitoringPage() {
-  const {
-    stats,
-    documents,
-    currentUser,
-    openVerifyModal,
-    openRevisiModal,
-    openDetailModal,
-  } = useSipandu();
-  const router = useRouter();
+  const { documents, currentUser } = useSipandu();
 
   return (
     <DashboardLayout>
-      <MonitoringDashboard
-        stats={stats}
+      <MonitoringProcessView
         documents={documents}
         currentUser={currentUser}
-        onNavigateToUpload={() => router.push("/documents/create")}
-        onNavigateToDocuments={() => router.push("/documents")}
-        onOpenVerify={openVerifyModal}
-        onOpenRevisi={openRevisiModal}
-        onOpenDetail={openDetailModal}
       />
     </DashboardLayout>
   );

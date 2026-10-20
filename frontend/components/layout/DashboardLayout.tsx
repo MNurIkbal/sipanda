@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSipandu } from "@/context/SipanduContext";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { Footer } from "@/components/layout/Footer";
 
 export default function DashboardLayout({
   children,
@@ -25,7 +26,7 @@ export default function DashboardLayout({
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs text-slate-400 font-medium">Memuat SIPANDU...</span>
+          <span className="text-xs text-slate-400 font-medium">Memuat SIPANDA...</span>
         </div>
       </div>
     );
@@ -45,12 +46,13 @@ export default function DashboardLayout({
         onShowToast={addToast}
       />
 
-      <div className="flex flex-1 pt-16">
-        <Sidebar />
+      <Sidebar />
 
-        <main className="flex-1 min-w-0 md:ml-64 px-4 sm:px-6 md:px-8 py-6 w-full">
+      <div className="flex flex-col flex-1 pt-16 md:ml-64 transition-all duration-300 min-h-screen">
+        <main className="flex-1 px-4 sm:px-6 md:px-8 py-6 w-full">
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   );
