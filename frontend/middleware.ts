@@ -22,7 +22,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Cek apakah ada query parameter ?access_token=...
   const tokenParam = searchParams.get("access_token");
 
   // Validasi token rahasia 10 karakter acak
