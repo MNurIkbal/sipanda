@@ -5,8 +5,8 @@ import type { NextRequest } from "next/server";
 const ACCESS_COOKIE_NAME = "sipanda_access_gate";
 const COOKIE_MAX_AGE = 2 * 24 * 60 * 60; // 2 hari (dalam detik)
 
-// Token rahasia khusus 10 digit acak (bisa diatur lewat process.env.APP_ACCESS_TOKEN)
-const REQUIRED_ACCESS_TOKEN = process.env.APP_ACCESS_TOKEN || "k9X#mQ2$vL";
+// Token rahasia khusus (bisa diatur lewat process.env.APP_ACCESS_TOKEN)
+const REQUIRED_ACCESS_TOKEN = (process.env.APP_ACCESS_TOKEN || "k9X#mQ2$vL").trim();
 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
@@ -22,9 +22,10 @@ export function middleware(request: NextRequest) {
   }
 
   const tokenParam = searchParams.get("access_token");
+  const decodedTokenParam = tokenParam ? decodeURIComponent(tokenParam).trim() : null;
 
   const isValidToken = Boolean(
-    tokenParam && tokenParam.trim() === REQUIRED_ACCESS_TOKEN
+    decodedTokenParam && (decodedTokenParam === REQUIRED_ACCESS_TOKEN || tokenParam?.trim() === REQUIRED_ACCESS_TOKEN)
   );
 
   if (isValidToken) {

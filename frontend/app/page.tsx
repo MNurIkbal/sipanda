@@ -11,12 +11,12 @@ export default function RootPage() {
   useEffect(() => {
     if (!isInitializing) {
       if (currentUser) {
-        router.replace("/dashboard");
+        window.location.replace("/dashboard");
       } else {
-        router.replace("/login");
+        window.location.replace("/login");
       }
     }
-  }, [currentUser, isInitializing, router]);
+  }, [currentUser, isInitializing]);
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center">
