@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useEffect, useState, use } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { DocumentUploadForm } from "@/features/documents/DocumentUploadForm";
 import { useSipandu } from "@/context/SipanduContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { PaymentDocument } from "@/types/sipandu.types";
 import { sipanduApi } from "@/services/api.service";
 
-export default function EditDocumentPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const unwrappedParams = use(params);
-  const docId = parseInt(unwrappedParams.id);
+function EditDocumentContent() {
+  const routeParams = useParams();
+  const rawId = routeParams?.id;
+  const docId = rawId ? parseInt(Array.isArray(rawId) ? rawId[0] : rawId, 10) : NaN;
   const { currentUser, documents, updateDocument, addToast, loading } = useSipandu();
   const router = useRouter();
 
@@ -22,6 +19,8 @@ export default function EditDocumentPage({
   const [fetchingDoc, setFetchingDoc] = useState(true);
 
   useEffect(() => {
+    if (isNaN(docId)) return;
+
     // Cari dari cache context terlebih dahulu
     const found = documents.find((d) => d.id === docId);
     if (found) {
@@ -66,7 +65,9 @@ export default function EditDocumentPage({
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center p-12">
           <div className="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs text-slate-500 font-medium mt-3">Memuat berkas dokumen #{docId}...</span>
+          <span className="text-xs text-slate-500 font-medium mt-3">
+            {isNaN(docId) ? "Memuat berkas dokumen..." : `Memuat berkas dokumen #${docId}...`}
+          </span>
         </div>
       </DashboardLayout>
     );
@@ -87,5 +88,22 @@ export default function EditDocumentPage({
         loading={loading}
       />
     </DashboardLayout>
+  );
+}
+
+export default function EditDocumentPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex flex-col items-center justify-center p-12">
+            <div className="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-xs text-slate-500 font-medium mt-3">Memuat halaman edit...</span>
+          </div>
+        </DashboardLayout>
+      }
+    >
+      <EditDocumentContent />
+    </Suspense>
   );
 }
