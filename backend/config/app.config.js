@@ -13,5 +13,6 @@ module.exports = {
   },
   jwtSecret: process.env.JWT_SECRET || 'sipandu_super_secret_jwt_key_2027',
   uploadDir: process.env.UPLOAD_DIR || 'uploads',
-  maxFileSize: 25 * 1024 * 1024 // 25 MB
+  maxFileSize: 25 * 1024 * 1024, // 25 MB
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
 };

@@ -15,7 +15,29 @@ const masterRoutes = require('./routes/master.routes');
 const app = express();
 
 // Middlewares
-app.use(cors());
+const allowedOrigins = [
+  config.frontendUrl,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Izinkan request tanpa origin (seperti curl, mobile apps, Postman) atau origin yang terdaftar
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Tetap izinkan atau fallback agar development tidak terblokir
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Disposition']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight requests
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, config.uploadDir)));
 
