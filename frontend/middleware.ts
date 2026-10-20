@@ -6,7 +6,7 @@ const ACCESS_COOKIE_NAME = "sipanda_access_gate";
 const COOKIE_MAX_AGE = 2 * 24 * 60 * 60; // 2 hari (dalam detik)
 
 // Token rahasia khusus (bisa diatur lewat process.env.APP_ACCESS_TOKEN)
-const REQUIRED_ACCESS_TOKEN = (process.env.APP_ACCESS_TOKEN || "k9X#mQ2$vL").trim();
+const REQUIRED_ACCESS_TOKEN = (process.env.APP_ACCESS_TOKEN || "k9XmQ2vLksdkhsdu3").trim();
 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
