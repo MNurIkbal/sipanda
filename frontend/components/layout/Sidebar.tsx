@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Sparkles,
   Database,
-  FileCheck2
+  FileCheck2,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useSipandu } from "@/context/SipanduContext";
 
@@ -48,6 +49,15 @@ export const Sidebar: React.FC = () => {
       badge: documents.length,
       description: "Pencarian & tracking berkas",
       match: (path: string) => path.startsWith("/documents"),
+    },
+    {
+      id: "reports",
+      href: "/reports",
+      label: "Laporan",
+      icon: FileSpreadsheet,
+      badge: null,
+      description: "Ekspor Excel & PDF berkas",
+      match: (path: string) => path.startsWith("/reports"),
     },
     {
       id: "audit",
