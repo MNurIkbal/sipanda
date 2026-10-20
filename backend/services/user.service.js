@@ -178,7 +178,7 @@ class UserService {
     });
 
     // Buat URL reset password menuju frontend
-    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendBase = process.env.FRONTEND_URL || 'https://sipanda.asiasistem.com';
     const resetUrl = `${frontendBase}/login/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`;
 
     const emailService = require('./email.service');
