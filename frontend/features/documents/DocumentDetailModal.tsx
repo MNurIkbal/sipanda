@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { PaymentDocument, User, AuditTrail } from "@/types/sipandu.types";
 import { formatDateID, formatDateTimeID } from "@/lib/dateFormat";
-import { sipanduApi } from "@/services/api.service";
+import { sipanduApi, BACKEND_URL } from "@/services/api.service";
 
 interface DocumentDetailModalProps {
   document: PaymentDocument;
@@ -305,7 +305,7 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                             </span>
 
                             <a
-                              href={`http://localhost:5000${file.file_path}`}
+                              href={`${BACKEND_URL}${file.file_path}`}
                               target="_blank"
                               rel="noreferrer"
                               className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-medium text-xs flex items-center gap-1 transition border border-slate-200"

@@ -18,6 +18,7 @@ const app = express();
 const allowedOrigins = [
   config.frontendUrl,
   'http://localhost:3000',
+  'http://192.168.19.212:3000',
   'http://127.0.0.1:3000'
 ].filter(Boolean);
 

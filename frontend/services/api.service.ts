@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.19.212:5000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || `${BACKEND_URL}/api`;
 
 export const sipanduApi = {
   // Auth (Login & Lupa Password)
