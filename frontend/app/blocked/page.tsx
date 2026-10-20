@@ -16,12 +16,10 @@ export default function AccessBlockedPage() {
       </div>
 
       <div className="relative w-full max-w-lg bg-slate-900/90 border border-rose-500/30 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl text-center space-y-6">
-        {/* Icon Header */}
         <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-600 to-rose-400 flex items-center justify-center text-white shadow-lg shadow-rose-600/30 ring-4 ring-rose-500/20">
           <ShieldAlert className="w-8 h-8" />
         </div>
 
-        {/* Title & Description */}
         <div className="space-y-3">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
             Situs Ini Diblokir
