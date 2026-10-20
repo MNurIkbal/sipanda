@@ -199,7 +199,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           {/* Header Title inside Showcase */}
           <div className="relative z-10 flex items-center justify-between">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-white/40 shadow-sm text-xs font-bold text-slate-800">
-              <Sparkles className="h-4 w-4 text-blue-600" />
               <span>Portal Verifikasi & Monitoring Pembayaran</span>
             </div>
           </div>
@@ -209,7 +208,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             {/* Slider Info Description */}
             <div className="space-y-2 text-left max-w-xl">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-600/90 backdrop-blur-md text-white text-xs font-bold shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 text-blue-200" />
                 <span>{LIGHT_SLIDES[currentSlide].badge}</span>
               </div>
               <h2 className="text-2xl xl:text-3xl font-black text-white tracking-tight drop-shadow-sm">
