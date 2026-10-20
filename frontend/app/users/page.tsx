@@ -12,20 +12,20 @@ export default function UsersPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (currentUser && currentUser.role === "biro_01") {
-      addToast("warning", "Akses Dibatasi", "Role Biro 01 tidak diizinkan mengakses menu User Management.");
-      router.replace("/documents");
+    if (currentUser && currentUser.role !== "superadmin") {
+      addToast("warning", "Akses Dibatasi", "Hanya Superadmin yang memiliki izin mengakses menu Pengguna.");
+      router.replace("/dashboard");
     }
   }, [currentUser, router, addToast]);
 
-  if (currentUser?.role === "biro_01") {
+  if (currentUser && currentUser.role !== "superadmin") {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-slate-200">
           <ShieldAlert className="h-12 w-12 text-rose-500 mb-3" />
-          <h2 className="text-base font-bold text-slate-800">Akses Tidak Diizinkan</h2>
+          <h2 className="text-base font-bold text-slate-800">Akses Dibatasi</h2>
           <p className="text-xs text-slate-500 mt-1 max-w-md">
-            Role Biro 01 Verifikator tidak memiliki izin akses ke modul User Management. Mengalihkan Anda kembali...
+            Hanya Superadmin yang memiliki izin akses ke modul Pengguna. Mengalihkan Anda kembali...
           </p>
         </div>
       </DashboardLayout>

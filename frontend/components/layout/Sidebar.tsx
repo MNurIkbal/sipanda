@@ -14,10 +14,18 @@ import {
   Database,
   FileCheck2,
   FileSpreadsheet,
+  Building2,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { useSipandu } from "@/context/SipanduContext";
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose }) => {
   const { currentUser, documents, loading, fetchAllData } = useSipandu();
   const pathname = usePathname();
 
@@ -71,61 +79,105 @@ export const Sidebar: React.FC = () => {
     {
       id: "users",
       href: "/users",
-      label: "User Management",
+      label: "Pengguna",
       icon: Users,
       badge: null,
       description: "Hak akses & akun sistem",
       match: (path: string) => path.startsWith("/users"),
     },
+    {
+      id: "master",
+      href: "/master",
+      label: "Master Data",
+      icon: Database,
+      badge: null,
+      description: "Unit kerja & jenis dokumen",
+      match: (path: string) => path.startsWith("/master"),
+    },
   ];
 
+  // Filter Menu Berdasarkan Role Pengguna:
+  // - PPK: dashboard, documents, monitoring
+  // - Biro 01: dashboard, monitoring, documents, reports, audit
+  // - Superadmin: semua menu (dashboard, monitoring, documents, reports, audit, users, master)
   const menuItems = allMenuItems.filter((item) => {
-    // Biro 01 tidak boleh akses User Management
-    if (item.id === "users" && currentUser?.role === "biro_01") {
-      return false;
+    if (currentUser?.role === "ppk") {
+      return item.id === "dashboard" || item.id === "monitoring" || item.id === "documents";
     }
+
+    if (currentUser?.role === "biro_01") {
+      return item.id !== "users" && item.id !== "master";
+    }
+
+    // Superadmin: semua menu diizinkan
     return true;
   });
 
   return (
-    <aside className="w-64 fixed top-0 bottom-0 left-0 h-screen z-30 border-r border-slate-800/80 bg-[#070d1e] text-slate-300 flex flex-col justify-between hidden md:flex shadow-2xl select-none overflow-hidden">
-      
-      {/* Background Image Layer (Pattern Clearly Visible) */}
-      <div
-        className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-65"
-        style={{
-          backgroundImage: "url('/sidebar-pattern.jpg')",
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
-        }}
-      ></div>
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-xs md:hidden animate-fade-in"
+          onClick={onMobileClose}
+        />
+      )}
 
-      {/* Lightened Tint Gradient Overlay to Reveal the Image */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0b1329]/50 via-[#0f172a]/45 to-[#070d1e]/60 pointer-events-none"></div>
-      
-      {/* Background Decorative Ambient Glows */}
-      <div className="absolute top-0 -left-20 w-48 h-48 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-20 -right-20 w-48 h-48 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
+      <aside
+        className={`w-64 fixed top-0 bottom-0 left-0 h-screen z-50 md:z-30 border-r border-slate-800/80 bg-[#070d1e] text-slate-300 flex flex-col justify-between shadow-2xl select-none overflow-hidden transition-transform duration-300 ease-in-out ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        {/* Background Image Layer (Pattern Clearly Visible) */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-65"
+          style={{
+            backgroundImage: "url('/sidebar-pattern.jpg')",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+          }}
+        ></div>
 
-      {/* Brand Header Inside Full Height Sidebar */}
-      <div className="relative z-10 h-16 px-5 border-b border-white/[0.08] flex items-center gap-3 shrink-0 bg-slate-950/20 backdrop-blur-xs">
-        <Link href="/dashboard" className="flex items-center gap-3 group cursor-pointer">
-          <div className="relative">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-500 rounded-xl blur-xs opacity-75 group-hover:opacity-100 transition duration-300"></div>
-            <div className="relative rounded-xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 p-2 text-white shadow-md border border-white/20">
-              <FileCheck2 className="h-5 w-5" />
+        {/* Lightened Tint Gradient Overlay to Reveal the Image */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0b1329]/50 via-[#0f172a]/45 to-[#070d1e]/60 pointer-events-none"></div>
+        
+        {/* Background Decorative Ambient Glows */}
+        <div className="absolute top-0 -left-20 w-48 h-48 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-20 -right-20 w-48 h-48 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        {/* Brand Header Inside Full Height Sidebar */}
+        <div className="relative z-10 h-16 px-5 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-slate-950/20 backdrop-blur-xs">
+          <Link
+            href="/dashboard"
+            onClick={() => onMobileClose && onMobileClose()}
+            className="flex items-center gap-3 group cursor-pointer"
+          >
+            <div className="relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-500 rounded-xl blur-xs opacity-75 group-hover:opacity-100 transition duration-300"></div>
+              <div className="relative rounded-xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 p-2 text-white shadow-md border border-white/20">
+                <FileCheck2 className="h-5 w-5" />
+              </div>
             </div>
-          </div>
-          <div className="min-w-0">
-            <div className="text-base font-black text-white tracking-tight leading-tight">
-              SIPANDA
+            <div className="min-w-0">
+              <div className="text-base font-black text-white tracking-tight leading-tight">
+                SIPANDA
+              </div>
+              <div className="text-[10px] text-slate-400 font-medium truncate">
+                Sistem Dokumen Pembayaran
+              </div>
             </div>
-            <div className="text-[10px] text-slate-400 font-medium truncate">
-              Sistem Dokumen Pembayaran
-            </div>
-          </div>
-        </Link>
-      </div>
+          </Link>
+
+          {/* Close button for mobile screen */}
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+            title="Tutup Menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
       {/* Navigation Section */}
       <div className="relative z-10 flex flex-col flex-1 p-4 space-y-5 overflow-y-auto">
@@ -166,6 +218,7 @@ export const Sidebar: React.FC = () => {
                 <Link
                   key={item.id}
                   href={item.href}
+                  onClick={() => onMobileClose?.()}
                   className={`group relative flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left transition-all duration-200 cursor-pointer ${
                     isActive
                       ? "bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white font-bold shadow-lg shadow-blue-600/30 border border-white/20"
@@ -212,5 +265,6 @@ export const Sidebar: React.FC = () => {
       </div>
 
     </aside>
+    </>
   );
 };

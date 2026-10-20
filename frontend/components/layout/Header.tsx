@@ -15,7 +15,8 @@ import {
   FilePlus2,
   RotateCw,
   AlertCircle,
-  FileText
+  FileText,
+  Menu,
 } from "lucide-react";
 import { User as UserType } from "@/types/sipandu.types";
 import { sipanduApi } from "@/services/api.service";
@@ -28,6 +29,7 @@ interface HeaderProps {
   onSwitchUser: (userId: string) => void;
   onLogout: () => void;
   onShowToast?: (type: "success" | "error" | "warning" | "info", title: string, message: string) => void;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSwitchUser,
   onLogout,
   onShowToast,
+  onToggleSidebar,
 }) => {
   const {
     notifications,
@@ -150,8 +153,19 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="relative z-10 flex h-full items-center justify-between gap-4 px-4 md:px-7">
           
-          {/* Left Title / Greeting */}
-          <div className="flex items-center gap-3">
+          {/* Left Title / Greeting & Burger Menu */}
+          <div className="flex items-center gap-2.5">
+            {/* Hamburger button for mobile/tablet */}
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="md:hidden flex items-center justify-center h-9 w-9 rounded-xl border border-slate-200/90 bg-white text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition shadow-2xs cursor-pointer active:scale-95"
+              aria-label="Buka Navigasi Menu"
+              title="Menu Navigasi"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
             <div className="md:hidden flex items-center gap-2">
               <div className="rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-2 text-white shadow-xs">
                 <FileCheck2 className="h-4 w-4" />

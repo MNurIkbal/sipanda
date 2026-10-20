@@ -50,7 +50,7 @@ class UserService {
     // Validasi format email dasar
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(userData.email.trim())) {
-      throw new Error('Format email tidak valid (contoh: user@kemenkeu.go.id)!');
+      throw new Error('Format email tidak valid (contoh: user@example.com)!');
     }
 
     if (!userData.full_name || !userData.full_name.trim()) {
@@ -140,6 +140,105 @@ class UserService {
     const deleted = await userRepository.delete(id);
     if (!deleted) throw new Error('Pengguna tidak ditemukan atau gagal dihapus!');
     return deleted.toSafeObject();
+  }
+
+  async requestPasswordReset(email) {
+    if (!email || !email.trim()) {
+      throw new Error('Alamat email wajib diisi!');
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await userRepository.findByEmail(cleanEmail);
+    if (!user) {
+      throw new Error(`Email "${cleanEmail}" tidak terdaftar di sistem SIPANDA!`);
+    }
+
+    // Generate secure random token untuk link reset password
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresInMinutes = 15;
+    const expiresAt = Date.now() + expiresInMinutes * 60 * 1000;
+
+    // Simpan di in-memory store token (key: resetToken)
+    if (!global.sipanduResetTokens) {
+      global.sipanduResetTokens = new Map();
+    }
+
+    // Hapus token lama untuk email yang sama jika ada
+    for (const [key, val] of global.sipanduResetTokens.entries()) {
+      if (val.email === cleanEmail) {
+        global.sipanduResetTokens.delete(key);
+      }
+    }
+
+    global.sipanduResetTokens.set(resetToken, {
+      userId: user.id,
+      email: cleanEmail,
+      expiresAt,
+    });
+
+    // Buat URL reset password menuju frontend
+    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetUrl = `${frontendBase}/login/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`;
+
+    const emailService = require('./email.service');
+    const sendResult = await emailService.sendResetPasswordLinkEmail(cleanEmail, resetUrl, user.full_name);
+
+    return {
+      email: cleanEmail,
+      expiresInMinutes,
+      mode: sendResult.mode,
+    };
+  }
+
+  async verifyResetToken(token, email) {
+    if (!token || !email) {
+      throw new Error('Token dan email tidak valid!');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!global.sipanduResetTokens || !global.sipanduResetTokens.has(token)) {
+      throw new Error('Tautan reset password tidak valid atau sudah digunakan!');
+    }
+
+    const record = global.sipanduResetTokens.get(token);
+    if (record.email !== cleanEmail) {
+      throw new Error('Tautan reset password tidak cocok dengan email ini!');
+    }
+
+    if (Date.now() > record.expiresAt) {
+      global.sipanduResetTokens.delete(token);
+      throw new Error('Tautan reset password telah kedaluwarsa! Silakan ajukan tautan baru.');
+    }
+
+    return { valid: true, email: cleanEmail };
+  }
+
+  async resetPasswordWithToken(token, email, newPassword) {
+    if (!token || !email || !newPassword) {
+      throw new Error('Token, email, dan password baru wajib diisi!');
+    }
+
+    // Verifikasi token
+    await this.verifyResetToken(token, email);
+
+    const record = global.sipanduResetTokens.get(token);
+
+    // Validasi aturan password baru
+    const passwordCheck = validatePasswordSecurity(newPassword);
+    if (!passwordCheck.valid) {
+      throw new Error(passwordCheck.message);
+    }
+
+    const newHash = hashPassword(newPassword);
+    const updated = await userRepository.updatePassword(record.userId, newHash);
+
+    // Hapus token setelah berhasil digunakan
+    global.sipanduResetTokens.delete(token);
+
+    return {
+      success: true,
+      user: updated.toSafeObject(),
+    };
   }
 }
 

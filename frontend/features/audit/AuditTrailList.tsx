@@ -11,6 +11,7 @@ import {
   FileText,
   Clock,
   UserCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { AuditTrail } from "@/types/sipandu.types";
 import { formatDateTimeID } from "@/lib/dateFormat";
@@ -21,7 +22,6 @@ interface AuditTrailListProps {
 }
 
 export const AuditTrailList: React.FC<AuditTrailListProps> = ({ logs: initialLogs = [] }) => {
-  // State data hasil API
   const [logs, setLogs] = useState<AuditTrail[]>(initialLogs);
   const [totalLogs, setTotalLogs] = useState(initialLogs.length);
   const [loading, setLoading] = useState(false);
@@ -171,16 +171,19 @@ export const AuditTrailList: React.FC<AuditTrailListProps> = ({ logs: initialLog
   return (
     <div className="space-y-4">
       {/* Top Banner Header Card */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-2xs">
+            <ShieldCheck className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">
               Audit Trail &amp; Log Aktivitas
             </h1>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Rekam jejak setiap tindakan: pendaftaran dokumen baru, persetujuan, penolakan, perubahan berkas, hingga penghapusan.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Rekam jejak setiap tindakan: pendaftaran dokumen baru, persetujuan, penolakan, perubahan berkas, hingga penghapusan.
-          </p>
         </div>
 
         {/* Tombol Refresh */}
@@ -248,7 +251,7 @@ export const AuditTrailList: React.FC<AuditTrailListProps> = ({ logs: initialLog
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 uppercase tracking-wider font-black text-xs">
-                <th className="px-4 py-3.5 text-center w-12">Nomor</th>
+                <th className="px-4 py-3.5 text-center w-12">No.</th>
                 <th className="px-5 py-3.5">Waktu Kejadian</th>
                 <th className="px-5 py-3.5">Pengguna &amp; Role</th>
                 <th className="px-5 py-3.5">Aksi Log</th>

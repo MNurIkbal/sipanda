@@ -2,13 +2,23 @@ const PaymentDocument = require('../models/document.model');
 const db = require('../config/db');
 
 class DocumentRepository {
-  async findAll({ status, search, page, limit } = {}) {
+  async findAll({ status, search, unit_kerja, jenis_dokumen, page, limit } = {}) {
     let baseWhere = `WHERE 1=1`;
     const params = [];
 
     if (status && status !== 'ALL') {
       params.push(status);
       baseWhere += ` AND d.status = $${params.length}`;
+    }
+
+    if (unit_kerja && unit_kerja !== 'ALL') {
+      params.push(unit_kerja.trim());
+      baseWhere += ` AND d.unit_kerja = $${params.length}`;
+    }
+
+    if (jenis_dokumen && jenis_dokumen !== 'ALL') {
+      params.push(jenis_dokumen.trim());
+      baseWhere += ` AND d.jenis_dokumen = $${params.length}`;
     }
 
     if (search) {

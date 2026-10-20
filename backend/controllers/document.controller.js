@@ -4,8 +4,8 @@ const { successResponse, errorResponse } = require('../utils/response.util');
 class DocumentController {
   async getAllDocuments(req, res) {
     try {
-      const { status, search, page, limit } = req.query;
-      const documents = await documentService.getAllDocuments({ status, search, page, limit });
+      const { status, search, unit_kerja, jenis_dokumen, page, limit } = req.query;
+      const documents = await documentService.getAllDocuments({ status, search, unit_kerja, jenis_dokumen, page, limit });
       return successResponse(res, 'Berhasil memuat daftar dokumen', documents);
     } catch (err) {
       return errorResponse(res, err.message, 500);

@@ -7,6 +7,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Inbox,
+  Activity,
 } from "lucide-react";
 import { PaymentDocument, User } from "@/types/sipandu.types";
 import { formatDateID, formatDateTimeID } from "@/lib/dateFormat";
@@ -178,26 +179,31 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Title & Subtitle + Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Monitoring Proses Pembayaran
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Pantau setiap dokumen melalui timeline proses.
-          </p>
+      {/* Top Banner Card Page Header */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-2xs">
+            <Activity className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">
+              Monitoring Proses Pembayaran
+            </h1>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Pantau alur tahapan setiap berkas dokumen pembayaran secara real-time melalui timeline proses.
+            </p>
+          </div>
         </div>
 
         {/* Search Input Box */}
         <div className="relative w-full md:w-80">
-          <Search className="h-4 w-4 absolute left-3.5 top-2.5 text-slate-400" />
+          <Search className="h-4 w-4 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nomor surat / PPK..."
-            className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 font-medium transition shadow-2xs"
+            className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-lg bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 font-medium transition shadow-2xs"
           />
         </div>
       </div>

@@ -243,10 +243,16 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">Manajemen Pengguna</h1>
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-2xs">
+            <Users className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">Manajemen Pengguna</h1>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Kelola data akun pengguna, hak akses role (Superadmin, Biro 01, PPK), dan unit kerja.
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -566,13 +572,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         </div>
       </div>
 
-      {/* MODAL FULLSCREEN: TAMBAH & EDIT PENGGUNA (LAYAR PENUH 100vw x 100vh) */}
+      {/* MODAL RESPONSIVE: TAMBAH & EDIT PENGGUNA */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/70 backdrop-blur-md animate-fade-in overflow-hidden">
-          <div className="bg-[#f8fafc] w-full h-full flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-[#f8fafc] w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
             
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-xs">
+            <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-2xs">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 shadow-2xs">
                   <Users className="h-5 w-5" />
@@ -584,7 +590,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <p className="text-xs text-slate-500">
                     {modalMode === "create"
                       ? "Formulir pendaftaran akun pengguna baru dengan autentikasi email dan verifikasi keamanan."
-                      : `Memperbarui profil, data kepegawaian`}
+                      : "Memperbarui profil, hak akses role, serta data kepegawaian pengguna."}
                   </p>
                 </div>
               </div>
@@ -599,8 +605,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               </button>
             </div>
 
-            {/* Modal Body: Full Width Scrollable Area */}
-            <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4 w-full">
+            {/* Modal Body: Scrollable Area */}
+            <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 w-full">
               
               {/* Card Section 1: Informasi Autentikasi (Wajib) */}
               <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 md:p-5 space-y-4">
@@ -621,7 +627,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     </label>
                     <input
                       type="email"
-                      placeholder="nama@kemenkeu.go.id"
+                      placeholder="nama@example.com"
                       value={form.email}
                       onChange={(e) => {
                         setForm({ ...form, email: e.target.value });

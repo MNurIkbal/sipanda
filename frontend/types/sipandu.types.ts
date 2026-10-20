@@ -94,3 +94,12 @@ export interface AppNotification {
   read: boolean;
   target_role: "biro_01" | "ppk" | "all";
 }
+
+export interface MasterItem {
+  id: number;
+  nama: string;
+  keterangan?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}

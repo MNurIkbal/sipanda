@@ -1,12 +1,32 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export const sipanduApi = {
-  // Auth (Login menggunakan Email)
+  // Auth (Login & Lupa Password)
   login: async (credentials: { email?: string; username?: string; password: string }) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
+    });
+    return res.json();
+  },
+  forgotPassword: async (email: string) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    return res.json();
+  },
+  verifyResetToken: async (token: string, email: string) => {
+    const res = await fetch(`${API_BASE}/auth/verify-reset-token?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`);
+    return res.json();
+  },
+  resetPassword: async (payload: { token: string; email: string; newPassword: string }) => {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
     return res.json();
   },
@@ -58,10 +78,19 @@ export const sipanduApi = {
   },
 
   // Documents
-  getDocuments: async (params?: { status?: string; search?: string; page?: number; limit?: number }) => {
+  getDocuments: async (params?: {
+    status?: string;
+    search?: string;
+    unit_kerja?: string;
+    jenis_dokumen?: string;
+    page?: number;
+    limit?: number;
+  }) => {
     const query = new URLSearchParams();
     if (params?.status && params.status !== "ALL") query.append("status", params.status);
     if (params?.search) query.append("search", params.search);
+    if (params?.unit_kerja && params.unit_kerja !== "ALL") query.append("unit_kerja", params.unit_kerja);
+    if (params?.jenis_dokumen && params.jenis_dokumen !== "ALL") query.append("jenis_dokumen", params.jenis_dokumen);
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
@@ -146,6 +175,68 @@ export const sipanduApi = {
   // Monitoring Stats
   getStats: async () => {
     const res = await fetch(`${API_BASE}/monitoring/stats`);
+    return res.json();
+  },
+
+  // Master Data: Units
+  getMasterUnits: async (params?: { search?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append("search", params.search);
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    const res = await fetch(`${API_BASE}/master/units${queryString}`);
+    return res.json();
+  },
+  createMasterUnit: async (data: { nama: string; keterangan?: string; is_active?: boolean }) => {
+    const res = await fetch(`${API_BASE}/master/units`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  updateMasterUnit: async (id: number, data: { nama?: string; keterangan?: string; is_active?: boolean }) => {
+    const res = await fetch(`${API_BASE}/master/units/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  deleteMasterUnit: async (id: number) => {
+    const res = await fetch(`${API_BASE}/master/units/${id}`, {
+      method: "DELETE",
+    });
+    return res.json();
+  },
+
+  // Master Data: Jenis Dokumen
+  getMasterJenisDokumen: async (params?: { search?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append("search", params.search);
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    const res = await fetch(`${API_BASE}/master/jenis-dokumen${queryString}`);
+    return res.json();
+  },
+  createMasterJenisDokumen: async (data: { nama: string; keterangan?: string; is_active?: boolean }) => {
+    const res = await fetch(`${API_BASE}/master/jenis-dokumen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  updateMasterJenisDokumen: async (id: number, data: { nama?: string; keterangan?: string; is_active?: boolean }) => {
+    const res = await fetch(`${API_BASE}/master/jenis-dokumen/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  deleteMasterJenisDokumen: async (id: number) => {
+    const res = await fetch(`${API_BASE}/master/jenis-dokumen/${id}`, {
+      method: "DELETE",
+    });
     return res.json();
   },
 };

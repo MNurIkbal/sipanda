@@ -80,12 +80,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const fetchDocumentsFromApi = async () => {
     try {
       setApiLoading(true);
-      console.log("[DocumentList] Fetching API documents:", {
-        search: debouncedSearch,
-        status: statusFilter,
-        page,
-        limit,
-      });
       const res = await sipanduApi.getDocuments({
         search: debouncedSearch,
         status: statusFilter,
@@ -168,10 +162,16 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   return (
     <div className="space-y-4">
       {/* Top Banner Header Card */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">Daftar Dokumen Pembayaran</h1>
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-2xs">
+            <FileText className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">Daftar Dokumen Pembayaran</h1>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Kelola, cari, dan lacak seluruh berkas pengajuan dokumen pembayaran beserta status verifikasinya.
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -230,6 +230,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+
             {/* Filter Status */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-700 font-bold">Status:</span>

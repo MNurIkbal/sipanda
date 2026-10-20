@@ -10,6 +10,7 @@ const userRoutes = require('./routes/user.routes');
 const documentRoutes = require('./routes/document.routes');
 const auditRoutes = require('./routes/audit.routes');
 const monitoringRoutes = require('./routes/monitoring.routes');
+const masterRoutes = require('./routes/master.routes');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/audit-trail', auditRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/master', masterRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

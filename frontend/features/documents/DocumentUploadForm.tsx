@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -53,7 +53,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     initialData?.perihal || initialData?.nama_kegiatan || ""
   );
 
-  const jenisDokumenOptions = [
+  const defaultJenisDokumenOptions = [
     "Pembayaran LS (Langsung)",
     "Pembayaran UP (Uang Persediaan)",
     "Pembayaran TUP (Tambah Uang Persediaan)",
@@ -71,7 +71,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     "Perjalanan Dinas (SPD)",
   ];
 
-  const unitKerjaOptions = [
+  const defaultUnitKerjaOptions = [
     "PPK Kegiatan Operasional",
     "PPK Infrastruktur & Pengadaan",
     "PPK Pelayanan Publik & TI",
@@ -83,6 +83,26 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     "Biro Sumber Daya Manusia",
     "Inspektorat Utama",
   ];
+
+  const [jenisDokumenOptions, setJenisDokumenOptions] = useState<string[]>(defaultJenisDokumenOptions);
+  const [unitKerjaOptions, setUnitKerjaOptions] = useState<string[]>(defaultUnitKerjaOptions);
+
+  useEffect(() => {
+    // Ambil data master secara dinamis (Hanya yang berstatus Aktif)
+    sipanduApi.getMasterUnits().then((res) => {
+      if (res.success && res.data && res.data.length > 0) {
+        const activeUnits = res.data.filter((item: any) => item.is_active !== false);
+        setUnitKerjaOptions(activeUnits.map((item: any) => item.nama));
+      }
+    }).catch(() => {});
+
+    sipanduApi.getMasterJenisDokumen().then((res) => {
+      if (res.success && res.data && res.data.length > 0) {
+        const activeDocs = res.data.filter((item: any) => item.is_active !== false);
+        setJenisDokumenOptions(activeDocs.map((item: any) => item.nama));
+      }
+    }).catch(() => {});
+  }, []);
 
   const [isUnitPpkOpen, setIsUnitPpkOpen] = useState(false);
   const [unitPpkSearch, setUnitPpkSearch] = useState("");
