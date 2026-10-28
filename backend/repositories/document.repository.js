@@ -2,9 +2,16 @@ const PaymentDocument = require('../models/document.model');
 const db = require('../config/db');
 
 class DocumentRepository {
-  async findAll({ status, search, unit_kerja, jenis_dokumen, page, limit } = {}) {
+  async findAll({ status, search, unit_kerja, jenis_dokumen, page, limit, user_role } = {}) {
     let baseWhere = `WHERE 1=1`;
     const params = [];
+
+    // Filter khusus Biro 01:
+    // Biro 01 TIDAK BOLEH melihat dokumen yang masih berstatus 'draft'
+    // dan dokumen yang ditolak/dikembalikan ('dikembalikan' / 'ditolak')
+    if (user_role === 'biro_01') {
+      baseWhere += ` AND d.status NOT IN ('draft', 'dikembalikan', 'ditolak')`;
+    }
 
     if (status && status !== 'ALL') {
       params.push(status);
@@ -238,6 +245,10 @@ class DocumentRepository {
       'tanggal_diterima',
       'pihak_eksternal',
       'keterangan',
+      'bast_generated',
+      'bap_generated',
+      'bapp_generated',
+      'official_docs_data',
     ];
 
     for (const key of allowedFields) {

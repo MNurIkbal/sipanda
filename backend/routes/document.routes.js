@@ -20,6 +20,18 @@ router.put('/:id/revisi', upload.array('files', 10), (req, res) => documentContr
 // Update tahapan alur pembayaran (KPPN / Dana Cair)
 router.post('/:id/stage', (req, res) => documentController.updateStage(req, res));
 
+// Simpan hasil Generate Dokumen Resmi (BAST, BAP, BAPP)
+router.post('/:id/generate-official', (req, res) => documentController.saveOfficialDoc(req, res));
+
+// Reset hasil Generate Dokumen Resmi (hanya jika masih draft)
+router.post('/:id/reset-official', (req, res) => documentController.resetOfficialDocs(req, res));
+
+// Kirim dokumen dari PPK ke Biro 01
+router.post('/:id/submit-to-biro', (req, res) => documentController.submitToBiro(req, res));
+
+// Tandai status Review saat Biro 01 melihat dokumen / berkas
+router.post('/:id/review', (req, res) => documentController.markAsReview(req, res));
+
 // Edit Data Dokumen
 router.put('/:id', upload.array('files', 10), (req, res) => documentController.editDocument(req, res));
 

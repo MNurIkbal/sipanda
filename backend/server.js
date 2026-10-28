@@ -24,11 +24,10 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Izinkan request tanpa origin (seperti curl, mobile apps, Postman) atau origin yang terdaftar
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Tetap izinkan atau fallback agar development tidak terblokir
+      callback(null, true); 
     }
   },
   credentials: true,

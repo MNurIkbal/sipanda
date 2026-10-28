@@ -4,8 +4,8 @@ const { successResponse, errorResponse } = require('../utils/response.util');
 class DocumentController {
   async getAllDocuments(req, res) {
     try {
-      const { status, search, unit_kerja, jenis_dokumen, page, limit } = req.query;
-      const documents = await documentService.getAllDocuments({ status, search, unit_kerja, jenis_dokumen, page, limit });
+      const { status, search, unit_kerja, jenis_dokumen, page, limit, user_role } = req.query;
+      const documents = await documentService.getAllDocuments({ status, search, unit_kerja, jenis_dokumen, page, limit, user_role });
       return successResponse(res, 'Berhasil memuat daftar dokumen', documents);
     } catch (err) {
       return errorResponse(res, err.message, 500);
@@ -76,6 +76,46 @@ class DocumentController {
     try {
       const doc = await documentService.updateStage(req.params.id, req.body);
       return successResponse(res, 'Tahapan pembayaran berhasil diperbarui!', doc);
+    } catch (err) {
+      return errorResponse(res, err.message, 400);
+    }
+  }
+
+  async saveOfficialDoc(req, res) {
+    try {
+      const { type, formData, user_name, user_role } = req.body;
+      const doc = await documentService.saveOfficialDoc(req.params.id, { type, formData, user_name, user_role });
+      return successResponse(res, `Dokumen ${type} berhasil digenerate dan dikunci!`, doc);
+    } catch (err) {
+      return errorResponse(res, err.message, 400);
+    }
+  }
+
+  async resetOfficialDocs(req, res) {
+    try {
+      const { user_name, user_role } = req.body;
+      const doc = await documentService.resetOfficialDocs(req.params.id, { user_name, user_role });
+      return successResponse(res, 'Berkas resmi BAST, BAP, dan BAPP berhasil direset!', doc);
+    } catch (err) {
+      return errorResponse(res, err.message, 400);
+    }
+  }
+
+  async submitToBiro(req, res) {
+    try {
+      const { user_name, user_role } = req.body;
+      const doc = await documentService.submitToBiro(req.params.id, { user_name, user_role });
+      return successResponse(res, 'Dokumen berhasil dikirim ke Biro 01 Keuangan!', doc);
+    } catch (err) {
+      return errorResponse(res, err.message, 400);
+    }
+  }
+
+  async markAsReview(req, res) {
+    try {
+      const { user_name, user_role } = req.body;
+      const doc = await documentService.markAsReview(req.params.id, { user_name, user_role });
+      return successResponse(res, 'Status dokumen diperbarui menjadi Review', doc);
     } catch (err) {
       return errorResponse(res, err.message, 400);
     }

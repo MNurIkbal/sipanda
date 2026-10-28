@@ -73,7 +73,7 @@ class DocumentService {
       nomor_surat,
       nomor_agenda: nomor_agenda || `AGD-${Date.now().toString().slice(-4)}`,
       nama_kegiatan: perihal || nama_kegiatan || jenis_dokumen || 'Pengajuan Pembayaran',
-      kategori: jenis_dokumen || kategori || 'LS-Kontraktual',
+      kategori: data.kategori_pengadaan || kategori || jenis_dokumen || 'Pengadaan Barang / Jasa',
       ppk_name: ppk_name || 'Petugas Pengadaan',
       unit_kerja: unit_kerja || 'PPK Kegiatan Operasional',
       nilai_pembayaran: Number(nilai_pembayaran) || 0,
@@ -111,9 +111,9 @@ class DocumentService {
     if (action === 'approve') {
       const updated = await documentRepository.update(id, {
         status: 'lengkap_valid',
-        legend_status: 'Lengkap / Valid (Disetujui)',
+        legend_status: 'Disetujui',
         legend_color: 'emerald',
-        catatan_verifikasi: pesan || 'Dokumen telah diverifikasi dan dinyatakan lengkap serta sah.',
+        catatan_verifikasi: pesan || 'Dokumen telah disetujui oleh Biro 01.',
         tanggal_verifikasi: new Date(),
         verified_by_id: verifier_id ? parseInt(verifier_id) : null,
       });
@@ -124,7 +124,7 @@ class DocumentService {
         user_name: verifier_name || 'Biro 01 Keuangan',
         user_role: verifier_role || 'biro_01',
         action: 'VERIFY_APPROVE',
-        description: `Menyetujui verifikasi dokumen ${doc.nomor_surat}. Legend: Lengkap / Valid. Catatan: ${pesan || 'Lengkap & Valid'}`,
+        description: `Menyetujui dokumen ${doc.nomor_surat}. Status: Disetujui. Catatan: ${pesan || 'Lengkap & Valid'}`,
         previous_status: prevStatus,
         new_status: 'lengkap_valid',
       });
@@ -132,15 +132,15 @@ class DocumentService {
       return updated;
     } else if (action === 'reject') {
       if (!pesan || pesan.trim() === '') {
-        throw new Error('Pesan alasan penolakan/revisi wajib diisi!');
+        throw new Error('Pesan alasan penolakan wajib diisi!');
       }
 
       const updated = await documentRepository.update(id, {
         status: 'dikembalikan',
-        legend_status: 'Dikembalikan untuk Perbaikan',
+        legend_status: 'Ditolak',
         legend_color: 'red',
         catatan_revisi: pesan,
-        catatan_verifikasi: 'Dikembalikan oleh Biro 01',
+        catatan_verifikasi: 'Ditolak oleh Biro 01',
         tanggal_verifikasi: new Date(),
         verified_by_id: verifier_id ? parseInt(verifier_id) : null,
       });
@@ -151,7 +151,7 @@ class DocumentService {
         user_name: verifier_name || 'Biro 01 Keuangan',
         user_role: verifier_role || 'biro_01',
         action: 'VERIFY_REJECT',
-        description: `Mengembalikan dokumen ${doc.nomor_surat}. Alasan Revisi: ${pesan}`,
+        description: `Menolak dokumen ${doc.nomor_surat}. Status: Ditolak. Alasan: ${pesan}`,
         previous_status: prevStatus,
         new_status: 'dikembalikan',
       });
@@ -159,8 +159,8 @@ class DocumentService {
       return updated;
     } else if (action === 'process') {
       const updated = await documentRepository.update(id, {
-        status: 'sedang_diverifikasi',
-        legend_status: 'Sedang Diverifikasi',
+        status: 'review',
+        legend_status: 'Review',
         legend_color: 'blue',
       });
 
@@ -170,9 +170,9 @@ class DocumentService {
         user_name: verifier_name || 'Biro 01 Keuangan',
         user_role: verifier_role || 'biro_01',
         action: 'PROCESS_VERIFICATION',
-        description: `Membuka dan memproses verifikasi berkas ${doc.nomor_surat}`,
+        description: `Membuka dan memproses review berkas ${doc.nomor_surat}`,
         previous_status: prevStatus,
-        new_status: 'sedang_diverifikasi',
+        new_status: 'review',
       });
 
       return updated;
@@ -219,7 +219,7 @@ class DocumentService {
       nama_kegiatan: nama_kegiatan || doc.nama_kegiatan,
       kategori: kategori || doc.kategori,
       status: 'menunggu_verifikasi_ulang',
-      legend_status: 'Menunggu Verifikasi Ulang',
+      legend_status: 'Pengajuan Ulang',
       legend_color: 'orange',
       catatan_revisi: null,
     };
@@ -236,7 +236,7 @@ class DocumentService {
       user_name: user_name || doc.ppk_name,
       user_role: user_role || 'petugas',
       action: 'REVISE_DOCUMENT',
-      description: `PPK memperbarui dokumen dan mengunggah ${newAttachments.length} file revisi baru. Catatan: ${catatan_perbaikan || 'Sudah disesuaikan.'}`,
+      description: `PPK mengirim ulang dokumen (Pengajuan Ulang) dan mengunggah ${newAttachments.length} file perbaikan. Catatan: ${catatan_perbaikan || 'Sudah disesuaikan.'}`,
       previous_status: prevStatus,
       new_status: 'menunggu_verifikasi_ulang',
     });
@@ -271,9 +271,136 @@ class DocumentService {
     return updated;
   }
 
+  async saveOfficialDoc(id, { type, formData, user_name, user_role }) {
+    const doc = await documentRepository.findById(id);
+    if (!doc) throw new Error('Dokumen tidak ditemukan!');
+
+    const upperType = (type || '').toUpperCase();
+    const existingOfficial = doc.official_docs_data || {};
+    existingOfficial[upperType] = {
+      formData: formData || {},
+      generated_at: new Date().toISOString(),
+      generated_by: user_name || 'PPK',
+    };
+
+    const updatePayload = {
+      official_docs_data: existingOfficial,
+    };
+
+    if (upperType === 'BAST') updatePayload.bast_generated = true;
+    if (upperType === 'BAP') updatePayload.bap_generated = true;
+    if (upperType === 'BAPP') updatePayload.bapp_generated = true;
+
+    const updated = await documentRepository.update(id, updatePayload);
+
+    return updated;
+  }
+
+  async resetOfficialDocs(id, { user_name, user_role }) {
+    const doc = await documentRepository.findById(id);
+    if (!doc) throw new Error('Dokumen tidak ditemukan!');
+
+    // Reset dokumen resmi boleh jika status masih draft atau ditolak (dikembalikan / ditolak)
+    if (doc.status !== 'draft' && doc.status !== 'dikembalikan' && doc.status !== 'ditolak') {
+      throw new Error('Dokumen resmi hanya dapat direset saat status masih Draft atau Ditolak!');
+    }
+
+    const updated = await documentRepository.update(id, {
+      bast_generated: false,
+      bap_generated: false,
+      bapp_generated: false,
+      official_docs_data: {},
+    });
+
+    await auditService.log({
+      document_id: doc.id,
+      nomor_surat: doc.nomor_surat,
+      user_name: user_name || 'Petugas PPK',
+      user_role: user_role || 'ppk',
+      action: 'RESET_OFFICIAL_DOCS',
+      description: `Mereset berkas resmi BAST, BAP, dan BAPP pada dokumen ${doc.nomor_surat} agar dapat diedit/digenerate ulang`,
+      previous_status: doc.status,
+      new_status: doc.status,
+    });
+
+    return updated;
+  }
+
+  async submitToBiro(id, { user_name, user_role }) {
+    const doc = await documentRepository.findById(id);
+    if (!doc) throw new Error('Dokumen tidak ditemukan!');
+
+    // Tentukan status berikutnya:
+    // Jika dokumen sebelumnya ditolak (dikembalikan / ditolak), maka saat dikirim ulang menjadi 'pengajuan_ulang' (menunggu_verifikasi_ulang)
+    // Jika dokumen baru (draft), maka menjadi 'submit_dokumen'
+    const isResubmission = doc.status === 'dikembalikan' || doc.status === 'ditolak';
+    const targetStatus = isResubmission ? 'menunggu_verifikasi_ulang' : 'submit_dokumen';
+    const targetLegend = isResubmission ? 'Pengajuan Ulang' : 'Submit Dokumen';
+    const targetColor = isResubmission ? 'orange' : 'amber';
+
+    const updated = await documentRepository.update(id, {
+      status: targetStatus,
+      legend_status: targetLegend,
+      legend_color: targetColor,
+    });
+
+    await auditService.log({
+      document_id: doc.id,
+      nomor_surat: doc.nomor_surat,
+      user_name: user_name || 'Petugas PPK',
+      user_role: user_role || 'ppk',
+      action: isResubmission ? 'RESUBMIT_DOKUMEN' : 'SUBMIT_DOKUMEN',
+      description: isResubmission
+        ? `PPK mengirim ulang dokumen ${doc.nomor_surat} ke Biro 01 (Status: Pengajuan Ulang)`
+        : `PPK mengirim dokumen ${doc.nomor_surat} ke Biro 01 (Status: Submit Dokumen)`,
+      previous_status: doc.status,
+      new_status: targetStatus,
+    });
+
+    return updated;
+  }
+
+  async markAsReview(id, { user_name, user_role } = {}) {
+    const doc = await documentRepository.findById(id);
+    if (!doc) throw new Error('Dokumen tidak ditemukan!');
+
+    // Hanya ubah ke status review jika sebelumnya berstatus 'submit_dokumen', 'menunggu_verifikasi', atau 'menunggu_verifikasi_ulang' (pengajuan ulang)
+    if (
+      doc.status === 'submit_dokumen' ||
+      doc.status === 'menunggu_verifikasi' ||
+      doc.status === 'menunggu_verifikasi_ulang'
+    ) {
+      const updated = await documentRepository.update(id, {
+        status: 'review',
+        legend_status: 'Review',
+        legend_color: 'blue',
+      });
+
+      await auditService.log({
+        document_id: doc.id,
+        nomor_surat: doc.nomor_surat,
+        user_name: user_name || 'Biro 01 Keuangan',
+        user_role: user_role || 'biro_01',
+        action: 'REVIEW_DOCUMENT',
+        description: `Biro 01 membuka berkas dokumen ${doc.nomor_surat} (Status: Review)`,
+        previous_status: doc.status,
+        new_status: 'review',
+      });
+
+      return updated;
+    }
+
+    return doc;
+  }
+
   async editDocument(id, bodyData, files = []) {
     const doc = await documentRepository.findById(id);
     if (!doc) throw new Error('Dokumen tidak ditemukan!');
+
+    // Aturan Kunci: Jika dokumen sudah dikirim ke Biro 01 atau disetujui, tidak boleh diedit (kecuali status draft atau ditolak)
+    if (doc.status !== 'draft' && doc.status !== 'dikembalikan' && doc.status !== 'ditolak') {
+      throw new Error(`Dokumen ${doc.nomor_surat} berstatus "${doc.legend_status || doc.status}" dan telah dikunci sehingga tidak dapat diedit.`);
+    }
 
     const {
       nomor_surat,
@@ -305,6 +432,9 @@ class DocumentService {
     if (ppk_name) updatePayload.ppk_name = ppk_name.trim();
     if (nilai_pembayaran !== undefined) updatePayload.nilai_pembayaran = Number(nilai_pembayaran) || 0;
     if (keterangan !== undefined) updatePayload.keterangan = keterangan.trim();
+    if (bodyData.catatan_perbaikan) {
+      updatePayload.catatan_perbaikan = bodyData.catatan_perbaikan.trim();
+    }
 
     // Update metadata dokumen pendukung yang sudah ada di database
     if (bodyData.existing_attachments) {
@@ -387,6 +517,11 @@ class DocumentService {
   async deleteDocument(id, { user_name, user_role } = {}) {
     const doc = await documentRepository.findById(id);
     if (!doc) throw new Error('Dokumen tidak ditemukan atau gagal dihapus!');
+
+    // Aturan Kunci: Dokumen boleh dihapus jika berstatus draft atau ditolak
+    if (doc.status !== 'draft' && doc.status !== 'dikembalikan' && doc.status !== 'ditolak') {
+      throw new Error(`Dokumen ${doc.nomor_surat} berstatus "${doc.legend_status || doc.status}" dan tidak dapat dihapus.`);
+    }
 
     await auditService.log({
       document_id: doc.id,

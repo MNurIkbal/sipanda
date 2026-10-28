@@ -20,6 +20,10 @@ class PaymentDocument {
     pihak_eksternal = '',
     keterangan = '',
 
+    bast_generated = false,
+    bap_generated = false,
+    bapp_generated = false,
+    official_docs_data = {},
     status = 'menunggu_verifikasi',
     catatan_revisi = '',
     catatan_verifikasi = '',
@@ -47,6 +51,10 @@ class PaymentDocument {
     this.keterangan = keterangan;
 
     this.status = status;
+    this.bast_generated = Boolean(bast_generated);
+    this.bap_generated = Boolean(bap_generated);
+    this.bapp_generated = Boolean(bapp_generated);
+    this.official_docs_data = official_docs_data || {};
     this.catatan_revisi = catatan_revisi;
     this.catatan_verifikasi = catatan_verifikasi;
     this.tanggal_verifikasi = tanggal_verifikasi;
