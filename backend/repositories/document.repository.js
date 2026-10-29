@@ -76,7 +76,8 @@ class DocumentRepository {
               'nilai_pembayaran', a.nilai_pembayaran,
               'uraian', a.uraian,
               'nama_perusahaan', a.nama_perusahaan,
-              'metadata', a.metadata
+              'params', COALESCE(a.params, a.metadata, '{}'::jsonb),
+              'metadata', COALESCE(a.metadata, a.params, '{}'::jsonb)
             )
           ) FILTER (WHERE a.id IS NOT NULL),
           '[]'
@@ -138,7 +139,8 @@ class DocumentRepository {
               'nilai_pembayaran', a.nilai_pembayaran,
               'uraian', a.uraian,
               'nama_perusahaan', a.nama_perusahaan,
-              'metadata', a.metadata
+              'params', COALESCE(a.params, a.metadata, '{}'::jsonb),
+              'metadata', COALESCE(a.metadata, a.params, '{}'::jsonb)
             )
           ) FILTER (WHERE a.id IS NOT NULL),
           '[]'
@@ -211,10 +213,11 @@ class DocumentRepository {
             INSERT INTO document_attachments (
               document_id, file_name, file_path, file_size, mime_type,
               document_type, uploaded_by_id, nomor_dokumen, tanggal_dokumen,
-              nilai_pembayaran, uraian, nama_perusahaan, metadata
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+              nilai_pembayaran, uraian, nama_perusahaan, params, metadata
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING *
           `;
+          const jsonParams = JSON.stringify(att.params || att.metadata || {});
           const attRes = await client.query(attQuery, [
             insertedDoc.id,
             att.file_name,
@@ -228,7 +231,8 @@ class DocumentRepository {
             att.nilai_pembayaran || 0,
             att.uraian || '',
             att.nama_perusahaan || '',
-            JSON.stringify(att.metadata || {}),
+            jsonParams,
+            jsonParams,
           ]);
           attachments.push(attRes.rows[0]);
         }
@@ -304,10 +308,11 @@ class DocumentRepository {
         INSERT INTO document_attachments (
           document_id, file_name, file_path, file_size, mime_type,
           document_type, nomor_dokumen, tanggal_dokumen,
-          nilai_pembayaran, uraian, nama_perusahaan, metadata
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          nilai_pembayaran, uraian, nama_perusahaan, params, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *
       `;
+      const jsonParams = JSON.stringify(att.params || att.metadata || {});
       const res = await db.query(q, [
         documentId,
         att.file_name,
@@ -320,14 +325,15 @@ class DocumentRepository {
         att.nilai_pembayaran || 0,
         att.uraian || '',
         att.nama_perusahaan || '',
-        JSON.stringify(att.metadata || {}),
+        jsonParams,
+        jsonParams,
       ]);
       inserted.push(res.rows[0]);
     }
     return inserted;
   }
 
-  async updateAttachment(attachmentId, { document_type, nomor_dokumen, tanggal_dokumen, nilai_pembayaran, uraian, nama_perusahaan, metadata }) {
+  async updateAttachment(attachmentId, { document_type, nomor_dokumen, tanggal_dokumen, nilai_pembayaran, uraian, nama_perusahaan, params, metadata }) {
     const fields = [];
     const values = [];
     let idx = 1;
@@ -356,9 +362,13 @@ class DocumentRepository {
       fields.push(`nama_perusahaan = $${idx++}`);
       values.push(nama_perusahaan);
     }
-    if (metadata !== undefined) {
+    const resolvedParams = params !== undefined ? params : metadata;
+    if (resolvedParams !== undefined) {
+      const jsonStr = JSON.stringify(resolvedParams || {});
+      fields.push(`params = $${idx++}`);
+      values.push(jsonStr);
       fields.push(`metadata = $${idx++}`);
-      values.push(JSON.stringify(metadata || {}));
+      values.push(jsonStr);
     }
 
     if (fields.length === 0) return null;

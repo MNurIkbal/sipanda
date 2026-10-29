@@ -20,23 +20,20 @@ class VeriTextService {
       sep: '09', okt: '10', nov: '11', des: '12'
     };
 
-    // Format DD Bulan YYYY (e.g. 02 Desember 2024)
     const dmyMatch = text.match(/(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/);
     if (dmyMatch) {
       const day = dmyMatch[1].padStart(2, '0');
       const monthName = dmyMatch[2].toLowerCase();
-      const month = months[monthName] || '01';
-      const year = dmyMatch[3];
-      return `${year}-${month}-${day}`;
+      if (months[monthName]) {
+        return `${dmyMatch[3]}-${months[monthName]}-${day}`;
+      }
     }
 
-    // Format YYYY-MM-DD
     const isoMatch = text.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (isoMatch) {
       return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
     }
 
-    // Format DD/MM/YYYY atau DD-MM-YYYY
     const slashMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if (slashMatch) {
       return `${slashMatch[3]}-${slashMatch[2].padStart(2, '0')}-${slashMatch[1].padStart(2, '0')}`;
@@ -46,142 +43,304 @@ class VeriTextService {
   }
 
   /**
-   * Ekstraksi metadata dari teks dokumen (baik hasil VeriText OCR maupun DOCX fallback parser)
+   * Ekstrak pasangan key-value dinamis dari dokumen teks bebas (misal: "Nama : Budi", "Jenis Kelamin : Laki-laki")
    */
-  extractMetadataFromText(extractedText, originalFilename = '') {
-    const text = extractedText || '';
+  extractGenericKeyValuePairs(text) {
+    const dynamicParams = {};
+    if (!text) return dynamicParams;
 
-    // 1. Jenis Dokumen
-    let jenisDokumen = 'Invoice';
-    if (/invoice/i.test(text)) {
-      jenisDokumen = 'Invoice';
-    } else if (/berita\s+acara\s+serah\s+terima|bast/i.test(text)) {
-      jenisDokumen = 'Berita Acara Serah Terima (BAST)';
-    } else if (/berita\s+acara\s+penyelesaian\s+pekerjaan|bapp/i.test(text)) {
-      jenisDokumen = 'Berita Acara Penyelesaian Pekerjaan (BAPP)';
-    } else if (/berita\s+acara\s+pembayaran|bap/i.test(text)) {
-      jenisDokumen = 'Berita Acara Pembayaran (BAP)';
-    } else if (/surat\s+perjanjian|spk|kontrak/i.test(text)) {
-      jenisDokumen = 'Surat Perjanjian / Kontrak';
-    } else if (/kuitansi|kwitansi/i.test(text)) {
-      jenisDokumen = 'Kuitansi / Bukti Pembelian';
-    } else if (/spp/i.test(text)) {
-      jenisDokumen = 'Surat Perintah Pembayaran (SPP)';
-    } else if (/spm/i.test(text)) {
-      jenisDokumen = 'Surat Perintah Membayar (SPM)';
-    }
+    // 1. Pisahkan per baris jika memungkinkan, atau cari pola "Label : Value"
+    const lines = text.split(/[\r\n]+/);
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
 
-    // 2. Nomor Dokumen / Nomor Invoice / Nomor Surat
-    let nomorDokumen = '';
-    const invoiceNumMatch = text.match(/Invoice\s*(?:Number|No|Nomor)?[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
-    const spkNumMatch = text.match(/(?:PO\s*\/\s*SPK\s*Number|Nomor\s*Surat|Nomor\s*Kontrak)[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
-    const generalNumMatch = text.match(/(?:Nomor|No\.)[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
-
-    if (invoiceNumMatch && invoiceNumMatch[1]) {
-      nomorDokumen = invoiceNumMatch[1].trim();
-    } else if (spkNumMatch && spkNumMatch[1]) {
-      nomorDokumen = spkNumMatch[1].trim();
-    } else if (generalNumMatch && generalNumMatch[1]) {
-      nomorDokumen = generalNumMatch[1].trim();
-    }
-
-    // 3. Tanggal Dokumen
-    let tanggalDokumen = '';
-    const dateMatch = text.match(/(?:Date|Tanggal)[:\s\t|]+([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4}|[0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
-    if (dateMatch && dateMatch[1]) {
-      tanggalDokumen = this.parseIndonesianDate(dateMatch[1]) || '';
-    } else {
-      tanggalDokumen = this.parseIndonesianDate(text) || new Date().toISOString().split('T')[0];
-    }
-
-    // 4. Perihal / Project Title / Uraian Belanja
-    let perihal = '';
-    const titleMatch = text.match(/(?:Project\s*Title|Perihal|Uraian\s*Pekerjaan|Nama\s*Pekerjaan)[:\s\t|]+([^|\n\r]+?)(?=(?:PO|\bDate\b|Invoice|Terms|Bill to|No\b|\t))/i);
-    if (titleMatch && titleMatch[1]) {
-      perihal = titleMatch[1].trim();
-    } else {
-      const descMatch = text.match(/(?:Termin\s*\d+[^\n\r|]+?)(?=(?:Lot|Unit|Rp|\d))/i);
-      if (descMatch) {
-        perihal = descMatch[0].trim();
+      // Pola "Key : Value" atau "Key = Value"
+      const kvMatch = line.match(/^([A-Za-z0-9\s\/\.\-\(\)&_]{2,45}?)\s*[:=]\s*(.+)$/);
+      if (kvMatch) {
+        const key = kvMatch[1].trim();
+        const val = kvMatch[2].trim();
+        if (key && val && !/^https?$/i.test(key) && val.length <= 300) {
+          dynamicParams[key] = val;
+        }
       }
     }
 
-    // 5. Nilai Pembayaran / Grand Total
-    let nilaiPembayaran = 0;
-    const grandTotalMatch = text.match(/(?:GRAND\s*TOTAL|Total\s*Price|Jumlah|Total)[^\d]*Rp?\s*([\d\.,]+)/i);
-    if (grandTotalMatch && grandTotalMatch[1]) {
-      // Hapus titik ribuan, ubah koma menjadi desimal jika ada
-      const rawNum = grandTotalMatch[1].replace(/\./g, '').replace(/,/g, '.');
-      nilaiPembayaran = parseFloat(rawNum) || 0;
+    // 2. Jika teks menyatu dalam satu baris (misal hasil strip XML), cari pasangan umum "Label : Value"
+    if (Object.keys(dynamicParams).length === 0) {
+      const inlineMatches = text.matchAll(/([A-Z][A-Za-z0-9\s\/\(\)]{1,30}?)\s*:\s*([^:\n\r]+?)(?=(?:\s+[A-Z][A-Za-z0-9\s\/\(\)]{1,25}?\s*:|$))/g);
+      for (const m of inlineMatches) {
+        const k = m[1].trim();
+        const v = m[2].trim();
+        if (k && v && k.length <= 40 && v.length <= 250) {
+          dynamicParams[k] = v;
+        }
+      }
     }
 
-    // 6. Pihak Eksternal (Perusahaan Penyedia)
-    let pihakEksternal = '';
+    return dynamicParams;
+  }
+
+  /**
+   * Ekstrak tabel dan struktur paragraf langsung dari XML Word (.docx) agar setiap field pada file (seperti file A atau file B) terambil dinamis
+   */
+  extractStructuredDocxParams(xml) {
+    const params = {};
+    if (!xml) return params;
+
+    const cleanCell = (str) =>
+      str
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // Ambil paragraf di luar tabel terlebih dahulu
+    const bodyWithoutTables = xml.replace(/<w:tbl[\s\S]*?<\/w:tbl>/g, '');
+    const paragraphs = [...bodyWithoutTables.matchAll(/<w:p[\s>][\s\S]*?<\/w:p>/g)]
+      .map((m) => cleanCell(m[0]))
+      .filter(Boolean);
+
+    // Deteksi pasangan "Key : Value" di paragraf
+    for (const p of paragraphs) {
+      const kv = p.match(/^([A-Za-z0-9\s\/\.\-\(\)&_]{2,40}?)\s*:\s*(.+)$/);
+      if (kv) {
+        const k = kv[1].trim();
+        const v = kv[2].trim();
+        if (k && v) {
+          params[k] = v;
+        }
+      }
+    }
+
+    // Ekstrak seluruh baris tabel (<w:tr>)
+    const tables = [...xml.matchAll(/<w:tbl[\s>][\s\S]*?<\/w:tbl>/g)].map((m) => m[0]);
+    for (const tbl of tables) {
+      const rows = [...tbl.matchAll(/<w:tr[\s>][\s\S]*?<\/w:tr>/g)].map((r) => {
+        return [...r[0].matchAll(/<w:tc[\s>][\s\S]*?<\/w:tc>/g)].map((c) => cleanCell(c[0]));
+      });
+
+      if (rows.length === 0) continue;
+
+      // Cek apakah tabel ini adalah tabel rincian item dengan header (misal: No | Description | Unit | Qty | Unit Price | Total Price)
+      const firstRowText = rows[0].join(' ').toLowerCase();
+      const isItemTable =
+        rows[0].length >= 4 &&
+        (firstRowText.includes('description') ||
+          firstRowText.includes('uraian') ||
+          firstRowText.includes('unit price') ||
+          firstRowText.includes('qty') ||
+          firstRowText.includes('kuantitas'));
+
+      if (isItemTable) {
+        const headers = rows[0].map((h, i) => h || `Kolom ${i + 1}`);
+        // Baris kedua (data item)
+        if (rows[1] && rows[1].length >= 3) {
+          headers.forEach((h, idx) => {
+            const val = rows[1][idx];
+            if (h && val && !/^no\.?$/i.test(h)) {
+              params[h] = val;
+            }
+          });
+        }
+        // Baris lainnya (Grand Total, Terbilang, dsb.)
+        for (let rIdx = 2; rIdx < rows.length; rIdx++) {
+          const r = rows[rIdx].filter(Boolean);
+          if (r.length === 2) {
+            params[r[0].replace(/:$/, '').trim()] = r[1];
+          } else if (r.length === 1) {
+            const kv = r[0].match(/^([A-Za-z0-9\s\/\.\-\(\)]{2,30}?)\s*:\s*(.+)$/);
+            if (kv) {
+              params[kv[1].trim()] = kv[2].trim();
+            }
+          }
+        }
+      } else {
+        // Tabel key-value (2 atau 3 kolom)
+        for (const r of rows) {
+          if (r.length >= 2) {
+            const k = r[0].replace(/:$/, '').trim();
+            const v = r[1].replace(/^:\s*/, '').trim();
+            if (k && v && k.length <= 45 && !/^please remit$/i.test(k)) {
+              params[k] = v;
+            }
+            // Jika ada kolom ke-3 (seperti Bill to: ...)
+            if (r[2]) {
+              const col3 = r[2].trim();
+              const billMatch = col3.match(/^(Bill\s*to|Kepada|Tujuan)[:\s]+(.+)$/i);
+              if (billMatch && !params[billMatch[1].trim()]) {
+                params['Bill To'] = billMatch[2].trim();
+              } else {
+                const kv3 = col3.match(/^([A-Za-z0-9\s\/]{2,30}?)\s*:\s*(.+)$/);
+                if (kv3 && !params[kv3[1].trim()]) {
+                  params[kv3[1].trim()] = kv3[2].trim();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return params;
+  }
+
+  /**
+   * Ekstraksi metadata dari teks dokumen (baik hasil VeriText OCR maupun DOCX parser)
+   * Menghasilkan objek `params` dinamis sesuai isi dokumen yang diupload.
+   */
+  extractMetadataFromText(extractedText, originalFilename = '', preExtractedParams = null) {
+    const text = extractedText || '';
+    const params = preExtractedParams && Object.keys(preExtractedParams).length > 0
+      ? { ...preExtractedParams }
+      : {};
+
+    // Deteksi apakah dokumen adalah Invoice / BAST / BAPP / Kontrak / Dokumen Umum
+    let jenisDokumen = 'Dokumen Pendukung';
+    if (/invoice/i.test(text) || /invoice/i.test(originalFilename)) {
+      jenisDokumen = 'Invoice';
+    } else if (/berita\s+acara\s+serah\s+terima|\bbast\b/i.test(text) || /bast/i.test(originalFilename)) {
+      jenisDokumen = 'Berita Acara Serah Terima (BAST)';
+    } else if (/berita\s+acara\s+penyelesaian\s+pekerjaan|\bbapp\b/i.test(text) || /bapp/i.test(originalFilename)) {
+      jenisDokumen = 'Berita Acara Penyelesaian Pekerjaan (BAPP)';
+    } else if (/berita\s+acara\s+pembayaran|\bbap\b/i.test(text) || /bap/i.test(originalFilename)) {
+      jenisDokumen = 'Berita Acara Pembayaran (BAP)';
+    } else if (/surat\s+perjanjian|\bspk\b|kontrak/i.test(text) || /spk|kontrak/i.test(originalFilename)) {
+      jenisDokumen = 'Surat Perjanjian / Kontrak';
+    } else if (/kuitansi|kwitansi/i.test(text) || /kuitansi|kwitansi/i.test(originalFilename)) {
+      jenisDokumen = 'Kuitansi / Bukti Pembelian';
+    } else if (/biodata|identitas|ktp|pegawai|peserta/i.test(text)) {
+      jenisDokumen = 'Dokumen Identitas / Biodata';
+    }
+
+    const hasKey = (label) => {
+      const norm = label.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return Object.keys(params).some((k) => k.toLowerCase().replace(/[^a-z0-9]/g, '') === norm);
+    };
+
+    const setParamIfMissing = (label, value) => {
+      if (value !== undefined && value !== null && String(value).trim() !== '' && !hasKey(label)) {
+        params[label] = String(value).trim();
+      }
+    };
+
+    // Ekstrak field spesifik jika terdeteksi di teks (HANYA ditambahkan ke params jika benar-benar ditemukan di dalam file!)
     const ptMatch = text.match(/(PT\.?\s+[A-Za-z0-9\s]+?\b(?:INDONESIA|JAYA|ABADI|KARYA|TEKNIK|UTAMA|MANDIRI|CITRA|PRATAMA|SISTEM INDONESIA)\b)/i);
     const cvMatch = text.match(/(CV\.?\s+[A-Za-z0-9\s]+)/i);
+    let pihakEksternal = '';
     if (ptMatch && ptMatch[1]) {
       pihakEksternal = ptMatch[1].trim();
     } else if (cvMatch && cvMatch[1]) {
       pihakEksternal = cvMatch[1].trim();
     }
-
-    // 7. Unit / PPK yang dituju (Bill To)
-    let unitKerja = '';
-    const billToMatch = text.match(/Bill\s*to[:\s\t|]+([A-Za-z\s]+?)(?=(?:Jl|Jalan|RT|RW|Date|Project|PO|Invoice))/i);
-    if (billToMatch && billToMatch[1]) {
-      unitKerja = billToMatch[1].trim();
+    if (pihakEksternal) {
+      setParamIfMissing('Perusahaan / Pihak Eksternal', pihakEksternal);
     }
 
-    // 8. Nomor PO / SPK (jika ada tertera di invoice/kontrak)
-    let nomorSpk = '';
+    const alamatMatch = text.match(/(Jl\.\s*Kemang\s*Raya\s*No\.\s*14B[^\n\r|]*?)(?=(?:Telp|Date|Bill to))/i);
+    if (alamatMatch && alamatMatch[1]) {
+      setParamIfMissing('Alamat Perusahaan', alamatMatch[1].replace(/\|/g, '').trim());
+    }
+
+    const telpMatch = text.match(/(?:Telp|Tel|Phone)[:\s\t|]+([0-9\(\)\s\-]{6,25})/i);
+    if (telpMatch && telpMatch[1]) {
+      setParamIfMissing('Telp', telpMatch[1].trim());
+    }
+
+    const dateMatch = text.match(/(?:Date|Tanggal)[:\s\t|]+([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4}|[0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
+    let rawDateStr = '';
+    if (dateMatch && dateMatch[1]) {
+      rawDateStr = dateMatch[1].trim();
+      if (!hasKey('Date') && !hasKey('Tanggal')) {
+        setParamIfMissing('Date', rawDateStr);
+      }
+    }
+    const tanggalDokumen = this.parseIndonesianDate(rawDateStr || text) || new Date().toISOString().split('T')[0];
+
+    const titleMatch = text.match(/(?:Project\s*Title|Perihal|Uraian\s*Pekerjaan|Nama\s*Pekerjaan)[:\s\t|]+([^|\n\r]+?)(?=(?:PO\s*\/|PO\/SPK|\bDate\b|Invoice|Terms|Bill to|No\b|\t|$))/i);
+    let perihal = params['Project Title'] || params['Perihal'] || '';
+    if (titleMatch && titleMatch[1] && !perihal) {
+      perihal = titleMatch[1].trim();
+      setParamIfMissing('Project Title', perihal);
+    }
+
     const spkMatch = text.match(/(?:PO\s*\/\s*SPK\s*Number|Nomor\s*SPK|Nomor\s*Kontrak)[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
-    if (spkMatch && spkMatch[1]) {
-      nomorSpk = spkMatch[1].trim();
+    if (spkMatch && spkMatch[1] && !hasKey('PO/SPK Number') && !hasKey('Nomor SPK')) {
+      setParamIfMissing('PO/SPK Number', spkMatch[1].trim());
     }
 
-    // 9. Informasi Rekening Bank (jika ada pada invoice/kuitansi)
-    let bankName = '';
-    let bankAccount = '';
-    let bankHolder = '';
-    const bankMatch = text.match(/Bank\s*Name[:\s\t|]+([A-Za-z0-9\s]+?)(?=(?:Acc|Branch|Swift))/i);
-    const accNumMatch = text.match(/Acc\s*Number[:\s\t|]+([0-9\.\-_]+)/i);
-    const accNameMatch = text.match(/Acc\s*Name[:\s\t|]+([A-Za-z0-9\.\s]+?)(?=(?:Acc\s*Number|Branch|Swift))/i);
-    if (bankMatch && bankMatch[1]) bankName = bankMatch[1].trim();
-    if (accNumMatch && accNumMatch[1]) bankAccount = accNumMatch[1].trim();
-    if (accNameMatch && accNameMatch[1]) bankHolder = accNameMatch[1].trim();
+    const invoiceNumMatch = text.match(/Invoice\s*(?:Number|No|Nomor)?[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
+    const generalNumMatch = text.match(/(?:Nomor\s*Surat|Nomor\s*Dokumen|Nomor|No\.)[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
+    let nomorDokumen = params['Invoice Number'] || params['Nomor Dokumen'] || params['Nomor Surat'] || '';
+    if (!nomorDokumen) {
+      if (invoiceNumMatch && invoiceNumMatch[1]) {
+        nomorDokumen = invoiceNumMatch[1].trim();
+        setParamIfMissing('Invoice Number', nomorDokumen);
+      } else if (spkMatch && spkMatch[1]) {
+        nomorDokumen = spkMatch[1].trim();
+      } else if (generalNumMatch && generalNumMatch[1]) {
+        nomorDokumen = generalNumMatch[1].trim();
+        setParamIfMissing('Nomor Dokumen', nomorDokumen);
+      }
+    }
 
-    // 10. Terbilang
-    let terbilang = '';
-    const terbilangMatch = text.match(/Terbilang[:\s\t|]+([^\n\r|]+?)(?=(?:Please Remit|Approved by|Bank|Acc))/i);
+    const billToMatch = text.match(/Bill\s*to[:\s\t|]+([A-Za-z0-9\.\s,]+?)(?=(?:PO\/SPK|Invoice\s*Number|Terms|No\s+Description|$))/i);
+    let unitKerja = params['Bill To'] || '';
+    if (billToMatch && billToMatch[1] && !unitKerja) {
+      unitKerja = billToMatch[1].trim();
+      setParamIfMissing('Bill To', unitKerja);
+    }
+
+    const grandTotalMatch = text.match(/(?:GRAND\s*TOTAL|Total\s*Price|Jumlah|Nilai\s*Pembayaran)[^\d]*Rp\.?\s*([\d\.,]+)/i);
+    let nilaiPembayaran = 0;
+    if (grandTotalMatch && grandTotalMatch[1]) {
+      const rawNum = grandTotalMatch[1].replace(/\./g, '').replace(/,/g, '.');
+      nilaiPembayaran = parseFloat(rawNum) || 0;
+      if (!hasKey('GRAND TOTAL') && !hasKey('Total Price (IDR)')) {
+        setParamIfMissing('GRAND TOTAL', `Rp${grandTotalMatch[1].trim()}`);
+      }
+    }
+
+    const terbilangMatch = text.match(/Terbilang[:\s\t|]+([^\n\r|]+?)(?=(?:Please Remit|Approved by|Bank\s*Name|Acc\s*Name|$))/i);
     if (terbilangMatch && terbilangMatch[1]) {
-      terbilang = terbilangMatch[1].trim();
+      setParamIfMissing('Terbilang', terbilangMatch[1].trim());
     }
 
-    // 11. Approver / Penandatangan
-    let penandatangan = '';
-    let jabatanPenandatangan = '';
-    const approverMatch = text.match(/Approved\s*by[^\n\r]*?(?:materai&amp;cap|materai|cap)?\s*([A-Za-z\s]+?)\s+(Direktur|Kepala|Manajer|Pimpinan)/i);
+    const bankMatch = text.match(/Bank\s*Name[:\s\t|]+([A-Za-z0-9\s]+?)(?=(?:Acc|Branch|Swift|$))/i);
+    const accNameMatch = text.match(/Acc\s*Name[:\s\t|]+([A-Za-z0-9\.\s]+?)(?=(?:Acc\s*Number|Branch|Swift|$))/i);
+    const accNumMatch = text.match(/Acc\s*Number[:\s\t|]+([0-9\.\-_]+)/i);
+    const branchMatch = text.match(/Branch[:\s\t|]+([A-Za-z0-9\s]+?)(?=(?:Swift|Approved|materai|\n|\r|$))/i);
+    const swiftMatch = text.match(/Swift\s*Code[:\s\t|]+([A-Za-z0-9]+)/i);
+
+    if (bankMatch && bankMatch[1]) setParamIfMissing('Bank Name', bankMatch[1].trim());
+    if (accNameMatch && accNameMatch[1]) setParamIfMissing('Acc Name', accNameMatch[1].trim());
+    if (accNumMatch && accNumMatch[1]) setParamIfMissing('Acc Number', accNumMatch[1].trim());
+    if (branchMatch && branchMatch[1]) setParamIfMissing('Branch', branchMatch[1].trim());
+    if (swiftMatch && swiftMatch[1]) setParamIfMissing('Swift Code', swiftMatch[1].trim());
+
+    const approverMatch = text.match(/Approved\s*by[\s\S]*?(?:materai&amp;cap|materai&cap|materai|cap)?[\s\n\r|]*([A-Za-z\s]{3,35}?)[\s\n\r|]+(Direktur|Kepala|Manajer|Pimpinan|PPK)/i);
     if (approverMatch) {
-      penandatangan = approverMatch[1].trim();
-      jabatanPenandatangan = approverMatch[2].trim();
-    } else {
-      const rizkyMatch = text.match(/Rizky\s*Detha/i);
-      if (rizkyMatch) penandatangan = 'Rizky Detha';
-      const dirMatch = text.match(/\bDirektur\b/i);
-      if (dirMatch) jabatanPenandatangan = 'Direktur';
+      setParamIfMissing('Approved By', approverMatch[1].trim());
+      setParamIfMissing('Jabatan', approverMatch[2].trim());
+    } else if (/Rizky\s*Detha/i.test(text)) {
+      setParamIfMissing('Approved By', 'Rizky Detha');
+      if (/\bDirektur\b/i.test(text)) setParamIfMissing('Jabatan', 'Direktur');
     }
 
-    // 12. Alamat & Kontak Pihak Eksternal
-    let alamatPerusahaan = '';
-    let teleponPerusahaan = '';
-    const alamatMatch = text.match(/Jl\.\s*Kemang\s*Raya\s*No\.\s*14B[^\n\r|]*?(?=(?:Telp|Date|Bill to))/i);
-    if (alamatMatch) {
-      alamatPerusahaan = alamatMatch[0].trim();
-    } else {
-      alamatPerusahaan = 'Jl. Kemang Raya No. 14B Jakarta Selatan 12730';
+    // Gabungkan key-value generik dari dokumen apa pun (misal Nama, NIK, Jenis Kelamin, Tempat/Tgl Lahir, Jabatan, dsb.)
+    const genericKV = this.extractGenericKeyValuePairs(text);
+    for (const [k, v] of Object.entries(genericKV)) {
+      setParamIfMissing(k, v);
     }
-    const telpMatch = text.match(/(?:Telp|Tel|Phone)[:\s\t|]+([0-9\(\)\s\-]+)/i);
-    if (telpMatch) teleponPerusahaan = telpMatch[1].trim();
+
+    // Jika dokumen berisi teks paragraf namun tidak memiliki pola "Key : Value" sama sekali, simpan ringkasan isi dokumen sebagai field dinamis
+    if (Object.keys(params).length === 0 && text.trim().length > 0) {
+      params['Nama File'] = originalFilename || 'Dokumen';
+      params['Ringkasan Isi Dokumen'] = text.trim().slice(0, 250);
+    }
 
     return {
       jenis_dokumen: jenisDokumen,
@@ -190,43 +349,60 @@ class VeriTextService {
       perihal: perihal,
       nilai_pembayaran: nilaiPembayaran,
       pihak_eksternal: pihakEksternal,
-      alamat_perusahaan: alamatPerusahaan,
-      telepon_perusahaan: teleponPerusahaan,
       unit_kerja: unitKerja,
-      nomor_spk: nomorSpk,
-      bank_name: bankName,
-      bank_account: bankAccount,
-      bank_holder: bankHolder,
-      terbilang: terbilang,
-      penandatangan: penandatangan,
-      jabatan_penandatangan: jabatanPenandatangan,
+      params: params,
+      metadata: params,
       raw_text_snippet: text.slice(0, 300),
       file_name: originalFilename,
     };
   }
 
   /**
-   * Parser fallback untuk berkas .docx menggunakan native zip reading
+   * Parser untuk berkas .docx menggunakan native zip reading
    */
   extractFromDocxFile(filePath, originalFilename = '') {
     try {
       const zip = new AdmZip(filePath);
       const xml = zip.readAsText('word/document.xml');
       if (!xml) return null;
-      // Bersihkan XML tag menjadi plain text
-      const cleanText = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-      return this.extractMetadataFromText(cleanText, originalFilename);
+
+      // Ekstrak struktur tabel dan paragraf dari XML terlebih dahulu
+      const structuredParams = this.extractStructuredDocxParams(xml);
+
+      // Konversi tag paragraf dan baris tabel menjadi newline agar ekstraksi key-value akurat
+      const cleanText = xml
+        .replace(/<\/w:p>/g, '\n')
+        .replace(/<\/w:tr>/g, '\n')
+        .replace(/<\/w:tc>/g, ' | ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/[ \t]+/g, ' ')
+        .trim();
+
+      return this.extractMetadataFromText(cleanText, originalFilename, structuredParams);
     } catch (err) {
-      console.warn('Docx fallback extraction error:', err.message);
+      console.warn('Docx extraction error:', err.message);
       return null;
     }
   }
 
   /**
-   * Ekstraksi utama: panggil endpoint VeriText OCR, jika network/Cloudflare 530 gagal, gunakan local fallback
+   * Ekstraksi utama: panggil endpoint VeriText OCR, dan gabungkan/fallback dengan struktur dokumen
    */
   async extractDocument(filePath, originalFilename = '', mimeType = '') {
     const isDocx = /\.docx$/i.test(originalFilename) || mimeType.includes('word');
+
+    // Jika file DOCX, kita juga bisa mengekstrak struktur XML tabelnya secara presisi
+    let docxStructuredParams = null;
+    if (isDocx) {
+      try {
+        const zip = new AdmZip(filePath);
+        const xml = zip.readAsText('word/document.xml');
+        if (xml) {
+          docxStructuredParams = this.extractStructuredDocxParams(xml);
+        }
+      } catch (e) {}
+    }
 
     try {
       const fileBuffer = fs.readFileSync(filePath);
@@ -241,14 +417,14 @@ class VeriTextService {
           Authorization: `Bearer ${this.token}`,
         },
         body: formData,
-        signal: AbortSignal.timeout(12000), // Timeout 12 detik
+        signal: AbortSignal.timeout(12000),
       });
 
       if (response.ok) {
         const json = await response.json();
         if (json.success && json.extraction) {
           const rawText = json.extraction.extracted_text || json.extraction.raw_markdown || '';
-          const meta = this.extractMetadataFromText(rawText, originalFilename);
+          const meta = this.extractMetadataFromText(rawText, originalFilename, docxStructuredParams);
           return {
             success: true,
             source: 'veritext_api',
@@ -257,13 +433,12 @@ class VeriTextService {
           };
         }
       } else {
-        console.warn(`VeriText API responded with HTTP ${response.status}. Attempting local parser fallback.`);
+        console.warn(`VeriText API responded with HTTP ${response.status}. Using local document extractor.`);
       }
     } catch (apiErr) {
       console.warn('VeriText API fetch error:', apiErr.message);
     }
 
-    // Fallback jika file DOCX dan VeriText API unreachable / Cloudflare 530
     if (isDocx) {
       const docxMeta = this.extractFromDocxFile(filePath, originalFilename);
       if (docxMeta) {
@@ -271,23 +446,28 @@ class VeriTextService {
           success: true,
           source: 'veritext_local_parser',
           data: docxMeta,
-          note: 'Diekstrak menggunakan parser cerdas lokal SIPANDA.',
+          note: 'Diekstrak secara dinamis sesuai struktur konten dokumen.',
         };
       }
     }
 
-    // Default template jika file biner lain belum bisa diurai offline
     return {
       success: true,
       source: 'fallback',
       data: {
-        jenis_dokumen: 'Invoice',
-        nomor_dokumen: path.parse(originalFilename).name || 'INV-001',
+        jenis_dokumen: 'Dokumen Pendukung',
+        nomor_dokumen: path.parse(originalFilename).name || 'DOK-001',
         tanggal_dokumen: new Date().toISOString().split('T')[0],
-        perihal: 'Pengajuan Dokumen Pembayaran',
+        perihal: '',
         nilai_pembayaran: 0,
         pihak_eksternal: '',
         unit_kerja: '',
+        params: {
+          'Nama Berkas': originalFilename,
+        },
+        metadata: {
+          'Nama Berkas': originalFilename,
+        },
         file_name: originalFilename,
       },
     };

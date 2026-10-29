@@ -55,6 +55,7 @@ class DocumentService {
 
     const attachments = files.map((file, idx) => {
       const meta = attachmentMeta[idx] || {};
+      const paramsObj = meta.params || meta.metadata || {};
       return {
         file_name: file.originalname,
         file_path: `/uploads/${file.filename}`,
@@ -66,7 +67,8 @@ class DocumentService {
         nilai_pembayaran: Number(meta.nilai_pembayaran) || 0,
         uraian: meta.uraian || '',
         nama_perusahaan: meta.nama_perusahaan || '',
-        metadata: meta.metadata || {},
+        params: paramsObj,
+        metadata: paramsObj,
         uploaded_by_id: user_id ? parseInt(user_id) : null,
       };
     });
@@ -452,10 +454,16 @@ class DocumentService {
       if (Array.isArray(existingList)) {
         for (const item of existingList) {
           if (item && item.id) {
+            const paramsObj = item.params || item.metadata;
             await documentRepository.updateAttachment(Number(item.id), {
               document_type: item.document_type || item.jenis_dokumen,
               nomor_dokumen: item.nomor_dokumen,
               tanggal_dokumen: item.tanggal_dokumen || item.tanggal,
+              nilai_pembayaran: item.nilai_pembayaran,
+              uraian: item.uraian,
+              nama_perusahaan: item.nama_perusahaan,
+              params: paramsObj,
+              metadata: paramsObj,
             });
           }
         }
@@ -473,6 +481,7 @@ class DocumentService {
 
       const newAttachments = files.map((file, idx) => {
         const meta = metaList[idx] || {};
+        const paramsObj = meta.params || meta.metadata || {};
         return {
           file_name: file.originalname,
           file_path: `/uploads/${file.filename}`,
@@ -481,6 +490,11 @@ class DocumentService {
           document_type: meta.document_type || meta.jenis_dokumen || 'Dokumen Pendukung Tambahan',
           nomor_dokumen: meta.nomor_dokumen || '-',
           tanggal_dokumen: meta.tanggal_dokumen || meta.tanggal || null,
+          nilai_pembayaran: Number(meta.nilai_pembayaran) || 0,
+          uraian: meta.uraian || '',
+          nama_perusahaan: meta.nama_perusahaan || '',
+          params: paramsObj,
+          metadata: paramsObj,
         };
       });
 

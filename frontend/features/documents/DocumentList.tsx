@@ -157,12 +157,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     fetchDocumentsFromApi();
   }, [debouncedSearch, statusFilter, startDate, endDate, page, limit]);
 
-  // Sinkronisasi state lokal saat context parent me-refresh dokumen
-  useEffect(() => {
-    if (initialDocuments && initialDocuments.length > 0) {
-      setDocuments(initialDocuments);
-    }
-  }, [initialDocuments]);
+  // Sinkronisasi state lokal saat context parent me-refresh dokumen (hanya jika filter masih kosong/default dan belum dimodifikasi)
+  // Catatan: Jika user sedang memfilter (status/tanggal/search), pertahankan data hasil filter API lokal agar tidak tertimpa data unfiltered
 
   const getBadgeClass = (color: string) => {
     switch (color) {

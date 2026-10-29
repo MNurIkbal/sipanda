@@ -9,14 +9,7 @@ export interface SupportingDocumentInput {
   nilai_pembayaran?: string | number;
   uraian?: string;
   nama_perusahaan?: string;
-  nomor_spk?: string;
-  unit_kerja?: string;
-  bank_name?: string;
-  bank_account?: string;
-  bank_holder?: string;
-  terbilang?: string;
-  penandatangan?: string;
-  jabatan_penandatangan?: string;
+  params?: Record<string, string>;
   metadata?: any;
   existing_file_name?: string | null;
   existing_file_path?: string | null;
@@ -189,8 +182,9 @@ export const documentValidationSchema = {
 
   // Aturan Validasi Dokumen Pendukung:
   // - Pada Edit Mode: jika file sebelumnya sudah ada di database (existing_file_name/existing_file_path), upload file tidak wajib!
-  // - Jika salah satu kolom (jenis, nomor, tanggal, file) diisi atau telah terisi di db, maka kolom lainnya yang wajib diisi harus dilengkapi.
-  // - Jika keempat-empatnya kosong pada baris pertama (atau jika tidak ada dokumen sama sekali), baru muncul error schema required.
+  // - Validasi Dokumen Pendukung (VeriText Dinamis):
+  //   Input statis Jenis Dokumen, Nomor Dokumen, dan Tanggal Dokumen pada dokumen pendukung telah dihapus karena diekstrak otomatis via VeriText ke dalam params JSON.
+  //   Oleh sebab itu, validasi dokumen pendukung hanya memeriksa ketersediaan berkas (minimal 3 berkas pendukung diunggah).
   validateSupportingDocs: (
     docs?: SupportingDocumentInput[],
     requireAtLeastOne = true,
@@ -211,50 +205,17 @@ export const documentValidationSchema = {
     );
 
     if (requireAtLeastOne && validUploadedDocs.length < 3) {
+      docs.forEach((doc, idx) => {
+        const hasFile = Boolean(doc.file || doc.existing_file_name || doc.existing_file_path);
+        if (!hasFile && idx < 3) {
+          itemErrors[doc.id] = {
+            file: "File lampiran wajib diunggah!",
+          };
+        }
+      });
+
       return {
         summaryError: `Wajib mengunggah minimal 3 dokumen pendukung (saat ini baru ${validUploadedDocs.length} berkas yang diunggah)!`,
-        itemErrors,
-      };
-    }
-
-    let anyIncompleteRow = false;
-
-    docs.forEach((doc, idx) => {
-      const hasJenis = Boolean(doc.jenis_dokumen && doc.jenis_dokumen.trim());
-      const hasNomor = Boolean(doc.nomor_dokumen && doc.nomor_dokumen.trim());
-      const hasTanggal = Boolean(doc.tanggal && doc.tanggal.trim());
-      // File dianggap ada jika user memilih file baru ATAU jika dalam mode edit dan berkas sudah ada sebelumnya di database
-      const hasFile = Boolean(doc.file || doc.existing_file_name || doc.existing_file_path);
-
-      // Apakah ada salah satu yang diisi pada baris ini?
-      const isPartiallyFilled = hasJenis || hasNomor || hasTanggal || hasFile;
-      const isCompletelyEmpty = !hasJenis && !hasNomor && !hasTanggal && !hasFile;
-
-      if (isPartiallyFilled) {
-        const rowErr: SupportingDocItemError = {};
-        if (!hasJenis) rowErr.jenis_dokumen = "Jenis dokumen wajib diisi!";
-        if (!hasNomor) rowErr.nomor_dokumen = "Nomor dokumen wajib diisi!";
-        if (!hasTanggal) rowErr.tanggal = "Tanggal dokumen wajib diisi!";
-        if (!hasFile) rowErr.file = "File lampiran wajib diunggah!";
-
-        if (Object.keys(rowErr).length > 0) {
-          itemErrors[doc.id] = rowErr;
-          anyIncompleteRow = true;
-        }
-      } else if (idx < 3 && requireAtLeastOne && isCompletelyEmpty) {
-        itemErrors[doc.id] = {
-          jenis_dokumen: "Jenis dokumen wajib diisi!",
-          nomor_dokumen: "Nomor dokumen wajib diisi!",
-          tanggal: "Tanggal dokumen wajib diisi!",
-          file: "File lampiran wajib diunggah!",
-        };
-        anyIncompleteRow = true;
-      }
-    });
-
-    if (anyIncompleteRow) {
-      return {
-        summaryError: "Terdapat baris dokumen pendukung yang belum lengkap. Semua kolom (Jenis Dokumen, Nomor Dokumen, Tanggal, dan Upload File) harus diisi jika salah satunya telah diisi.",
         itemErrors,
       };
     }

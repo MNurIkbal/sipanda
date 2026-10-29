@@ -19,6 +19,11 @@ export interface Attachment {
   document_type?: string;
   nomor_dokumen?: string;
   tanggal_dokumen?: string | null;
+  nilai_pembayaran?: number;
+  uraian?: string;
+  nama_perusahaan?: string;
+  params?: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
 export interface PaymentDocument {

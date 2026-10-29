@@ -150,7 +150,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     initialData?.pihak_eksternal || ""
   );
   const [unitPpk, setUnitPpk] = useState(
-    initialData?.unit_kerja || currentUser?.unit_kerja || "PPK Kegiatan Operasional"
+    initialData?.unit_kerja || ""
   );
   const [ppkName, setPpkName] = useState(
     initialData?.ppk_name || currentUser?.full_name || "Andi Pratama"
@@ -168,18 +168,40 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   // 2. Dokumen Pendukung (Minimal 1, bisa tambah lebih dari 1)
   const [supportingDocs, setSupportingDocs] = useState<SupportingDocumentItem[]>(() => {
     if (initialData?.attachments && initialData.attachments.length > 0) {
-      return initialData.attachments.map((att) => ({
-        id: `doc-${att.id}`,
-        jenis_dokumen: att.document_type || "Dokumen Pendukung",
-        nomor_dokumen: att.nomor_dokumen || "-",
-        tanggal: att.tanggal_dokumen
-          ? new Date(att.tanggal_dokumen).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0],
-        file: null,
-        existing_file_name: att.file_name,
-        existing_file_path: att.file_path,
-        existing_attachment_id: att.id,
-      }));
+      return initialData.attachments.map((att) => {
+        const rawParams = att.params || att.metadata || {};
+        const cleanParams: Record<string, string> = {};
+        if (rawParams && typeof rawParams === "object") {
+          Object.entries(rawParams).forEach(([k, v]) => {
+            if (
+              v !== undefined &&
+              v !== null &&
+              typeof v !== "object" &&
+              k !== "raw_text_snippet" &&
+              k !== "file_name"
+            ) {
+              cleanParams[k] = String(v);
+            }
+          });
+        }
+        return {
+          id: `doc-${att.id}`,
+          jenis_dokumen: att.document_type || "Dokumen Pendukung",
+          nomor_dokumen: att.nomor_dokumen || "-",
+          tanggal: att.tanggal_dokumen
+            ? new Date(att.tanggal_dokumen).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
+          file: null,
+          nilai_pembayaran: att.nilai_pembayaran || 0,
+          uraian: att.uraian || "",
+          nama_perusahaan: att.nama_perusahaan || "",
+          params: cleanParams,
+          metadata: rawParams,
+          existing_file_name: att.file_name,
+          existing_file_path: att.file_path,
+          existing_attachment_id: att.id,
+        };
+      });
     }
     return [
       {
@@ -188,6 +210,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         nomor_dokumen: "",
         tanggal: new Date().toISOString().split("T")[0],
         file: null,
+        params: {},
       },
       {
         id: "doc-2",
@@ -195,6 +218,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         nomor_dokumen: "",
         tanggal: new Date().toISOString().split("T")[0],
         file: null,
+        params: {},
       },
       {
         id: "doc-3",
@@ -202,6 +226,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         nomor_dokumen: "",
         tanggal: new Date().toISOString().split("T")[0],
         file: null,
+        params: {},
       },
     ];
   });
@@ -236,8 +261,57 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         nomor_dokumen: "",
         tanggal: new Date().toISOString().split("T")[0],
         file: null,
+        params: {},
       },
     ]);
+  };
+
+  // Update nilai field dinamis di dalam `params` milik suatu dokumen pendukung
+  const handleUpdateDynamicParam = (docId: string, paramKey: string, paramValue: string) => {
+    setSupportingDocs((prev) =>
+      prev.map((d) => {
+        if (d.id !== docId) return d;
+        const nextParams = { ...(d.params || {}), [paramKey]: paramValue };
+        return {
+          ...d,
+          params: nextParams,
+          metadata: nextParams,
+        };
+      })
+    );
+  };
+
+  // Tambah field kustom baru ke dalam `params` dokumen pendukung
+  const handleAddCustomDynamicParam = (docId: string) => {
+    setSupportingDocs((prev) =>
+      prev.map((d) => {
+        if (d.id !== docId) return d;
+        const existingCount = Object.keys(d.params || {}).length + 1;
+        const newKey = `Field Tambahan ${existingCount}`;
+        const nextParams = { ...(d.params || {}), [newKey]: "" };
+        return {
+          ...d,
+          params: nextParams,
+          metadata: nextParams,
+        };
+      })
+    );
+  };
+
+  // Hapus satu field dari `params` dinamis dokumen pendukung
+  const handleRemoveDynamicParam = (docId: string, paramKey: string) => {
+    setSupportingDocs((prev) =>
+      prev.map((d) => {
+        if (d.id !== docId) return d;
+        const nextParams = { ...(d.params || {}) };
+        delete nextParams[paramKey];
+        return {
+          ...d,
+          params: nextParams,
+          metadata: nextParams,
+        };
+      })
+    );
   };
 
   // Hapus Dokumen Pendukung:
@@ -340,7 +414,24 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
       if (res.success && res.data) {
         const meta = res.data.data || res.data;
 
-        // Auto-fill field pada baris dokumen pendukung saat ini
+        // Ambil objek params dinamis sesuai isi file yang diupload
+        const extractedParams: Record<string, string> = {};
+        const sourceParams = meta.params || meta.metadata || {};
+        if (sourceParams && typeof sourceParams === "object") {
+          Object.entries(sourceParams).forEach(([k, v]) => {
+            if (
+              v !== undefined &&
+              v !== null &&
+              typeof v !== "object" &&
+              k !== "raw_text_snippet" &&
+              k !== "file_name"
+            ) {
+              extractedParams[k] = String(v);
+            }
+          });
+        }
+
+        // Auto-fill field utama & params dinamis pada baris dokumen pendukung saat ini
         if (meta.jenis_dokumen) {
           handleUpdateDocField(docId, "jenis_dokumen", meta.jenis_dokumen);
         }
@@ -359,52 +450,12 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         if (meta.pihak_eksternal) {
           handleUpdateDocField(docId, "nama_perusahaan", meta.pihak_eksternal);
         }
-        if (meta.nomor_spk) {
-          handleUpdateDocField(docId, "nomor_spk", meta.nomor_spk);
-        }
-        if (meta.unit_kerja) {
-          handleUpdateDocField(docId, "unit_kerja", meta.unit_kerja);
-        }
-        if (meta.bank_name) {
-          handleUpdateDocField(docId, "bank_name", meta.bank_name);
-        }
-        if (meta.bank_account) {
-          handleUpdateDocField(docId, "bank_account", meta.bank_account);
-        }
-        if (meta.bank_holder) {
-          handleUpdateDocField(docId, "bank_holder", meta.bank_holder);
-        }
-        if (meta.terbilang) {
-          handleUpdateDocField(docId, "terbilang", meta.terbilang);
-        }
-        if (meta.penandatangan) {
-          handleUpdateDocField(docId, "penandatangan", meta.penandatangan);
-        }
-        if (meta.jabatan_penandatangan) {
-          handleUpdateDocField(docId, "jabatan_penandatangan", meta.jabatan_penandatangan);
-        }
-        handleUpdateDocField(docId, "metadata", meta);
+        handleUpdateDocField(docId, "params", extractedParams);
+        handleUpdateDocField(docId, "metadata", extractedParams);
 
-        // Auto-fill ke Form Data Dokumen Utama jika field di form atas masih kosong / default
-        if (meta.nomor_dokumen && (!nomorSurat || nomorSurat.trim() === "")) {
-          setNomorSurat(meta.nomor_dokumen);
-        }
-        if (meta.perihal && (!perihal || perihal.trim() === "")) {
-          setPerihal(meta.perihal);
-        }
-        if (meta.tanggal_dokumen && (!tanggalDokumen || tanggalDokumen.trim() === "")) {
-          setTanggalDokumen(meta.tanggal_dokumen);
-        }
-        if (meta.pihak_eksternal && (!pihakEksternal || pihakEksternal.trim() === "")) {
-          setPihakEksternal(meta.pihak_eksternal);
-        }
-        if (meta.nilai_pembayaran && (!nilaiPembayaran || nilaiPembayaran === "" || nilaiPembayaran === "0")) {
-          setNilaiPembayaran(new Intl.NumberFormat("id-ID").format(Number(meta.nilai_pembayaran)));
-        }
-
-        // Tampilkan toast notifikasi sukses ekstraksi
+        const paramCount = Object.keys(extractedParams).length;
         setOcrSuccessToast(
-          `Metadata dokumen berhasil diekstrak otomatis melalui VeriText (No: ${meta.nomor_dokumen || "-"}, Nilai: Rp ${Number(meta.nilai_pembayaran || 0).toLocaleString("id-ID")})`
+          `VeriText berhasil mengekstrak ${paramCount} field metadata dinamis dari berkas "${file.name}"`
         );
         setTimeout(() => setOcrSuccessToast(null), 6000);
       }
@@ -429,14 +480,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             nilai_pembayaran: 0,
             uraian: "",
             nama_perusahaan: "",
-            nomor_spk: "",
-            unit_kerja: "",
-            bank_name: "",
-            bank_account: "",
-            bank_holder: "",
-            terbilang: "",
-            penandatangan: "",
-            jabatan_penandatangan: "",
+            params: {},
             metadata: undefined,
           };
         }
@@ -510,26 +554,20 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     // Kirim data update untuk dokumen pendukung yang sudah ada di database (sesuai id attachment)
     const existingAttachments = supportingDocs
       .filter((d) => Boolean(d.existing_attachment_id))
-      .map((d) => ({
-        id: d.existing_attachment_id,
-        document_type: d.jenis_dokumen.trim() || "Dokumen Pendukung",
-        nomor_dokumen: d.nomor_dokumen.trim() || "-",
-        tanggal_dokumen: d.tanggal || null,
-        nilai_pembayaran: Number(d.nilai_pembayaran) || 0,
-        uraian: d.uraian || "",
-        nama_perusahaan: d.nama_perusahaan || "",
-        metadata: {
-          ...(d.metadata || {}),
-          nomor_spk: d.nomor_spk || "",
-          unit_kerja: d.unit_kerja || "",
-          bank_name: d.bank_name || "",
-          bank_account: d.bank_account || "",
-          bank_holder: d.bank_holder || "",
-          terbilang: d.terbilang || "",
-          penandatangan: d.penandatangan || "",
-          jabatan_penandatangan: d.jabatan_penandatangan || "",
-        },
-      }));
+      .map((d) => {
+        const dynamicParams = d.params || d.metadata || {};
+        return {
+          id: d.existing_attachment_id,
+          document_type: d.jenis_dokumen.trim() || "Dokumen Pendukung",
+          nomor_dokumen: d.nomor_dokumen.trim() || "-",
+          tanggal_dokumen: d.tanggal || null,
+          nilai_pembayaran: Number(d.nilai_pembayaran) || 0,
+          uraian: d.uraian || "",
+          nama_perusahaan: d.nama_perusahaan || "",
+          params: dynamicParams,
+          metadata: dynamicParams,
+        };
+      });
     formData.append("existing_attachments", JSON.stringify(existingAttachments));
 
     // Kirim berkas baru jika user memilih/mengupload file baru
@@ -537,6 +575,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     supportingDocs.forEach((doc) => {
       if (doc.file) {
         formData.append("files", doc.file);
+        const dynamicParams = doc.params || doc.metadata || {};
         attachmentMeta.push({
           document_type: doc.jenis_dokumen.trim() || "Dokumen Pendukung",
           nomor_dokumen: doc.nomor_dokumen.trim() || "-",
@@ -544,17 +583,8 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
           nilai_pembayaran: Number(doc.nilai_pembayaran) || 0,
           uraian: doc.uraian || "",
           nama_perusahaan: doc.nama_perusahaan || "",
-          metadata: {
-            ...(doc.metadata || {}),
-            nomor_spk: doc.nomor_spk || "",
-            unit_kerja: doc.unit_kerja || "",
-            bank_name: doc.bank_name || "",
-            bank_account: doc.bank_account || "",
-            bank_holder: doc.bank_holder || "",
-            terbilang: doc.terbilang || "",
-            penandatangan: doc.penandatangan || "",
-            jabatan_penandatangan: doc.jabatan_penandatangan || "",
-          },
+          params: dynamicParams,
+          metadata: dynamicParams,
         });
       }
     });
@@ -578,10 +608,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                   : "Edit Data Dokumen Pembayaran"
                 : "Pendaftaran & Input Dokumen Pembayaran"}
             </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-black">
-              <Sparkles className="h-2.5 w-2.5 text-blue-600" />
-              VeriText OCR Ready
-            </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             {initialData
@@ -1139,7 +1165,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
               key={item.id}
               className="rounded-2xl border border-slate-200/90 p-5 bg-white relative transition hover:border-slate-300"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <span className="font-extrabold text-xs text-slate-800">
                   Dokumen {index + 1}
                 </span>
@@ -1154,271 +1180,162 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mb-4">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Jenis Dokumen <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: BAPP, BAST, Invoice, SPK..."
-                    value={item.jenis_dokumen}
-                    onChange={(e) =>
-                      handleUpdateDocField(item.id, "jenis_dokumen", e.target.value)
-                    }
-                    className={`w-full px-3 py-2 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${
-                      formErrors.supporting_doc_items?.[item.id]?.jenis_dokumen
-                        ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                        : "border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                    }`}
-                  />
-                  {formErrors.supporting_doc_items?.[item.id]?.jenis_dokumen && (
-                    <p className="text-[10px] text-red-500 font-semibold mt-1">
-                      {formErrors.supporting_doc_items[item.id].jenis_dokumen}
-                    </p>
-                  )}
-                </div>
+              {/* ANIMASI SCANNER & PLACEHOLDER LOADING VERITEXT CANGGIH & UI/UX MODERN */}
+              {extractingDocId === item.id ? (
+                <div className="space-y-4 pb-4 animate-in fade-in duration-200">
+                  {/* Scanner HUD Alert */}
+                  <div className="relative overflow-hidden rounded-2xl border-2 border-blue-500/70 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-4 shadow-xl">
+                    <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-[1px] animate-[bounce_2s_infinite]"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-transparent to-blue-500/10 pointer-events-none"></div>
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Nomor Dokumen <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: BAPP/001/KEU/2027"
-                    value={item.nomor_dokumen}
-                    onChange={(e) =>
-                      handleUpdateDocField(item.id, "nomor_dokumen", e.target.value)
-                    }
-                    className={`w-full px-3 py-2 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${
-                      formErrors.supporting_doc_items?.[item.id]?.nomor_dokumen
-                        ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                        : "border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                    }`}
-                  />
-                  {formErrors.supporting_doc_items?.[item.id]?.nomor_dokumen && (
-                    <p className="text-[10px] text-red-500 font-semibold mt-1">
-                      {formErrors.supporting_doc_items[item.id].nomor_dokumen}
-                    </p>
-                  )}
-                </div>
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative p-2.5 rounded-xl bg-blue-600/40 border border-blue-400/40 text-cyan-300 shadow-inner">
+                          <ScanLine className="h-6 w-6 animate-pulse" />
+                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+                          </span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-xs text-cyan-300 tracking-wider uppercase">
+                              VERITEXT OCR ENGINE SCANNING
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-[10px] font-bold text-cyan-200 border border-cyan-400/30">
+                              Memproses Metadata Dinamis...
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-0.5">
+                            Mendeteksi atribut &amp; field di dalam dokumen secara otomatis untuk ditampilkan sebagai form dinamis...
+                          </p>
+                        </div>
+                      </div>
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Tanggal Dokumen <span className="text-red-500">*</span>
-                  </label>
-                  <DatePicker
-                    value={item.tanggal}
-                    onChange={(dateStr) =>
-                      handleUpdateDocField(item.id, "tanggal", dateStr)
-                    }
-                    placeholder="Pilih tanggal..."
-                    hasError={Boolean(formErrors.supporting_doc_items?.[item.id]?.tanggal)}
-                  />
-                  {formErrors.supporting_doc_items?.[item.id]?.tanggal && (
-                    <p className="text-[10px] text-red-500 font-semibold mt-1">
-                      {formErrors.supporting_doc_items[item.id].tanggal}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Field Input Metadata Lengkap (Plaintext) Hasil Ekstraksi VeriText */}
-              <div className="space-y-3.5 pt-3 border-t border-slate-100">
-                <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                  <span>Metadata Dokumen Pendukung (Plaintext)</span>
-                  {item.metadata && (
-                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                      Terisi Otomatis via VeriText OCR
-                    </span>
-                  )}
-                </div>
-
-                {/* Baris 1: Nomor PO/SPK, Nilai/Grand Total, Pihak Eksternal */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Nomor PO / SPK
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: SP-1177/I/2024"
-                      value={item.nomor_spk || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "nomor_spk", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Grand Total / Nilai Nominal (Rp)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-[11px] font-bold text-slate-400">Rp</span>
-                      <input
-                        type="text"
-                        placeholder="Contoh: 134.259.000"
-                        value={
-                          item.nilai_pembayaran
-                            ? new Intl.NumberFormat("id-ID").format(Number(item.nilai_pembayaran))
-                            : ""
-                        }
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/[^0-9]/g, "");
-                          handleUpdateDocField(item.id, "nilai_pembayaran", raw ? Number(raw) : 0);
-                        }}
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                      />
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                        <div className="h-4 w-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-[11px] font-bold text-cyan-300 animate-pulse">Mengekstrak Params</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Pihak Eksternal / Perusahaan
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: PT Asia Sistem Indonesia"
-                      value={item.nama_perusahaan || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "nama_perusahaan", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
+                  {/* Placeholder Shimmer Skeleton Loading State */}
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/30 p-4 space-y-3 animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="h-3.5 w-48 bg-slate-200 rounded-md"></div>
+                      <div className="h-3.5 w-28 bg-blue-200/60 rounded-md"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-20 bg-slate-200 rounded"></div>
+                        <div className="h-8 bg-slate-200/70 rounded-xl"></div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-28 bg-slate-200 rounded"></div>
+                        <div className="h-8 bg-slate-200/70 rounded-xl"></div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-32 bg-slate-200 rounded"></div>
+                        <div className="h-8 bg-slate-200/70 rounded-xl"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-36 bg-slate-200 rounded"></div>
+                        <div className="h-8 bg-slate-200/70 rounded-xl"></div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-20 bg-slate-200 rounded"></div>
+                        <div className="h-8 bg-slate-200/70 rounded-xl"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="h-8 bg-slate-200/60 rounded-xl"></div>
+                      <div className="h-8 bg-slate-200/60 rounded-xl"></div>
+                      <div className="h-8 bg-slate-200/60 rounded-xl"></div>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                /* Field Input Metadata DINAMIS (Plaintext) Sesuai Isi File yang Diupload (Disimpan ke kolom JSONB `params`) */
+                <div className="space-y-3.5 pb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                      <span>Metadata Dinamis Dokumen (Disimpan ke JSON Params)</span>
+                      {item.params && Object.keys(item.params).length > 0 && (
+                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 normal-case">
+                          {Object.keys(item.params).length} Field Terdeteksi Otomatis via VeriText OCR
+                        </span>
+                      )}
+                    </div>
 
-                {/* Baris 2: Project Title / Uraian & Terbilang */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Project Title / Uraian Pekerjaan
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Pemeliharaan dan Perawatan Jaringan Dokumentasi..."
-                      value={item.uraian || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "uraian", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
+                    {(item.file || item.existing_file_name || (item.params && Object.keys(item.params).length > 0)) && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomDynamicParam(item.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-[11px] font-bold transition cursor-pointer"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Tambah Field Params</span>
+                      </button>
+                    )}
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Terbilang
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Seratus Tiga Puluh Empat Juta..."
-                      value={item.terbilang || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "terbilang", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
+                  {item.params && Object.keys(item.params).length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                      {Object.entries(item.params).map(([paramKey, paramValue]) => {
+                        const isLongValue = String(paramValue || "").length > 55;
+                        return (
+                          <div
+                            key={paramKey}
+                            className={isLongValue ? "md:col-span-3" : ""}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block font-bold text-slate-700 truncate" title={paramKey}>
+                                {paramKey}
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveDynamicParam(item.id, paramKey)}
+                                className="text-[10px] text-slate-400 hover:text-rose-500 font-semibold transition cursor-pointer"
+                                title={`Hapus field ${paramKey}`}
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              value={paramValue || ""}
+                              onChange={(e) =>
+                                handleUpdateDynamicParam(item.id, paramKey, e.target.value)
+                              }
+                              placeholder={`Masukkan ${paramKey}...`}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium text-slate-800"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 text-xs text-slate-500 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-blue-500 shrink-0" />
+                        <span>
+                          Unggah berkas (PDF/Word/Excel/Gambar) agar sistem mengekstrak field input secara <strong>dinamis</strong> sesuai isi metadata berkas tersebut.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomDynamicParam(item.id)}
+                        className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-bold transition cursor-pointer"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Input Manual</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-
-                {/* Baris 3: Rekening Pembayaran (Bank Name, Acc Number, Acc Name) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Nama Bank (Please Remit)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Bank Permata"
-                      value={item.bank_name || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "bank_name", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Nomor Rekening
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: 971.102.012"
-                      value={item.bank_account || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "bank_account", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Atas Nama (Acc Name)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: PT. ASIA SISTEM INDONESIA"
-                      value={item.bank_holder || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "bank_holder", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
-                </div>
-
-                {/* Baris 4: Unit/PPK Tujuan (Bill to) & Penandatangan (Approved by) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Tujuan Penagihan (Bill To)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: BADAN INTELIJEN NEGARA"
-                      value={item.unit_kerja || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "unit_kerja", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Penandatangan (Approved By)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Rizky Detha"
-                      value={item.penandatangan || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "penandatangan", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Jabatan Penandatangan
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Direktur"
-                      value={item.jabatan_penandatangan || ""}
-                      onChange={(e) =>
-                        handleUpdateDocField(item.id, "jabatan_penandatangan", e.target.value)
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Upload File Button & Info Berkas yang sudah ada */}
               <div>
@@ -1443,7 +1360,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                   </label>
 
                   {/* Tombol Hapus Upload VeriText (Mengosongkan Berkas & Reset Field Metadata yang Terisi) */}
-                  {(item.file || item.existing_file_name || item.nomor_dokumen || item.nilai_pembayaran) && (
+                  {(item.file || item.existing_file_name || item.nomor_dokumen || (item.params && Object.keys(item.params).length > 0)) && (
                     <button
                       type="button"
                       onClick={() => handleClearVeriTextUpload(item.id)}
@@ -1481,45 +1398,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                     <span className="text-xs text-slate-400">Belum ada file dipilih</span>
                   )}
                 </div>
-
-                {/* ANIMASI SCANNER VERITEXT CANGGIH & UI/UX MODERN */}
-                {extractingDocId === item.id && (
-                  <div className="mt-3.5 relative overflow-hidden rounded-2xl border-2 border-blue-500/70 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-4 shadow-xl">
-                    {/* Laser Scanner Bar yang bergerak naik-turun */}
-                    <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-[1px] animate-[bounce_2s_infinite]"></div>
-                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-transparent to-blue-500/10 pointer-events-none"></div>
-
-                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="relative p-2.5 rounded-xl bg-blue-600/40 border border-blue-400/40 text-cyan-300 shadow-inner">
-                          <ScanLine className="h-6 w-6 animate-pulse" />
-                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
-                          </span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-xs text-cyan-300 tracking-wider uppercase">
-                              VERITEXT OCR ENGINE ACTIVE
-                            </span>
-                            <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-[10px] font-bold text-cyan-200 border border-cyan-400/30">
-                              AI Scanning...
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-300 mt-0.5">
-                            Memindai struktur dokumen, mengekstrak Nomor Surat, Tanggal, Nominal, dan Pihak Penyedia...
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                        <div className="h-4 w-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-[11px] font-bold text-cyan-300 animate-pulse">Mengisi Form Otomatis</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {formErrors.supporting_doc_items?.[item.id]?.file && (
                   <p className="text-[10px] text-red-500 font-semibold mt-1.5">
