@@ -269,7 +269,7 @@ export const VerifyModal: React.FC<VerifyModalProps> = ({
                     }`}
                   >
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    Setujui (Lengkap / Valid)
+                    Setujui Dokumen
                   </button>
                   <button
                     type="button"
@@ -281,7 +281,7 @@ export const VerifyModal: React.FC<VerifyModalProps> = ({
                     }`}
                   >
                     <XCircle className="h-4 w-4 text-rose-600" />
-                    Kembalikan (Perlu Revisi)
+                    Tolak Dokumen
                   </button>
                 </div>
               </div>
@@ -290,7 +290,7 @@ export const VerifyModal: React.FC<VerifyModalProps> = ({
                 <label className="block font-bold text-slate-700 mb-1.5">
                   {verifyAction === "approve"
                     ? "Catatan Verifikasi (Opsional):"
-                    : "Catatan / Alasan Revisi Dokumen (Wajib):"}
+                    : "Catatan / Alasan Penolakan Dokumen (Wajib):"}
                 </label>
                 <textarea
                   rows={3}
@@ -301,8 +301,8 @@ export const VerifyModal: React.FC<VerifyModalProps> = ({
                   }}
                   placeholder={
                     verifyAction === "approve"
-                      ? "Contoh: Seluruh dokumen pendukung telah lengkap dan sesuai aturan perpajakan."
-                      : "Contoh: BAST belum ditandatangani rekanan, kuitansi materai kurang jelas."
+                      ? "Contoh: Seluruh dokumen pendukung telah lengkap dan sesuai aturan."
+                      : "Contoh: Berkas belum lengkap atau terdapat ketidaksesuaian data."
                   }
                   className={`w-full px-3.5 py-2.5 rounded-xl border focus:outline-none text-slate-800 font-medium transition ${
                     fieldError

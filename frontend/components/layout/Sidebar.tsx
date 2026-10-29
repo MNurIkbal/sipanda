@@ -15,6 +15,7 @@ import {
   FileCheck2,
   FileSpreadsheet,
   Building2,
+  Files,
   ChevronDown,
   X,
 } from "lucide-react";
@@ -56,7 +57,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
       icon: FileText,
       badge: documents.length,
       description: "Pencarian & tracking berkas",
-      match: (path: string) => path.startsWith("/documents"),
+      match: (path: string) => path === "/documents" || (path.startsWith("/documents/") && !path.startsWith("/documents/supporting")),
+    },
+    {
+      id: "supporting-documents",
+      href: "/documents/supporting",
+      label: "Dokumen Pendukung",
+      icon: Files,
+      badge: null,
+      description: "Generate BAST, BAP, & BAPP",
+      match: (path: string) => path.startsWith("/documents/supporting"),
     },
     {
       id: "reports",
@@ -97,19 +107,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
   ];
 
   // Filter Menu Berdasarkan Role Pengguna:
-  // - PPK: dashboard, documents, monitoring
-  // - Biro 01: dashboard, monitoring, documents, reports, audit
-  // - Superadmin: semua menu (dashboard, monitoring, documents, reports, audit, users, master)
+  // - PPK: dashboard, documents, supporting-documents, monitoring
+  // - Biro 01: dashboard, monitoring, documents, supporting-documents, reports, audit
+  // - Superadmin: dashboard, reports, audit, users, master (TIDAK BOLEH akses: documents, supporting-documents, monitoring)
   const menuItems = allMenuItems.filter((item) => {
     if (currentUser?.role === "ppk") {
-      return item.id === "dashboard" || item.id === "monitoring" || item.id === "documents";
+      return item.id === "dashboard" || item.id === "monitoring" || item.id === "documents" || item.id === "supporting-documents";
     }
 
     if (currentUser?.role === "biro_01") {
       return item.id !== "users" && item.id !== "master";
     }
 
-    // Superadmin: semua menu diizinkan
+    if (currentUser?.role === "superadmin") {
+      // Superadmin tidak boleh akses: Daftar Dokumen, Dokumen Pendukung, dan Monitoring
+      return item.id !== "documents" && item.id !== "supporting-documents" && item.id !== "monitoring";
+    }
+
     return true;
   });
 
@@ -194,7 +208,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
             </div>
             <div className="min-w-0">
               <div className="font-extrabold text-xs text-white truncate tracking-tight">
-                {currentUser?.role === "biro_01" ? "Biro 01 Verifikator" : "PPK Operasional"}
+                {currentUser?.role === "biro_01"
+                  ? "Biro 01 Verifikator"
+                  : currentUser?.role === "superadmin"
+                  ? "Super Administrator"
+                  : "PPK Operasional"}
               </div>
               <div className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
                 {currentUser?.full_name || "Petugas"}

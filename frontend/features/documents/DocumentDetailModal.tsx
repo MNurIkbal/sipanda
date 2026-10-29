@@ -89,43 +89,131 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
     }
   };
 
-  // Timeline process steps matching Screenshot 2
+  // Log teranyar tiap tahap
+  const submitLog = [...docAuditLogs].reverse().find((l) => l.action === "SUBMIT_DOKUMEN" || l.new_status === "submit_dokumen");
+  const reviewLog = [...docAuditLogs].reverse().find((l) => l.action === "REVIEW_DOCUMENT" || l.new_status === "review");
+  const rejectLog = [...docAuditLogs].reverse().find((l) => l.action === "VERIFY_REJECT" || l.new_status === "dikembalikan" || l.new_status === "ditolak");
+  const reviseLog = [...docAuditLogs].reverse().find((l) => l.action === "RESUBMIT_DOKUMEN" || l.action === "REVISE_DOCUMENT" || l.new_status === "menunggu_verifikasi_ulang" || l.new_status === "pengajuan_ulang");
+  const approveLog = [...docAuditLogs].reverse().find((l) => l.action === "VERIFY_APPROVE" || l.new_status === "lengkap_valid" || l.new_status === "disetujui");
+
+  // Status flags
+  const isRejected = document.status === "dikembalikan" || document.status === "ditolak";
+  const isPengajuanUlang = document.status === "menunggu_verifikasi_ulang" || document.status === "pengajuan_ulang";
+  const hasEverBeenRejected = Boolean(rejectLog || isRejected || isPengajuanUlang);
+  const hasEverBeenResubmitted = Boolean(reviseLog || isPengajuanUlang);
+
+  // Jika dokumen ini diajukan ulang dan sedang dalam review ulang oleh Biro 01:
+  // Alur siklus: Draft -> Submit -> Review -> Ditolak -> Pengajuan Ulang -> Review (Ulang) -> Disetujui
+  const isReviewingResubmission =
+    hasEverBeenResubmitted &&
+    (document.status === "review" || document.status === "lengkap_valid" || document.status === "disetujui");
+
+  // Timeline tahapan proses komprehensif:
   const timelineSteps = [
-    { key: "diterima", label: "Dokumen Diterima", date: formatDateID(document.tanggal_diterima || document.created_at) },
-    { key: "terdaftar", label: "Terdaftar", date: formatDateTimeID(document.created_at) },
-    { key: "diverifikasi", label: "Diverifikasi", date: document.tanggal_verifikasi ? formatDateTimeID(document.tanggal_verifikasi) : null },
-    { key: "lengkap_valid", label: "Lengkap / Valid", date: null },
-    { key: "sedang_diproses", label: "Sedang Diproses", date: null },
-    { key: "pengajuan_kppn", label: "Pengajuan ke KPPN", date: null },
-    { key: "menunggu_pencairan", label: "Menunggu Pencairan", date: null },
-    { key: "dana_cair", label: "Dana Cair", date: null },
+    {
+      key: "draft",
+      label: "Draft Dokumen",
+      date: formatDateTimeID(document.created_at),
+    },
+    {
+      key: "submit_dokumen",
+      label: "Submit Dokumen",
+      date: submitLog?.created_at
+        ? formatDateTimeID(submitLog.created_at)
+        : document.status !== "draft"
+        ? formatDateTimeID(document.updated_at || document.created_at)
+        : null,
+    },
+    {
+      key: "review_awal",
+      label: "Review (Biro 01)",
+      date: reviewLog?.created_at
+        ? formatDateTimeID(reviewLog.created_at)
+        : document.status !== "draft" && document.status !== "submit_dokumen"
+        ? formatDateTimeID(document.updated_at || document.created_at)
+        : null,
+    },
+    ...(hasEverBeenRejected
+      ? [
+          {
+            key: "ditolak",
+            label: "Ditolak (Perlu Revisi)",
+            date: rejectLog?.created_at
+              ? formatDateTimeID(rejectLog.created_at)
+              : isRejected
+              ? document.tanggal_verifikasi
+                ? formatDateTimeID(document.tanggal_verifikasi)
+                : formatDateTimeID(document.updated_at || document.created_at)
+              : null,
+            isDanger: true,
+          },
+        ]
+      : []),
+    ...(hasEverBeenResubmitted
+      ? [
+          {
+            key: "pengajuan_ulang",
+            label: "Pengajuan Ulang PPK",
+            date: reviseLog?.created_at
+              ? formatDateTimeID(reviseLog.created_at)
+              : isPengajuanUlang
+              ? formatDateTimeID(document.updated_at || document.created_at)
+              : null,
+            isWarning: true,
+          },
+        ]
+      : []),
+    ...(isReviewingResubmission
+      ? [
+          {
+            key: "review_ulang",
+            label: "Review Pengajuan Ulang",
+            date:
+              document.status === "review"
+                ? formatDateTimeID(document.updated_at || new Date().toISOString())
+                : reviewLog?.created_at
+                ? formatDateTimeID(reviewLog.created_at)
+                : null,
+          },
+        ]
+      : []),
+    {
+      key: "disetujui",
+      label: "Disetujui",
+      date: approveLog?.created_at
+        ? formatDateTimeID(approveLog.created_at)
+        : document.status === "lengkap_valid" || document.status === "disetujui"
+        ? document.tanggal_verifikasi
+          ? formatDateTimeID(document.tanggal_verifikasi)
+          : formatDateTimeID(document.updated_at || document.created_at)
+        : null,
+    },
   ];
 
-  // Determine current step index based on document status
+  // Determine current active step index dynamically
   const getActiveStepIndex = () => {
     switch (document.status) {
       case "draft":
-        return 0; // Dokumen Diterima
+        return timelineSteps.findIndex((s) => s.key === "draft");
+      case "submit_dokumen":
       case "menunggu_verifikasi":
-        return 1; // Terdaftar, next is Diverifikasi
-      case "diverifikasi":
-        return 2;
-      case "lengkap":
-      case "valid":
+        return timelineSteps.findIndex((s) => s.key === "submit_dokumen");
+      case "review":
+      case "sedang_diverifikasi":
+        return isReviewingResubmission
+          ? timelineSteps.findIndex((s) => s.key === "review_ulang")
+          : timelineSteps.findIndex((s) => s.key === "review_awal");
+      case "dikembalikan":
+      case "ditolak":
+        return timelineSteps.findIndex((s) => s.key === "ditolak");
+      case "menunggu_verifikasi_ulang":
+      case "pengajuan_ulang":
+        return timelineSteps.findIndex((s) => s.key === "pengajuan_ulang");
       case "lengkap_valid":
-        return 3;
-      case "proses":
-      case "sedang_diproses":
-        return 4;
-      case "kppn":
-      case "pengajuan_kppn":
-        return 5;
-      case "menunggu_pencairan":
-        return 6;
+      case "disetujui":
       case "dana_cair":
       case "selesai":
-      case "siap_digunakan":
-        return 7;
+        return timelineSteps.findIndex((s) => s.key === "disetujui");
       default:
         return 1;
     }
@@ -236,33 +324,30 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                   {/* Row 4 */}
                   <div>
                     <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase block mb-1">
+                      KATEGORI PENGADAAN
+                    </span>
+                    <span className="font-semibold text-slate-800 text-sm">
+                      {document.kategori || (document as any).kategori_pengadaan || "Pengadaan Barang / Jasa"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase block mb-1">
                       NILAI PEMBAYARAN
                     </span>
                     <span className="font-bold text-slate-900 text-base text-blue-700">
                       Rp {Number(document.nilai_pembayaran || 0).toLocaleString("id-ID")}
                     </span>
                   </div>
-                  <div>
+
+                  {/* Row 5 */}
+                  <div className="md:col-span-2">
                     <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase block mb-1">
                       KETERANGAN
                     </span>
-                    <span className="font-bold text-slate-900 text-base text-blue-700">
-                        {document.keterangan}
+                    <span className="font-medium text-slate-800 text-sm">
+                      {document.keterangan || "-"}
                     </span>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase block mb-1">
-                      AGING
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white tracking-wider">
-                        AGING
-                      </span>
-                      <span className="font-semibold text-slate-800">
-                        {calculateAging()}
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -350,8 +435,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
 
                 <div className="relative pl-6 space-y-5 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
                   {timelineSteps.map((step, idx) => {
-                    const isPassed = idx < activeIndex;
-                    const isCurrent = idx === activeIndex;
+                    const isDisetujuiFinal =
+                      step.key === "disetujui" &&
+                      (document.status === "lengkap_valid" ||
+                        document.status === "disetujui" ||
+                        document.status === "dana_cair" ||
+                        document.status === "selesai");
+                    const isPassed = idx < activeIndex || isDisetujuiFinal;
+                    const isCurrent = idx === activeIndex && !isDisetujuiFinal;
 
                     return (
                       <div key={step.key} className="relative flex items-start gap-3">
@@ -362,9 +453,19 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                               <CheckCircle2 className="h-4 w-4" />
                             </div>
                           ) : isCurrent ? (
-                            <div className="w-5 h-5 rounded-full border-2 border-blue-600 bg-white flex items-center justify-center">
-                              <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                            </div>
+                            (step as any).isDanger ? (
+                              <div className="w-5 h-5 rounded-full border-2 border-rose-600 bg-white flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                              </div>
+                            ) : (step as any).isWarning ? (
+                              <div className="w-5 h-5 rounded-full border-2 border-orange-500 bg-white flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border-2 border-blue-600 bg-white flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                              </div>
+                            )
                           ) : (
                             <div className="w-5 h-5 rounded-full border-2 border-slate-300 bg-white" />
                           )}
@@ -377,7 +478,11 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                               isPassed
                                 ? "text-slate-800"
                                 : isCurrent
-                                ? "text-blue-600 font-bold"
+                                ? (step as any).isDanger
+                                  ? "text-rose-600 font-bold"
+                                  : (step as any).isWarning
+                                  ? "text-orange-600 font-bold"
+                                  : "text-blue-600 font-bold"
                                 : "text-slate-400 font-normal"
                             }`}
                           >
@@ -406,19 +511,22 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
 
                 <div className="space-y-4">
                   {docAuditLogs.length > 0 ? (
-                    docAuditLogs.map((log) => {
+                    // Filter log agar tidak menampilkan aktivitas generate dokumen resmi internal (BAST/BAP/BAPP)
+                    docAuditLogs
+                      .filter((log) => !log.action?.startsWith("GENERATE_") && !log.action?.startsWith("RESET_OFFICIAL"))
+                      .map((log) => {
                       // Tentukan warna badge dan label status berdasarkan new_status / action
                       const statusLabel =
-                        log.new_status === "dikembalikan"
-                          ? "Dikembalikan untuk Perbaikan"
-                          : log.new_status === "lengkap_valid"
-                          ? "Lengkap / Valid"
-                          : log.new_status === "menunggu_verifikasi_ulang"
-                          ? "Menunggu Verifikasi Ulang"
-                          : log.new_status === "menunggu_verifikasi"
-                          ? "Menunggu Verifikasi"
-                          : log.new_status === "sedang_diverifikasi"
-                          ? "Sedang Diverifikasi"
+                        log.new_status === "dikembalikan" || log.new_status === "ditolak"
+                          ? "Ditolak"
+                          : log.new_status === "lengkap_valid" || log.new_status === "disetujui"
+                          ? "Disetujui"
+                          : log.new_status === "menunggu_verifikasi_ulang" || log.new_status === "pengajuan_ulang"
+                          ? "Pengajuan Ulang"
+                          : log.new_status === "submit_dokumen" || log.new_status === "menunggu_verifikasi"
+                          ? "Submit Dokumen"
+                          : log.new_status === "review" || log.new_status === "sedang_diverifikasi"
+                          ? "Review"
                           : log.new_status === "sedang_diproses"
                           ? "Sedang Diproses"
                           : log.new_status === "pengajuan_kppn"

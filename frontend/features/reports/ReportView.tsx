@@ -117,8 +117,16 @@ export const ReportView: React.FC<ReportViewProps> = ({
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
       // 1. Filter Status
-      if (statusFilter !== "ALL" && doc.status !== statusFilter) {
-        return false;
+      if (statusFilter !== "ALL") {
+        if (statusFilter === "dikembalikan" || statusFilter === "ditolak") {
+          if (doc.status !== "dikembalikan" && doc.status !== "ditolak") return false;
+        } else if (statusFilter === "menunggu_verifikasi_ulang" || statusFilter === "pengajuan_ulang") {
+          if (doc.status !== "menunggu_verifikasi_ulang" && doc.status !== "pengajuan_ulang") return false;
+        } else if (statusFilter === "lengkap_valid" || statusFilter === "disetujui") {
+          if (doc.status !== "lengkap_valid" && doc.status !== "disetujui") return false;
+        } else if (doc.status !== statusFilter) {
+          return false;
+        }
       }
 
       // 2. Filter Tanggal Pengajuan
@@ -723,15 +731,12 @@ export const ReportView: React.FC<ReportViewProps> = ({
               className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
             >
               <option value="ALL">Semua Status</option>
-              <option value="menunggu_verifikasi">Menunggu Verifikasi</option>
-              <option value="sedang_diverifikasi">Sedang Diverifikasi</option>
-              <option value="dikembalikan">Dikembalikan (Revisi)</option>
-              <option value="menunggu_verifikasi_ulang">Menunggu Verifikasi Ulang</option>
-              <option value="lengkap_valid">Lengkap / Valid (Disetujui)</option>
-              <option value="sedang_diproses">Sedang Diproses</option>
-              <option value="pengajuan_kppn">Pengajuan ke KPPN</option>
-              <option value="menunggu_pencairan">Menunggu Pencairan</option>
-              <option value="dana_cair">Dana Cair</option>
+              <option value="draft">Draft</option>
+              <option value="submit_dokumen">Submit Dokumen</option>
+              <option value="review">Review</option>
+              <option value="dikembalikan">Ditolak</option>
+              <option value="menunggu_verifikasi_ulang">Pengajuan Ulang</option>
+              <option value="lengkap_valid">Disetujui</option>
             </select>
           </div>
         </div>

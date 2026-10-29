@@ -1,5 +1,19 @@
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.19.212:5000";
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || `${BACKEND_URL}/api`;
+const rawBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const formatUrl = (url: string) => {
+  if (!url) return "";
+  let clean = url.trim();
+  if (clean.startsWith("http:/") && !clean.startsWith("http://")) {
+    clean = clean.replace("http:/", "http://");
+  } else if (clean.startsWith("https:/") && !clean.startsWith("https://")) {
+    clean = clean.replace("https:/", "https://");
+  } else if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+    clean = `http://${clean}`;
+  }
+  return clean.replace(/\/+$/, "");
+};
+
+export const BACKEND_URL = formatUrl(rawBackendUrl);
+export const API_BASE = formatUrl(process.env.NEXT_PUBLIC_API_URL || `${BACKEND_URL}/api`);
 
 export const sipanduApi = {
   // Auth (Login & Lupa Password)
@@ -86,6 +100,7 @@ export const sipanduApi = {
     jenis_dokumen?: string;
     page?: number;
     limit?: number;
+    user_role?: string;
   }) => {
     const query = new URLSearchParams();
     if (params?.status && params.status !== "ALL") query.append("status", params.status);
@@ -94,6 +109,7 @@ export const sipanduApi = {
     if (params?.jenis_dokumen && params.jenis_dokumen !== "ALL") query.append("jenis_dokumen", params.jenis_dokumen);
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
+    if (params?.user_role) query.append("user_role", params.user_role);
 
     const res = await fetch(`${API_BASE}/documents?${query.toString()}`);
     return res.json();
@@ -133,6 +149,38 @@ export const sipanduApi = {
   },
   updateStage: async (id: number, payload: { next_stage: string; user_name?: string; user_role?: string; note?: string }) => {
     const res = await fetch(`${API_BASE}/documents/${id}/stage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  saveOfficialDoc: async (id: number, payload: { type: string; formData: any; user_name?: string; user_role?: string }) => {
+    const res = await fetch(`${API_BASE}/documents/${id}/generate-official`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  resetOfficialDocs: async (id: number, payload?: { user_name?: string; user_role?: string }) => {
+    const res = await fetch(`${API_BASE}/documents/${id}/reset-official`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    });
+    return res.json();
+  },
+  submitToBiro: async (id: number, payload: { user_name?: string; user_role?: string }) => {
+    const res = await fetch(`${API_BASE}/documents/${id}/submit-to-biro`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  markAsReview: async (id: number, payload: { user_name?: string; user_role?: string }) => {
+    const res = await fetch(`${API_BASE}/documents/${id}/review`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

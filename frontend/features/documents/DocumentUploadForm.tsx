@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { User, PaymentDocument } from "@/types/sipandu.types";
 import { AlertDialog } from "@/components/ui/AlertDialog";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { sipanduApi } from "@/services/api.service";
 import {
   documentValidationSchema,
@@ -114,6 +115,21 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   const filteredJenisDokumenOptions = jenisDokumenOptions.filter((opt) =>
     opt.toLowerCase().includes(jenisDokumenSearch.toLowerCase())
   );
+
+  // Kategori Pengadaan (Searchable Select: Pengadaan Barang / Jasa, Harwat(Harian Rawat))
+  const kategoriPengadaanOptions = [
+    "Pengadaan Barang / Jasa",
+    "Harwat(Harian Rawat)",
+  ];
+  const [kategoriPengadaan, setKategoriPengadaan] = useState<string>(
+    (initialData as any)?.kategori_pengadaan || "Pengadaan Barang / Jasa"
+  );
+  const [isKategoriPengadaanOpen, setIsKategoriPengadaanOpen] = useState(false);
+  const [kategoriPengadaanSearch, setKategoriPengadaanSearch] = useState("");
+
+  const filteredKategoriPengadaanOptions = kategoriPengadaanOptions.filter((opt) =>
+    opt.toLowerCase().includes(kategoriPengadaanSearch.toLowerCase())
+  );
   const [tanggalDokumen, setTanggalDokumen] = useState(
     initialData?.tanggal_dokumen
       ? new Date(initialData.tanggal_dokumen).toISOString().split("T")[0]
@@ -139,6 +155,9 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
       : ""
   );
   const [keterangan, setKeterangan] = useState(initialData?.keterangan || "");
+  const [catatanPerbaikan, setCatatanPerbaikan] = useState(
+    (initialData as any)?.catatan_perbaikan || ""
+  );
 
   // 2. Dokumen Pendukung (Minimal 1, bisa tambah lebih dari 1)
   const [supportingDocs, setSupportingDocs] = useState<SupportingDocumentItem[]>(() => {
@@ -286,7 +305,14 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
   // Submit Handler (Simpan Draft atau Kirim Verifikasi) menggunakan documentValidationSchema
   const handleSubmitForm = async (status: "draft" | "menunggu_verifikasi") => {
-    // Jalankan validasi schema dengan opsi is_edit_mode jika sedang mengedit dokumen
+    const isRejected = Boolean(
+      initialData &&
+        (initialData.status === "dikembalikan" ||
+          initialData.status === "ditolak" ||
+          Boolean(initialData.catatan_revisi))
+    );
+
+    // Jalankan validasi schema dengan opsi is_edit_mode dan is_rejected
     const validation = documentValidationSchema.validate(
       {
         nomor_surat: nomorSurat,
@@ -301,6 +327,8 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         keterangan,
         supporting_docs: supportingDocs,
         is_edit_mode: Boolean(initialData),
+        is_rejected: isRejected,
+        catatan_perbaikan: catatanPerbaikan,
       },
       status
     );
@@ -318,6 +346,8 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     const formData = new FormData();
     formData.append("nomor_surat", nomorSurat.trim());
     formData.append("jenis_dokumen", jenisDokumen.trim());
+    formData.append("kategori_pengadaan", (kategoriPengadaan || "Pengadaan Barang / Jasa").trim());
+    formData.append("kategori", (kategoriPengadaan || jenisDokumen || "Pengadaan Barang / Jasa").trim());
     formData.append("perihal", perihal.trim());
     formData.append("tanggal_dokumen", tanggalDokumen || "");
     formData.append("tanggal_diterima", tanggalDiterima);
@@ -326,6 +356,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     formData.append("ppk_name", ppkName.trim());
     formData.append("nilai_pembayaran", getCleanNumber(nilaiPembayaran));
     formData.append("keterangan", keterangan.trim());
+    formData.append("catatan_perbaikan", catatanPerbaikan.trim());
     formData.append("status", status);
 
     // Kirim data update untuk dokumen pendukung yang sudah ada di database (sesuai id attachment)
@@ -365,17 +396,71 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">
-              {initialData ? "Edit Data Dokumen Pembayaran" : "Pendaftaran & Input Dokumen Pembayaran"}
+              {initialData
+                ? initialData.status === "dikembalikan" || initialData.status === "ditolak"
+                  ? "Revisi Data Dokumen Pembayaran"
+                  : "Edit Data Dokumen Pembayaran"
+                : "Pendaftaran & Input Dokumen Pembayaran"}
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             {initialData
-              ? `Perbarui informasi dan dokumen pendukung untuk nomor surat ${initialData.nomor_surat}.`
+              ? initialData.status === "dikembalikan" || initialData.status === "ditolak"
+                ? `Perbaiki dan lengkapi catatan revisi berkas pembayaran untuk nomor surat ${initialData.nomor_surat}.`
+                : `Perbarui informasi dan dokumen pendukung untuk nomor surat ${initialData.nomor_surat}.`
               : "Lengkapi data berkas pembayaran dan lampirkan dokumen pendukung untuk diverifikasi oleh Biro 01 Keuangan."}
           </p>
         </div>
 
       </div>
+
+      {/* TAMPILAN KHUSUS DOKUMEN DITOLAK (Catatan Revisi dari Verifikator & Form Penjelasan Perbaikan PPK) */}
+      {initialData && (initialData.status === "dikembalikan" || initialData.status === "ditolak" || Boolean(initialData.catatan_revisi)) && (
+        <div className="bg-white rounded-2xl border border-rose-200 shadow-xs p-6 md:p-7 space-y-4 animate-in fade-in duration-200">
+          {/* Card Catatan Revisi dari Verifikator Biro 01 */}
+          <div className="p-4 bg-gradient-to-r from-rose-50/90 to-red-50/90 border border-rose-200 rounded-xl text-rose-900 shadow-2xs">
+            <div className="flex items-center gap-2 font-black text-xs text-rose-900 uppercase tracking-wider mb-1">
+              <span className="p-1 rounded-full bg-rose-200/80 text-rose-700">!</span>
+              <span>CATATAN REVISI DARI VERIFIKATOR BIRO 01:</span>
+            </div>
+            <div className="text-xs font-semibold text-rose-800 leading-relaxed bg-white/80 p-3 rounded-lg border border-rose-200/80 mt-2">
+              {initialData.catatan_revisi || "masih kurang"}
+            </div>
+          </div>
+
+          {/* Form Penjelasan Catatan Perbaikan PPK */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                <span>Penjelasan Catatan Perbaikan PPK</span>
+                <span className="text-rose-500 font-bold">*Wajib Diisi</span>
+              </label>
+              <span className="text-[10px] text-slate-400 font-medium">Minimal 5 karakter</span>
+            </div>
+            <textarea
+              rows={3}
+              placeholder="Contoh: Faktur pajak nomor 019283 telah diperbaiki stempelnya, kuitansi materai telah diunggah ulang..."
+              value={catatanPerbaikan}
+              onChange={(e) => {
+                setCatatanPerbaikan(e.target.value);
+                if (formErrors.catatan_perbaikan) {
+                  setFormErrors((prev) => ({ ...prev, catatan_perbaikan: undefined }));
+                }
+              }}
+              className={`w-full px-4 py-3 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 text-xs font-medium leading-relaxed transition ${
+                formErrors.catatan_perbaikan
+                  ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
+                  : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
+              }`}
+            />
+            {formErrors.catatan_perbaikan && (
+              <p className="text-[11px] text-red-500 font-semibold mt-1">
+                {formErrors.catatan_perbaikan}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 1. CARD SECTION DATA DOKUMEN (Sesuai Gambar 1) */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 md:p-8">
@@ -508,6 +593,86 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             )}
           </div>
 
+          {/* Kategori Pengadaan: Searchable Select */}
+          <div className="relative">
+            <label className="block font-bold text-slate-700 mb-1.5">
+              Kategori Pengadaan <span className="text-red-500">*</span>
+            </label>
+            <div
+              onClick={() => setIsKategoriPengadaanOpen(!isKategoriPengadaanOpen)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 bg-white cursor-pointer flex items-center justify-between font-medium transition hover:border-slate-300"
+            >
+              <span className={kategoriPengadaan ? "text-slate-900 font-semibold" : "text-slate-400"}>
+                {kategoriPengadaan || "Pilih kategori pengadaan..."}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isKategoriPengadaanOpen ? "rotate-180" : ""}`} />
+            </div>
+
+            {/* Popover Dropdown Searchable Select Kategori Pengadaan */}
+            {isKategoriPengadaanOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsKategoriPengadaanOpen(false)}
+                />
+                <div className="absolute left-0 right-0 mt-1.5 rounded-xl bg-white shadow-xl border border-slate-200/90 z-50 p-2 text-xs animate-in fade-in duration-100">
+                  <div className="relative mb-2">
+                    <Search className="h-3.5 w-3.5 absolute left-3 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="Cari Pengadaan / Harwat..."
+                      value={kategoriPengadaanSearch}
+                      onChange={(e) => setKategoriPengadaanSearch(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:border-blue-500 focus:bg-white font-medium"
+                    />
+                  </div>
+
+                  <div className="max-h-52 overflow-y-auto space-y-0.5">
+                    {filteredKategoriPengadaanOptions.length === 0 ? (
+                      <div className="py-3 text-center text-slate-400 text-[11px]">
+                        Tidak ada opsi yang cocok.
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setKategoriPengadaan(kategoriPengadaanSearch.trim());
+                            setIsKategoriPengadaanOpen(false);
+                            setKategoriPengadaanSearch("");
+                          }}
+                          className="block mx-auto mt-1 font-bold text-blue-600 hover:underline"
+                        >
+                          Gunakan "{kategoriPengadaanSearch.trim()}"
+                        </button>
+                      </div>
+                    ) : (
+                      filteredKategoriPengadaanOptions.map((opt) => (
+                        <div
+                          key={opt}
+                          onClick={() => {
+                            setKategoriPengadaan(opt);
+                            setIsKategoriPengadaanOpen(false);
+                            setKategoriPengadaanSearch("");
+                          }}
+                          className={`px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-between font-semibold ${
+                            kategoriPengadaan === opt
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          <span>{opt}</span>
+                          {kategoriPengadaan === opt && (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <div>
             <label className="block font-bold text-slate-700 mb-1.5">
               Perihal <span className="text-red-500">*</span>
@@ -538,19 +703,14 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             <label className="block font-bold text-slate-700 mb-1.5">
               Tanggal Dokumen <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              placeholder="Pilih tanggal dokumen..."
+            <DatePicker
               value={tanggalDokumen}
-              onChange={(e) => {
-                setTanggalDokumen(e.target.value);
+              onChange={(dateStr) => {
+                setTanggalDokumen(dateStr);
                 if (formErrors.tanggal_dokumen) setFormErrors((prev) => ({ ...prev, tanggal_dokumen: undefined }));
               }}
-              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-slate-700 focus:outline-none focus:ring-1 font-medium transition ${
-                formErrors.tanggal_dokumen
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                  : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
-              }`}
+              placeholder="Pilih tanggal dokumen..."
+              hasError={Boolean(formErrors.tanggal_dokumen)}
             />
             {formErrors.tanggal_dokumen && (
               <p className="text-[11px] text-red-500 font-semibold mt-1">
@@ -563,19 +723,14 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             <label className="block font-bold text-slate-700 mb-1.5">
               Tanggal Diterima <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              placeholder="Pilih tanggal diterima..."
+            <DatePicker
               value={tanggalDiterima}
-              onChange={(e) => {
-                setTanggalDiterima(e.target.value);
+              onChange={(dateStr) => {
+                setTanggalDiterima(dateStr);
                 if (formErrors.tanggal_diterima) setFormErrors((prev) => ({ ...prev, tanggal_diterima: undefined }));
               }}
-              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-slate-700 focus:outline-none focus:ring-1 font-medium transition ${
-                formErrors.tanggal_diterima
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                  : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
-              }`}
+              placeholder="Pilih tanggal diterima..."
+              hasError={Boolean(formErrors.tanggal_diterima)}
             />
             {formErrors.tanggal_diterima && (
               <p className="text-[11px] text-red-500 font-semibold mt-1">
@@ -851,18 +1006,13 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                   <label className="block font-bold text-slate-700 mb-1">
                     Tanggal Dokumen <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="date"
-                    placeholder="Pilih tanggal..."
+                  <DatePicker
                     value={item.tanggal}
-                    onChange={(e) =>
-                      handleUpdateDocField(item.id, "tanggal", e.target.value)
+                    onChange={(dateStr) =>
+                      handleUpdateDocField(item.id, "tanggal", dateStr)
                     }
-                    className={`w-full px-3 py-2 rounded-xl border bg-white text-slate-700 focus:outline-none focus:ring-1 font-medium transition ${
-                      formErrors.supporting_doc_items?.[item.id]?.tanggal
-                        ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                        : "border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                    }`}
+                    placeholder="Pilih tanggal..."
+                    hasError={Boolean(formErrors.supporting_doc_items?.[item.id]?.tanggal)}
                   />
                   {formErrors.supporting_doc_items?.[item.id]?.tanggal && (
                     <p className="text-[10px] text-red-500 font-semibold mt-1">
@@ -943,7 +1093,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         <button
           type="button"
           disabled={loading}
-          onClick={() => handleSubmitForm("menunggu_verifikasi")}
+          onClick={() => handleSubmitForm("draft")}
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition cursor-pointer disabled:opacity-50"
         >
           <CheckCircle2 className="h-4 w-4" />
@@ -951,49 +1101,17 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         </button>
       </div>
 
-      {/* Dialog Konfirmasi Hapus Dokumen Pendukung dari Database Backend */}
-      {Boolean(docToDeleteItem) && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center gap-3 mb-3 text-rose-600">
-              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100">
-                <Trash2 className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base text-slate-900">Hapus dari Database</h3>
-                <p className="text-xs text-slate-500 font-semibold">
-                  {docToDeleteItem?.jenis_dokumen || "Dokumen Pendukung"}
-                  {docToDeleteItem?.nomor_dokumen ? ` (${docToDeleteItem.nomor_dokumen})` : ""}
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-              Berkas lampiran ini telah tersimpan di database backend. Apakah Anda yakin ingin menghapus data dokumen pendukung ini secara permanen dari database?
-            </p>
-
-            <div className="flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setDocToDeleteItem(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer"
-              >
-                Batal
-              </button>
-
-              <button
-                type="button"
-                disabled={isDeletingFromDb}
-                onClick={confirmDeleteSupportingDoc}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition cursor-pointer disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>{isDeletingFromDb ? "Menghapus..." : "Ya"}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* AlertDialog Konfirmasi Hapus Dokumen Pendukung dari Database Backend */}
+      <AlertDialog
+        isOpen={Boolean(docToDeleteItem)}
+        title="Hapus Dokumen Pendukung dari Database"
+        description={`Berkas "${docToDeleteItem?.jenis_dokumen || "Dokumen Pendukung"}${docToDeleteItem?.nomor_dokumen ? ` (${docToDeleteItem.nomor_dokumen})` : ""}" telah tersimpan di database. Apakah Anda yakin ingin menghapus berkas ini secara permanen dari database?`}
+        confirmText={isDeletingFromDb ? "Menghapus..." : "Ya, Hapus Permanen"}
+        cancelText="Batal"
+        variant="danger"
+        onConfirm={confirmDeleteSupportingDoc}
+        onCancel={() => setDocToDeleteItem(null)}
+      />
 
       {/* AlertDialog Validasi Form */}
       <AlertDialog

@@ -167,13 +167,19 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       setLoading(true);
       const [resDocs, resStats, resAudit, resUsers] = await Promise.all([
-        sipanduApi.getDocuments(),
+        sipanduApi.getDocuments({ user_role: currentUser?.role }),
         sipanduApi.getStats(),
         sipanduApi.getAuditTrail(),
         sipanduApi.getUsers(),
       ]);
 
-      if (resDocs.success) setDocuments(resDocs.data);
+      if (resDocs.success) {
+        if (Array.isArray(resDocs.data)) {
+          setDocuments(resDocs.data);
+        } else if (resDocs.data && Array.isArray(resDocs.data.documents)) {
+          setDocuments(resDocs.data.documents);
+        }
+      }
       if (resStats.success) setStats(resStats.data);
       if (resAudit.success) {
         setAuditLogs(Array.isArray(resAudit.data) ? resAudit.data : resAudit.data.logs || []);
@@ -184,7 +190,7 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, currentUser]);
 
   useEffect(() => {
     if (currentUser) {
@@ -269,8 +275,8 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
 
         // Fallback dari daftar status dokumen yang aktif menunggu tindakan verifikasi
         documents.forEach((doc) => {
-          if (doc.status === "menunggu_verifikasi") {
-            const id = `biro-doc-mv-${doc.id}`;
+          if (doc.status === "submit_dokumen" || doc.status === "menunggu_verifikasi") {
+            const id = `biro-doc-submit-${doc.id}`;
             if (!roleNotifList.some((n) => n.id === id || (n.document_id === doc.id && n.type === "new_submission"))) {
               roleNotifList.push({
                 id,
@@ -278,9 +284,9 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
                 nomor_surat: doc.nomor_surat,
                 perihal: doc.perihal || doc.nama_kegiatan,
                 title: "Daftar Dokumen Baru Masuk",
-                message: `Dokumen ${doc.nomor_surat} (${doc.jenis_dokumen || doc.kategori || "SPP/SPM"}) baru dikirim dan menunggu verifikasi.`,
+                message: `Dokumen ${doc.nomor_surat} (${doc.jenis_dokumen || doc.kategori || "SPP/SPM"}) baru saja disubmit dan menunggu verifikasi.`,
                 type: "new_submission",
-                timestamp: doc.created_at || doc.tanggal_diterima || new Date().toISOString(),
+                timestamp: doc.updated_at || doc.created_at || new Date().toISOString(),
                 read: readMap.get(id) ?? false,
                 target_role: "biro_01",
               });
@@ -492,6 +498,39 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
   const openDetailModal = (doc: PaymentDocument) => {
     setSelectedDoc(doc);
     setShowDetailModal(true);
+
+    // Jika yang membuka adalah Biro 01 dan statusnya masih 'submit_dokumen', 'menunggu_verifikasi', atau 'menunggu_verifikasi_ulang', otomatis update ke 'review'
+    if (
+      currentUser?.role === "biro_01" &&
+      (doc.status === "submit_dokumen" || doc.status === "menunggu_verifikasi" || doc.status === "menunggu_verifikasi_ulang")
+    ) {
+      // Optimistic update status ke 'review' langsung di state
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === doc.id
+            ? { ...d, status: "review", legend_status: "Review", legend_color: "blue" }
+            : d
+        )
+      );
+      setSelectedDoc((prev) =>
+        prev && prev.id === doc.id
+          ? { ...prev, status: "review", legend_status: "Review", legend_color: "blue" }
+          : prev
+      );
+
+      sipanduApi.markAsReview(doc.id, {
+        user_name: currentUser.full_name,
+        user_role: currentUser.role,
+      }).then((res) => {
+        if (res.success && res.data) {
+          const updated = res.data;
+          setDocuments((prev) =>
+            prev.map((d) => (d.id === doc.id ? { ...d, ...updated } : d))
+          );
+          setSelectedDoc((prev) => (prev && prev.id === doc.id ? { ...prev, ...updated } : prev));
+        }
+      }).catch(() => {});
+    }
   };
 
   const closeModals = () => {
@@ -510,7 +549,7 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
       const res = await sipanduApi.createDocument(formData);
       if (res.success) {
-        addToast("success", "Pengajuan Berhasil", "Dokumen dan berkas berhasil disimpan dan diajukan ke Biro 01!");
+        addToast("success", "Dokumen Berhasil Dibuat", "Dokumen berhasil disimpan sebagai draft. Silakan lengkapi berkas di menu Dokumen Pendukung.");
         await fetchAllData();
         return true;
       } else {
@@ -583,9 +622,9 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
       });
       if (res.success) {
         if (action === "approve") {
-          addToast("success", "Dokumen Disetujui", "Dokumen telah diverifikasi dan berstatus Lengkap / Valid!");
+          addToast("success", "Dokumen Disetujui", "Dokumen telah diverifikasi dan berstatus Disetujui!");
         } else {
-          addToast("warning", "Dokumen Dikembalikan", "Dokumen dikembalikan ke PPK dengan catatan revisi.");
+          addToast("warning", "Dokumen Ditolak", "Dokumen telah ditolak dan dikembalikan ke PPK untuk diperbaiki.");
         }
         setShowVerifyModal(false);
         await fetchAllData();
@@ -611,7 +650,7 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       const res = await sipanduApi.reviseDocument(selectedDoc.id, formData);
       if (res.success) {
-        addToast("success", "Revisi Terkirim", "Berkas revisi berhasil diunggah dan dikirim ulang ke Biro 01!");
+        addToast("success", "Pengajuan Ulang Berhasil", "Dokumen telah diajukan ulang ke Biro 01 Keuangan!");
         setShowRevisiModal(false);
         await fetchAllData();
         return true;

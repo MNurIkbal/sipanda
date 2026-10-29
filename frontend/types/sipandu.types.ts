@@ -32,8 +32,8 @@ export interface PaymentDocument {
   nilai_pembayaran: number;
   tanggal_pengajuan: string;
 
-  // New fields matching the user's screenshot
   jenis_dokumen?: string;
+  kategori_pengadaan?: "Pengadaan Barang / Jasa" | "Harwat(Harian Rawat)" | string;
   perihal?: string;
   tanggal_dokumen?: string | null;
   tanggal_diterima?: string;
@@ -41,6 +41,10 @@ export interface PaymentDocument {
   keterangan?: string;
 
   status: string;
+  bast_generated?: boolean;
+  bap_generated?: boolean;
+  bapp_generated?: boolean;
+  official_docs_data?: Record<string, any>;
   catatan_revisi?: string;
   catatan_verifikasi?: string;
   tanggal_verifikasi?: string | null;

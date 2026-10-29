@@ -14,6 +14,7 @@ export interface SupportingDocumentInput {
 export interface DocumentFormInput {
   nomor_surat: string;
   jenis_dokumen: string;
+  kategori_pengadaan?: string;
   perihal: string;
   tanggal_dokumen: string;
   tanggal_diterima: string;
@@ -24,6 +25,8 @@ export interface DocumentFormInput {
   keterangan?: string;
   supporting_docs?: SupportingDocumentInput[];
   is_edit_mode?: boolean;
+  is_rejected?: boolean;
+  catatan_perbaikan?: string;
 }
 
 export interface SupportingDocItemError {
@@ -44,6 +47,7 @@ export interface DocumentValidationError {
   ppk_name?: string;
   nilai_pembayaran?: string;
   keterangan?: string;
+  catatan_perbaikan?: string;
   supporting_docs?: string;
   supporting_doc_items?: Record<string, SupportingDocItemError>;
 }
@@ -278,6 +282,15 @@ export const documentValidationSchema = {
 
     const ketErr = documentValidationSchema.validateKeterangan(data.keterangan);
     if (ketErr) errors.keterangan = ketErr;
+
+    // Jika status dokumen ditolak (dikembalikan / revisi), Penjelasan Catatan Perbaikan PPK wajib diisi minimal 5 karakter
+    if (data.is_rejected) {
+      if (!data.catatan_perbaikan || !data.catatan_perbaikan.trim()) {
+        errors.catatan_perbaikan = "Penjelasan Catatan Perbaikan PPK wajib diisi jika dokumen direvisi/ditolak!";
+      } else if (data.catatan_perbaikan.trim().length < 5) {
+        errors.catatan_perbaikan = "Penjelasan Catatan Perbaikan PPK minimal 5 karakter!";
+      }
+    }
 
     const requireFile = status === "menunggu_verifikasi";
     const docsValidation = documentValidationSchema.validateSupportingDocs(

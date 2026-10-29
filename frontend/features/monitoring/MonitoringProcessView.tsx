@@ -17,7 +17,7 @@ interface MonitoringProcessViewProps {
   currentUser?: User | null;
 }
 
-// 8 Tahapan standar timeline proses pembayaran
+// 8 Tahapan standar kartu monitoring proses pembayaran
 export const TIMELINE_STEPS = [
   { key: "diterima", label: "Dokumen Diterima" },
   { key: "terdaftar", label: "Terdaftar" },
@@ -29,34 +29,114 @@ export const TIMELINE_STEPS = [
   { key: "dana_cair", label: "Dana Cair" },
 ];
 
-// Helper menentukan tahapan aktif (0 sampai 7) berdasarkan status dokumen
 export const getActiveStepIndex = (status: string): number => {
   switch (status) {
     case "draft":
-      return 0; // Dokumen Diterima
+      return 0;
+    case "submit_dokumen":
     case "menunggu_verifikasi":
-      return 1; // Terdaftar
+      return 1;
+    case "review":
     case "diverifikasi":
     case "sedang_diverifikasi":
     case "dikembalikan":
+    case "ditolak":
     case "menunggu_verifikasi_ulang":
-      return 2; // Diverifikasi
+    case "pengajuan_ulang":
+      return 2;
     case "lengkap":
     case "valid":
     case "lengkap_valid":
-      return 3; // Lengkap / Valid
+    case "disetujui":
+      return 3;
     case "proses":
     case "sedang_diproses":
-      return 4; // Sedang Diproses
+      return 4;
     case "kppn":
     case "pengajuan_kppn":
-      return 5; // Pengajuan ke KPPN
+      return 5;
     case "menunggu_pencairan":
-      return 6; // Menunggu Pencairan
+      return 6;
     case "dana_cair":
     case "selesai":
     case "siap_digunakan":
-      return 7; // Dana Cair
+      return 7;
+    default:
+      return 1;
+  }
+};
+
+// Helper menghasilkan tahapan timeline dinamis untuk dokumen yang dipilih
+export const getDocumentTimelineSteps = (doc: PaymentDocument) => {
+  const isRejected = doc.status === "dikembalikan" || doc.status === "ditolak";
+  const isPengajuanUlang = doc.status === "menunggu_verifikasi_ulang" || doc.status === "pengajuan_ulang";
+  const hasEverBeenRejected = isRejected || isPengajuanUlang;
+  const hasEverBeenResubmitted = isPengajuanUlang;
+
+  const steps = [
+    { key: "diterima", label: "Dokumen Diterima" },
+    { key: "terdaftar", label: "Terdaftar" },
+    { key: "diverifikasi", label: "Diverifikasi (Review)" },
+  ];
+
+  if (hasEverBeenRejected) {
+    steps.push({ key: "ditolak", label: "Ditolak (Perlu Revisi)", isDanger: true } as any);
+  }
+
+  if (hasEverBeenResubmitted) {
+    steps.push({ key: "pengajuan_ulang", label: "Pengajuan Ulang PPK", isWarning: true } as any);
+    if (doc.status === "review" || doc.status === "lengkap_valid" || doc.status === "dana_cair") {
+      steps.push({ key: "review_ulang", label: "Review Pengajuan Ulang" } as any);
+    }
+  }
+
+  steps.push(
+    { key: "lengkap_valid", label: "Lengkap / Valid (Disetujui)" },
+    { key: "sedang_diproses", label: "Sedang Diproses" },
+    { key: "pengajuan_kppn", label: "Pengajuan ke KPPN" },
+    { key: "menunggu_pencairan", label: "Menunggu Pencairan" },
+    { key: "dana_cair", label: "Dana Cair" }
+  );
+
+  return steps;
+};
+
+// Helper menentukan tahapan aktif berdasarkan status dokumen dan steps dinamis
+export const getActiveDocStepIndex = (status: string, steps: any[]): number => {
+  switch (status) {
+    case "draft":
+      return steps.findIndex((s) => s.key === "diterima");
+    case "submit_dokumen":
+    case "menunggu_verifikasi":
+      return steps.findIndex((s) => s.key === "terdaftar");
+    case "review":
+    case "sedang_diverifikasi": {
+      const idxReviewUlang = steps.findIndex((s) => s.key === "review_ulang");
+      return idxReviewUlang !== -1 ? idxReviewUlang : steps.findIndex((s) => s.key === "diverifikasi");
+    }
+    case "dikembalikan":
+    case "ditolak":
+      return steps.findIndex((s) => s.key === "ditolak");
+    case "menunggu_verifikasi_ulang":
+    case "pengajuan_ulang":
+      return steps.findIndex((s) => s.key === "pengajuan_ulang");
+    case "lengkap":
+    case "valid":
+    case "lengkap_valid":
+    case "disetujui":
+      return steps.findIndex((s) => s.key === "lengkap_valid");
+    case "proses":
+    case "sedang_diproses":
+      return steps.findIndex((s) => s.key === "sedang_diproses");
+    case "kppn":
+    case "pengajuan_kppn":
+      return steps.findIndex((s) => s.key === "pengajuan_kppn");
+    case "menunggu_pencairan":
+      return steps.findIndex((s) => s.key === "menunggu_pencairan");
+    case "dana_cair":
+    case "selesai":
+    case "siap_digunakan":
+      return steps.findIndex((s) => s.key === "dana_cair");
     default:
       return 1;
   }
@@ -175,7 +255,11 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
     return documents.find((d) => d.id === selectedDocId) || paginatedDocuments[0] || null;
   }, [documents, selectedDocId, paginatedDocuments]);
 
-  const activeDocStepIndex = activeDoc ? getActiveStepIndex(activeDoc.status) : 0;
+  const activeDocTimelineSteps = useMemo(() => {
+    return activeDoc ? getDocumentTimelineSteps(activeDoc) : [];
+  }, [activeDoc]);
+
+  const activeDocStepIndex = activeDoc ? getActiveDocStepIndex(activeDoc.status, activeDocTimelineSteps) : 0;
 
   return (
     <div className="space-y-6">
@@ -419,17 +503,21 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
 
                 {/* Vertical Stepper Timeline Steps */}
                 <div className="relative mt-6 pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-3 before:w-[2px] before:bg-slate-100">
-                  {TIMELINE_STEPS.map((step, idx) => {
+                  {activeDocTimelineSteps.map((step, idx) => {
                     const isPassed = idx < activeDocStepIndex;
                     const isCurrent = idx === activeDocStepIndex;
                     
                     let stepDate: string | null = null;
-                    if (idx === 0) {
+                    if (step.key === "diterima") {
                       stepDate = formatDateID(activeDoc.tanggal_diterima || activeDoc.created_at, { format: "numeric" });
-                    } else if (idx === 1) {
+                    } else if (step.key === "terdaftar") {
                       stepDate = formatDateTimeID(activeDoc.created_at, { format: "numeric" });
-                    } else if (idx === 2 && activeDoc.tanggal_verifikasi) {
-                      stepDate = formatDateTimeID(activeDoc.tanggal_verifikasi, { format: "numeric" });
+                    } else if (step.key === "diverifikasi" || step.key === "ditolak") {
+                      stepDate = activeDoc.tanggal_verifikasi
+                        ? formatDateTimeID(activeDoc.tanggal_verifikasi, { format: "numeric" })
+                        : activeDoc.updated_at
+                        ? formatDateTimeID(activeDoc.updated_at, { format: "numeric" })
+                        : null;
                     } else if (idx <= activeDocStepIndex && activeDoc.updated_at) {
                       stepDate = formatDateTimeID(activeDoc.updated_at, { format: "numeric" });
                     }
@@ -443,9 +531,19 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
                               <CheckCircle2 className="h-5 w-5 fill-emerald-50 text-emerald-600" />
                             </div>
                           ) : isCurrent ? (
-                            <div className="w-5 h-5 rounded-full border-2 border-blue-600 bg-white flex items-center justify-center">
-                              <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                            </div>
+                            (step as any).isDanger ? (
+                              <div className="w-5 h-5 rounded-full border-2 border-rose-600 bg-white flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
+                              </div>
+                            ) : (step as any).isWarning ? (
+                              <div className="w-5 h-5 rounded-full border-2 border-orange-500 bg-white flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border-2 border-blue-600 bg-white flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                              </div>
+                            )
                           ) : (
                             <div className="w-5 h-5 rounded-full border-2 border-slate-200 bg-white" />
                           )}
@@ -456,7 +554,11 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
                           <p
                             className={`text-xs ${
                               isCurrent
-                                ? "text-slate-900 font-bold"
+                                ? (step as any).isDanger
+                                  ? "text-rose-600 font-bold"
+                                  : (step as any).isWarning
+                                  ? "text-orange-600 font-bold"
+                                  : "text-blue-600 font-bold"
                                 : isPassed
                                 ? "text-slate-800 font-semibold"
                                 : "text-slate-400 font-normal"

@@ -24,6 +24,11 @@ function EditDocumentContent() {
     // Cari dari cache context terlebih dahulu
     const found = documents.find((d) => d.id === docId);
     if (found) {
+      if (found.status !== "draft" && found.status !== "dikembalikan" && found.status !== "ditolak") {
+        addToast("warning", "Dokumen Terkunci", `Dokumen ${found.nomor_surat} berstatus "${found.legend_status || found.status}" dan tidak dapat diedit.`);
+        router.push("/documents");
+        return;
+      }
       setDocumentData(found);
       setFetchingDoc(false);
     } else {
@@ -34,6 +39,11 @@ function EditDocumentContent() {
           if (res.success) {
             const doc = res.data.find((d: PaymentDocument) => d.id === docId);
             if (doc) {
+              if (doc.status !== "draft" && doc.status !== "dikembalikan" && doc.status !== "ditolak") {
+                addToast("warning", "Dokumen Terkunci", `Dokumen ${doc.nomor_surat} berstatus "${doc.legend_status || doc.status}" dan tidak dapat diedit.`);
+                router.push("/documents");
+                return;
+              }
               setDocumentData(doc);
             } else {
               addToast("error", "Dokumen Tidak Ditemukan", `ID #${docId} tidak ada di database.`);
