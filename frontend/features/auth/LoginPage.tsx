@@ -171,16 +171,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
       {/* Main Container: Slider Gambar Full di KIRI (7 Cols), Form di KANAN (5 Cols) */}
       <div className="w-full max-w-7xl relative z-10 bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 shadow-[0_25px_70px_-15px_rgba(15,23,42,0.12),0_0_35px_rgba(59,130,246,0.08)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[700px]">
-        
+
         {/* LEFT COLUMN: Full Background Image Slider Showcase (Lg: 7 cols) */}
         <div className="relative hidden lg:flex lg:col-span-7 flex-col justify-between p-8 xl:p-12 overflow-hidden order-2 lg:order-1 border-r border-slate-200">
           {/* Full Background Slider Images */}
           {LIGHT_SLIDES.map((slide, idx) => (
             <div
               key={idx}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                idx === currentSlide ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
-              }`}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentSlide ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+                }`}
               style={{
                 transitionProperty: "opacity, transform",
                 transitionDuration: "1000ms",
@@ -227,11 +226,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     key={i}
                     type="button"
                     onClick={() => setCurrentSlide(i)}
-                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      i === currentSlide
+                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${i === currentSlide
                         ? "w-8 bg-white shadow-md"
                         : "w-2.5 bg-white/40 hover:bg-white/70"
-                    }`}
+                      }`}
                     aria-label={`Slide ${i + 1}`}
                   />
                 ))}
@@ -263,7 +261,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
         {/* RIGHT COLUMN: Clean Login Form (Lg: 5 cols) */}
         <div className="col-span-1 lg:col-span-5 p-8 sm:p-12 xl:p-14 flex flex-col justify-between bg-white order-1 lg:order-2">
-          
+
           <div className="w-full max-w-md mx-auto my-auto">
             {/* Header Brand Logo & Name */}
             <div className="flex items-center gap-3 mb-8">
@@ -275,7 +273,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   SIPANDA
                 </h1>
                 <p className="text-xs text-slate-500 font-medium mt-1">
-                  Sistem Informasi Pengelolaan Dokumen Pembayaran
+                  Sistem Informasi Pengelolaan Monitoring Dokumen Pembayaran
                 </p>
               </div>
             </div>
@@ -316,11 +314,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                       if (errorMsg) setErrorMsg("");
                     }}
                     placeholder="nama@example.com"
-                    className={`w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white font-semibold transition shadow-2xs ${
-                      formErrors.email
+                    className={`w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white font-semibold transition shadow-2xs ${formErrors.email
                         ? "border-rose-400 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/10 bg-rose-50/20"
                         : "border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
-                    }`}
+                      }`}
                   />
                 </div>
                 {formErrors.email && (
@@ -359,11 +356,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                       if (errorMsg) setErrorMsg("");
                     }}
                     placeholder="••••••••"
-                    className={`w-full pl-11 pr-11 py-3 rounded-xl bg-slate-50 border text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white font-semibold transition shadow-2xs ${
-                      formErrors.password
+                    className={`w-full pl-11 pr-11 py-3 rounded-xl bg-slate-50 border text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white font-semibold transition shadow-2xs ${formErrors.password
                         ? "border-rose-400 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/10 bg-rose-50/20"
                         : "border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
-                    }`}
+                      }`}
                   />
                   <button
                     type="button"
@@ -404,7 +400,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
 
           <div className="text-center pt-6 text-xs text-slate-400">
-            &copy; {new Date().getFullYear()} SIPANDA 
+            &copy; {new Date().getFullYear()} SIPANDA
           </div>
 
         </div>
@@ -415,7 +411,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       {isForgotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-150 text-slate-800">
-            
+
             {/* Header Modal */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">

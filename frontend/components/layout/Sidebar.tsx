@@ -176,9 +176,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
               <div className="text-base font-black text-white tracking-tight leading-tight">
                 SIPANDA
               </div>
-              <div className="text-[10px] text-slate-400 font-medium truncate">
-                Sistem Dokumen Pembayaran
-              </div>
             </div>
           </Link>
 

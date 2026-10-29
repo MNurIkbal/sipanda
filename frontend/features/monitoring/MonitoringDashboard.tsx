@@ -63,48 +63,68 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
     }
   };
 
-  // Hitung metrik real-time dari daftar dokumen & stats
-  const totalDocs = stats?.total || documents.length || 0;
+  // Hitung metrik real-time langsung dari daftar dokumen (selaras 100% dengan Timeline Proses di Detail Dokumen)
+  const totalDocs = documents.length || stats?.total || 0;
   const draftCount = documents.filter((d) => d.status === "draft").length;
   const submitCount = documents.filter(
     (d) => d.status === "submit_dokumen" || d.status === "menunggu_verifikasi"
   ).length;
-  const reviewCount = documents.filter((d) => d.status === "review").length;
-  const resubmittedCount = documents.filter(
-    (d) => d.status === "menunggu_verifikasi_ulang"
+  const reviewCount = documents.filter(
+    (d) => d.status === "review" || d.status === "sedang_diverifikasi"
   ).length;
-  const rejectedCount =
-    stats?.dikembalikan ??
-    documents.filter((d) => d.status === "dikembalikan" || d.status === "ditolak").length;
-  const approvedCount =
-    (stats?.lengkapValid || 0) +
-    (stats?.sedangDiproses || 0) +
-    (stats?.pengajuanKPPN || 0) +
-    (stats?.menungguPencairan || 0) +
-    (stats?.danaCair || 0);
+  const resubmittedCount = documents.filter(
+    (d) => d.status === "menunggu_verifikasi_ulang" || d.status === "pengajuan_ulang"
+  ).length;
+  const rejectedCount = documents.filter(
+    (d) => d.status === "dikembalikan" || d.status === "ditolak"
+  ).length;
+  const approvedCount = documents.filter((d) =>
+    [
+      "lengkap_valid",
+      "disetujui",
+      "sedang_diproses",
+      "pengajuan_kppn",
+      "menunggu_pencairan",
+      "dana_cair",
+      "selesai",
+    ].includes(d.status)
+  ).length;
 
-  const waitingVerificationTotal =
-    stats?.menunggu ?? submitCount + reviewCount + resubmittedCount;
+  const waitingVerificationTotal = submitCount + reviewCount + resubmittedCount;
 
-  // Hitung rekap nilai nominal berdasarkan kelompok status
+  // Hitung rekap nilai nominal berdasarkan kelompok status timeline
+  const totalNilaiKeseluruhan =
+    documents.reduce((acc, cur) => acc + (Number(cur.nilai_pembayaran) || 0), 0) ||
+    stats?.totalNilai ||
+    0;
+
+  const totalNilaiDraft = documents
+    .filter((d) => d.status === "draft")
+    .reduce((acc, cur) => acc + (Number(cur.nilai_pembayaran) || 0), 0);
+
+  const totalNilaiSubmit = documents
+    .filter((d) => ["submit_dokumen", "menunggu_verifikasi"].includes(d.status))
+    .reduce((acc, cur) => acc + (Number(cur.nilai_pembayaran) || 0), 0);
+
+  const totalNilaiReview = documents
+    .filter((d) => ["review", "sedang_diverifikasi"].includes(d.status))
+    .reduce((acc, cur) => acc + (Number(cur.nilai_pembayaran) || 0), 0);
+
+  const totalNilaiPengajuanUlang = documents
+    .filter((d) => ["menunggu_verifikasi_ulang", "pengajuan_ulang"].includes(d.status))
+    .reduce((acc, cur) => acc + (Number(cur.nilai_pembayaran) || 0), 0);
+
   const totalNilaiDisetujui = documents
     .filter((d) =>
       [
         "lengkap_valid",
+        "disetujui",
         "sedang_diproses",
         "pengajuan_kppn",
         "menunggu_pencairan",
         "dana_cair",
         "selesai",
       ].includes(d.status)
-    )
-    .reduce((acc, cur) => acc + (Number(cur.nilai_pembayaran) || 0), 0);
-
-  const totalNilaiProses = documents
-    .filter((d) =>
-      ["submit_dokumen", "menunggu_verifikasi", "review", "menunggu_verifikasi_ulang"].includes(
-        d.status
-      )
     )
     .reduce((acc, cur) => acc + (Number(cur.nilai_pembayaran) || 0), 0);
 
@@ -144,14 +164,6 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-bold text-cyan-200 shadow-inner">
-              <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
-              <span>SIPANDA Executive Command Center</span>
-              <span className="h-1 w-1 rounded-full bg-cyan-300"></span>
-              <span className="text-white/80 font-medium capitalize">
-                Role: {currentUser?.role?.replace("_", " ") || "User"}
-              </span>
-            </div>
 
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
               Selamat Datang,{" "}
@@ -200,144 +212,199 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                 </div>
               </div>
               <div className="text-xl sm:text-2xl font-black text-white mt-1.5 tracking-tight">
-                Rp {(stats?.totalNilai || 0).toLocaleString("id-ID")}
+                Rp {totalNilaiKeseluruhan.toLocaleString("id-ID")}
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-white/10">
                 <span>Tingkat Persetujuan</span>
-                <span className="font-extrabold text-emerald-300">{approvalRate}% Berkas Valid</span>
+                <span className="font-extrabold text-emerald-300">{approvalRate}% Disetujui</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. GRID KPI CARDS UTAMA */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Dokumen */}
+      {/* 2. GRID KPI CARDS UTAMA (6 Tahapan Lengkap: Draft -> Submit -> Review -> Ditolak -> Pengajuan Ulang -> Disetujui) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* Card 1: Draft Dokumen */}
         <div
           onClick={onNavigateToDocuments}
-          className="group relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 cursor-pointer"
+          className="group relative overflow-hidden rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 transition-all duration-300 cursor-pointer"
         >
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/15 transition-all"></div>
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-              Total Dokumen
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-slate-500/5 rounded-full blur-2xl group-hover:bg-slate-500/15 transition-all"></div>
+          <div className="flex items-center justify-between mb-2.5 relative z-10">
+            <span className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider">
+              1. Draft Dokumen
             </span>
-            <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-2xs">
-              <FileText className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-slate-700 group-hover:text-white transition-all duration-300 shadow-2xs">
+              <FileText className="h-4 w-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">
-              {totalDocs}
+          <div className="flex items-baseline gap-1.5 relative z-10">
+            <span className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-slate-700 transition-colors">
+              {draftCount}
             </span>
-            <span className="text-xs font-semibold text-slate-400">berkas terdaftar</span>
+            <span className="text-[11px] font-semibold text-slate-400">berkas draft</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 relative z-10">
-            <span className="flex items-center gap-1.5 font-medium">
-              <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-              Draft: <strong className="text-slate-700">{draftCount}</strong>
+          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 relative z-10">
+            <span className="flex items-center gap-1 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+              Total: <strong className="text-slate-700">{totalDocs}</strong>
             </span>
-            <span className="text-blue-600 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5">
-              Lihat Semua <ArrowUpRight className="h-3 w-3" />
+            <span className="text-blue-600 font-bold inline-flex items-center gap-0.5">
+              Detail <ArrowUpRight className="h-3 w-3" />
             </span>
           </div>
         </div>
 
-        {/* Card 2: Menunggu & Review Biro 01 */}
+        {/* Card 2: Submit Dokumen */}
         <div
           onClick={onNavigateToDocuments}
-          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50/60 via-white to-white p-5 border border-amber-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-amber-400 transition-all duration-300 cursor-pointer"
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50/60 via-white to-white p-4 border border-amber-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-amber-400 transition-all duration-300 cursor-pointer"
         >
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-xs font-extrabold text-amber-800 uppercase tracking-wider">
-              Antrean Verifikasi
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
+          <div className="flex items-center justify-between mb-2.5 relative z-10">
+            <span className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider">
+              2. Submit Dokumen
             </span>
-            <div className="h-10 w-10 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-2xs">
-              <Clock className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-2xs">
+              <Send className="h-4 w-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-black text-amber-600 tracking-tight">
-              {waitingVerificationTotal}
+          <div className="flex items-baseline gap-1.5 relative z-10">
+            <span className="text-2xl font-black text-amber-600 tracking-tight">
+              {submitCount}
             </span>
-            <span className="text-xs font-semibold text-amber-700/70">sedang diverifikasi</span>
+            <span className="text-[11px] font-semibold text-amber-700/70">disubmit</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-amber-100/80 flex items-center justify-between text-[11px] text-amber-800/80 relative z-10">
-            <span className="flex items-center gap-1.5 font-medium">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
-              Review: <strong>{reviewCount}</strong> • Ulang: <strong>{resubmittedCount}</strong>
+          <div className="mt-2.5 pt-2 border-t border-amber-100/80 flex items-center justify-between text-[10px] text-amber-800/80 relative z-10">
+            <span className="flex items-center gap-1 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+              Menunggu Review
             </span>
-            <span className="font-bold text-amber-700">Biro 01</span>
+            <span className="font-bold text-amber-700">PPK → Biro</span>
           </div>
         </div>
 
-        {/* Card 3: Ditolak / Perlu Perbaikan */}
+        {/* Card 3: Review (Biro 01) */}
         <div
           onClick={onNavigateToDocuments}
-          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-50/60 via-white to-white p-5 border border-rose-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-rose-400 transition-all duration-300 cursor-pointer"
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50/60 via-white to-white p-4 border border-blue-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-blue-400 transition-all duration-300 cursor-pointer"
         >
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all"></div>
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-xs font-extrabold text-rose-800 uppercase tracking-wider">
-              Ditolak / Revisi
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+          <div className="flex items-center justify-between mb-2.5 relative z-10">
+            <span className="text-[11px] font-extrabold text-blue-800 uppercase tracking-wider">
+              3. Review (Biro 01)
             </span>
-            <div className="h-10 w-10 rounded-xl bg-rose-100/80 text-rose-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 shadow-2xs">
-              <RotateCcw className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-2xs">
+              <Clock className="h-4 w-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-black text-rose-600 tracking-tight">
+          <div className="flex items-baseline gap-1.5 relative z-10">
+            <span className="text-2xl font-black text-blue-600 tracking-tight">
+              {reviewCount}
+            </span>
+            <span className="text-[11px] font-semibold text-blue-700/70">sedang direview</span>
+          </div>
+          <div className="mt-2.5 pt-2 border-t border-blue-100/80 flex items-center justify-between text-[10px] text-blue-800/80 relative z-10">
+            <span className="flex items-center gap-1 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+              Pemeriksaan Berkas
+            </span>
+            <span className="font-bold text-blue-600">Biro 01</span>
+          </div>
+        </div>
+
+        {/* Card 4: Ditolak (Perlu Revisi) */}
+        <div
+          onClick={onNavigateToDocuments}
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-50/60 via-white to-white p-4 border border-rose-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-rose-400 transition-all duration-300 cursor-pointer"
+        >
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all"></div>
+          <div className="flex items-center justify-between mb-2.5 relative z-10">
+            <span className="text-[11px] font-extrabold text-rose-800 uppercase tracking-wider">
+              4. Ditolak
+            </span>
+            <div className="h-9 w-9 rounded-xl bg-rose-100/80 text-rose-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 shadow-2xs">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-1.5 relative z-10">
+            <span className="text-2xl font-black text-rose-600 tracking-tight">
               {rejectedCount}
             </span>
-            <span className="text-xs font-semibold text-rose-700/70">perlu revisi PPK</span>
+            <span className="text-[11px] font-semibold text-rose-700/70">perlu revisi</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-rose-100/80 flex items-center justify-between text-[11px] text-rose-700/80 relative z-10">
-            <span className="flex items-center gap-1.5 font-medium">
-              <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
-              Menunggu perbaikan berkas
+          <div className="mt-2.5 pt-2 border-t border-rose-100/80 flex items-center justify-between text-[10px] text-rose-800/80 relative z-10">
+            <span className="flex items-center gap-1 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+              Dikembalikan ke PPK
             </span>
-            <span className="font-bold text-rose-600">Action</span>
+            <span className="font-bold text-rose-600">Revisi</span>
           </div>
         </div>
 
-        {/* Card 4: Disetujui (Lengkap / Valid) */}
+        {/* Card 5: Pengajuan Ulang */}
         <div
           onClick={onNavigateToDocuments}
-          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 p-5 text-white shadow-lg shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50/60 via-white to-white p-4 border border-orange-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-orange-400 transition-all duration-300 cursor-pointer"
         >
-          <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-xs font-extrabold text-emerald-100 uppercase tracking-wider">
-              Disetujui / Valid
+          <div className="absolute -right-6 -top-6 w-20 h-20 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all"></div>
+          <div className="flex items-center justify-between mb-2.5 relative z-10">
+            <span className="text-[11px] font-extrabold text-orange-800 uppercase tracking-wider">
+              5. Pengajuan Ulang
             </span>
-            <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:text-emerald-600 transition-all duration-300 shadow-2xs">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-xl bg-orange-100/80 text-orange-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-2xs">
+              <RotateCcw className="h-4 w-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-black tracking-tight text-white">
+          <div className="flex items-baseline gap-1.5 relative z-10">
+            <span className="text-2xl font-black text-orange-600 tracking-tight">
+              {resubmittedCount}
+            </span>
+            <span className="text-[11px] font-semibold text-orange-700/70">diajukan ulang</span>
+          </div>
+          <div className="mt-2.5 pt-2 border-t border-orange-100/80 flex items-center justify-between text-[10px] text-orange-800/80 relative z-10">
+            <span className="flex items-center gap-1 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-500"></span>
+              Pasca Perbaikan PPK
+            </span>
+            <span className="font-bold text-orange-600">Verifikasi Ulang</span>
+          </div>
+        </div>
+
+        {/* Card 6: Disetujui */}
+        <div
+          onClick={onNavigateToDocuments}
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 p-4 text-white shadow-lg shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+        >
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
+          <div className="flex items-center justify-between mb-2.5 relative z-10">
+            <span className="text-[11px] font-extrabold text-emerald-100 uppercase tracking-wider">
+              6. Disetujui
+            </span>
+            <div className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:text-emerald-600 transition-all duration-300 shadow-2xs">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-1.5 relative z-10">
+            <span className="text-2xl font-black tracking-tight text-white">
               {approvedCount}
             </span>
-            <span className="text-xs font-medium text-emerald-100">berkas disetujui</span>
+            <span className="text-[11px] font-medium text-emerald-100">disetujui</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-white/15 flex items-center justify-between text-[11px] text-emerald-50 relative z-10 font-medium">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-200" />
-              Terverifikasi Biro 01
+          <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between text-[10px] text-emerald-50 relative z-10 font-medium">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="h-3 w-3 text-emerald-200" />
+              Lolos Verifikasi
             </span>
             <span className="font-bold text-white">{approvalRate}%</span>
           </div>
         </div>
       </div>
 
-      {/* 3. ANALITIK DISTRIBUSI STATUS & RINGKASAN REALISASI ANGGARAN (TANPA AGING) */}
+      {/* 3. ANALITIK DISTRIBUSI STATUS TIMELINE & RINGKASAN REALISASI ANGGARAN */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Panel Kiri (7 Kolom): Pipeline & Distribusi Status Berkas */}
+        {/* Panel Kiri (7 Kolom): Pipeline & Distribusi Status Berkas Sesuai Timeline Proses Lengkap */}
         <div className="lg:col-span-7 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
@@ -347,10 +414,10 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900">
-                    Alur &amp; Distribusi Status Dokumen
+                    Timeline &amp; Distribusi Status Dokumen
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Proporsi tahapan berkas pembayaran berdasarkan siklus verifikasi terkini
+                    Ringkasan tahapan dokumen mulai dari Draft, Submit, Review, Ditolak, Pengajuan Ulang, hingga Disetujui
                   </p>
                 </div>
               </div>
@@ -359,74 +426,128 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
               </span>
             </div>
 
-            <div className="mt-5 space-y-4 text-xs">
-              {/* Bar 1: Submit & Review Verifikasi */}
-              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-2 text-slate-700">
+            <div className="mt-4 space-y-2.5 text-xs">
+              {/* Bar 1: Draft Dokumen */}
+              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
                   <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
-                    <span>Submit Dokumen &amp; Sedang Direview Biro 01</span>
+                    <span className="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+                    <span>Draft Dokumen</span>
                   </span>
-                  <span className="font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">
-                    {waitingVerificationTotal} Berkas
+                  <span className="font-black text-slate-700 bg-white px-2.5 py-0.5 rounded-md border border-slate-200">
+                    {draftCount} Berkas
                   </span>
                 </div>
-                <div className="h-2.5 rounded-full bg-slate-200/80 overflow-hidden">
+                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-slate-400 to-slate-600 rounded-full transition-all duration-500"
                     style={{
-                      width: `${Math.min(
-                        100,
-                        (waitingVerificationTotal / Math.max(1, totalDocs)) * 100
-                      )}%`,
+                      width: `${Math.min(100, (draftCount / Math.max(1, totalDocs)) * 100)}%`,
                     }}
                   ></div>
                 </div>
               </div>
 
-              {/* Bar 2: Ditolak / Dikembalikan */}
-              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-2 text-slate-700">
+              {/* Bar 2: Submit Dokumen */}
+              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
+                  <span className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                    <span>Submit Dokumen</span>
+                  </span>
+                  <span className="font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">
+                    {submitCount} Berkas
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, (submitCount / Math.max(1, totalDocs)) * 100)}%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Bar 3: Review (Biro 01) */}
+              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
+                  <span className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                    <span>Review (Biro 01)</span>
+                  </span>
+                  <span className="font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                    {reviewCount} Berkas
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, (reviewCount / Math.max(1, totalDocs)) * 100)}%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Bar 4: Ditolak (Perlu Revisi) */}
+              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
                   <span className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-                    <span>Ditolak / Dikembalikan (Perlu Perbaikan PPK)</span>
+                    <span>Ditolak (Perlu Revisi)</span>
                   </span>
-                  <span className="font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200">
+                  <span className="font-black text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200">
                     {rejectedCount} Berkas
                   </span>
                 </div>
-                <div className="h-2.5 rounded-full bg-slate-200/80 overflow-hidden">
+                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-500"
                     style={{
-                      width: `${Math.min(
-                        100,
-                        (rejectedCount / Math.max(1, totalDocs)) * 100
-                      )}%`,
+                      width: `${Math.min(100, (rejectedCount / Math.max(1, totalDocs)) * 100)}%`,
                     }}
                   ></div>
                 </div>
               </div>
 
-              {/* Bar 3: Disetujui / Lengkap & Valid */}
-              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-2 text-slate-700">
+              {/* Bar 5: Pengajuan Ulang */}
+              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
+                  <span className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-orange-500"></span>
+                    <span>Pengajuan Ulang</span>
+                  </span>
+                  <span className="font-black text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200">
+                    {resubmittedCount} Berkas
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, (resubmittedCount / Math.max(1, totalDocs)) * 100)}%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Bar 6: Disetujui */}
+              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
                   <span className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                    <span>Disetujui / Lengkap &amp; Valid (Lolos Verifikasi)</span>
+                    <span>Disetujui</span>
                   </span>
                   <span className="font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
                     {approvedCount} Berkas
                   </span>
                 </div>
-                <div className="h-2.5 rounded-full bg-slate-200/80 overflow-hidden">
+                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
                     style={{
-                      width: `${Math.min(
-                        100,
-                        (approvedCount / Math.max(1, totalDocs)) * 100
-                      )}%`,
+                      width: `${Math.min(100, (approvedCount / Math.max(1, totalDocs)) * 100)}%`,
                     }}
                   ></div>
                 </div>
@@ -434,28 +555,36 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
             </div>
           </div>
 
-          {/* Mini Stepper Alur Proses di Bagian Bawah Panel Kiri */}
-          <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
-              <div className="text-[10px] font-bold text-slate-400 uppercase">1. Draft PPK</div>
+          {/* Mini Stepper 6 Tahapan Timeline Proses di Bagian Bawah Panel Kiri */}
+          <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 text-center">
+            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/70">
+              <div className="text-[9px] font-bold text-slate-500 uppercase truncate">1. Draft</div>
               <div className="text-sm font-black text-slate-800 mt-0.5">{draftCount}</div>
             </div>
-            <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-200/70">
-              <div className="text-[10px] font-bold text-blue-600 uppercase">2. Sedang Review</div>
+            <div className="p-2 rounded-xl bg-amber-50/60 border border-amber-200/70">
+              <div className="text-[9px] font-bold text-amber-700 uppercase truncate">2. Submit</div>
+              <div className="text-sm font-black text-amber-700 mt-0.5">{submitCount}</div>
+            </div>
+            <div className="p-2 rounded-xl bg-blue-50/60 border border-blue-200/70">
+              <div className="text-[9px] font-bold text-blue-600 uppercase truncate">3. Review</div>
               <div className="text-sm font-black text-blue-700 mt-0.5">{reviewCount}</div>
             </div>
-            <div className="p-2.5 rounded-xl bg-orange-50/60 border border-orange-200/70">
-              <div className="text-[10px] font-bold text-orange-600 uppercase">3. Ajukan Ulang</div>
+            <div className="p-2 rounded-xl bg-rose-50/60 border border-rose-200/70">
+              <div className="text-[9px] font-bold text-rose-600 uppercase truncate">4. Ditolak</div>
+              <div className="text-sm font-black text-rose-700 mt-0.5">{rejectedCount}</div>
+            </div>
+            <div className="p-2 rounded-xl bg-orange-50/60 border border-orange-200/70">
+              <div className="text-[9px] font-bold text-orange-600 uppercase truncate">5. Pengajuan Ulang</div>
               <div className="text-sm font-black text-orange-700 mt-0.5">{resubmittedCount}</div>
             </div>
-            <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200/70">
-              <div className="text-[10px] font-bold text-emerald-600 uppercase">4. Disetujui</div>
+            <div className="p-2 rounded-xl bg-emerald-50/60 border border-emerald-200/70">
+              <div className="text-[9px] font-bold text-emerald-600 uppercase truncate">6. Disetujui</div>
               <div className="text-sm font-black text-emerald-700 mt-0.5">{approvedCount}</div>
             </div>
           </div>
         </div>
 
-        {/* Panel Kanan (5 Kolom): Ringkasan Nilai Anggaran & Unit Kerja (Menggantikan Aging SLA) */}
+        {/* Panel Kanan (5 Kolom): Ringkasan Nilai Anggaran Berdasarkan 6 Status Timeline */}
         <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -468,73 +597,142 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                     Rekapitulasi Nilai Pembayaran
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Akumulasi nominal anggaran berdasarkan status persetujuan
+                    Akumulasi nominal anggaran untuk setiap tahapan status dokumen
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* 3 Kartu Ringkasan Nominal */}
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200/80">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
-                    <CheckCheck className="h-4 w-4" />
+            {/* 6 Kartu Ringkasan Nominal Sesuai Timeline Status */}
+            <div className="mt-4 space-y-2">
+              {/* 1. Nilai Draft Dokumen */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-slate-600 text-white flex items-center justify-center shadow-xs">
+                    <FileText className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <div className="text-xs font-extrabold text-emerald-950">
-                      Nilai Berkas Disetujui
+                    <div className="text-xs font-extrabold text-slate-900">
+                      Draft Dokumen
                     </div>
-                    <div className="text-[11px] text-emerald-700 font-medium">
-                      {approvedCount} berkas telah lolos verifikasi
+                    <div className="text-[10px] text-slate-500 font-medium">
+                      {draftCount} berkas draft
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs sm:text-sm font-black text-emerald-700">
-                    Rp {totalNilaiDisetujui.toLocaleString("id-ID")}
+                  <div className="text-xs font-black text-slate-800">
+                    Rp {totalNilaiDraft.toLocaleString("id-ID")}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-                    <Clock className="h-4 w-4" />
+              {/* 2. Nilai Submit Dokumen */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                    <Send className="h-3.5 w-3.5" />
                   </div>
                   <div>
                     <div className="text-xs font-extrabold text-amber-950">
-                      Nilai Dalam Proses Review
+                      Submit Dokumen
                     </div>
-                    <div className="text-[11px] text-amber-700 font-medium">
-                      {waitingVerificationTotal} berkas sedang diperiksa
+                    <div className="text-[10px] text-amber-700 font-medium">
+                      {submitCount} berkas disubmit
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs sm:text-sm font-black text-amber-700">
-                    Rp {totalNilaiProses.toLocaleString("id-ID")}
+                  <div className="text-xs font-black text-amber-700">
+                    Rp {totalNilaiSubmit.toLocaleString("id-ID")}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-rose-50/60 border border-rose-200/80">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-xs">
-                    <RotateCcw className="h-4 w-4" />
+              {/* 3. Nilai Review (Biro 01) */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50/60 border border-blue-200/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                    <Clock className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <div className="text-xs font-extrabold text-rose-950">
-                      Nilai Berkas Ditolak / Revisi
+                    <div className="text-xs font-extrabold text-blue-950">
+                      Review (Biro 01)
                     </div>
-                    <div className="text-[11px] text-rose-700 font-medium">
-                      {rejectedCount} berkas dikembalikan ke PPK
+                    <div className="text-[10px] text-blue-700 font-medium">
+                      {reviewCount} berkas sedang direview
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs sm:text-sm font-black text-rose-700">
+                  <div className="text-xs font-black text-blue-700">
+                    Rp {totalNilaiReview.toLocaleString("id-ID")}
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Nilai Ditolak */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/60 border border-rose-200/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-rose-500 text-white flex items-center justify-center shadow-xs">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-rose-950">
+                      Ditolak (Perlu Revisi)
+                    </div>
+                    <div className="text-[10px] text-rose-700 font-medium">
+                      {rejectedCount} berkas ditolak / revisi
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-black text-rose-700">
                     Rp {totalNilaiDitolak.toLocaleString("id-ID")}
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Nilai Pengajuan Ulang */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-orange-50/60 border border-orange-200/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-orange-500 text-white flex items-center justify-center shadow-xs">
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-orange-950">
+                      Pengajuan Ulang
+                    </div>
+                    <div className="text-[10px] text-orange-700 font-medium">
+                      {resubmittedCount} berkas diajukan ulang
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-black text-orange-700">
+                    Rp {totalNilaiPengajuanUlang.toLocaleString("id-ID")}
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. Nilai Disetujui */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                    <CheckCheck className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-emerald-950">
+                      Disetujui
+                    </div>
+                    <div className="text-[10px] text-emerald-700 font-medium">
+                      {approvedCount} berkas telah disetujui
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-black text-emerald-700">
+                    Rp {totalNilaiDisetujui.toLocaleString("id-ID")}
                   </div>
                 </div>
               </div>

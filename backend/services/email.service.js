@@ -60,7 +60,7 @@ class EmailService {
         <div class="container">
           <div class="header">
             <h1>SIPANDA</h1>
-            <p>Sistem Informasi Pengelolaan Dokumen Pembayaran</p>
+            <p></p>
           </div>
           <div class="body">
             <div class="greeting">Halo, ${userName}</div>

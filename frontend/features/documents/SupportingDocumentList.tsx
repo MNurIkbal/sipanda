@@ -150,7 +150,49 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
 
   useEffect(() => {
     fetchDocumentsFromApi();
-  }, [debouncedSearch, statusFilter, startDate, endDate, page, limit]);
+  }, [debouncedSearch, statusFilter, startDate, endDate, page, limit, currentUser?.role]);
+
+  // Sinkronisasi real-time dengan perubahan status dari context parent (misal: saat Biro 01 verifikasi/tolak atau buka detail -> status jadi 'review')
+  useEffect(() => {
+    if (!initialDocuments) return;
+    setDocuments((prev) => {
+      if (prev.length === 0) return prev;
+      const parentMap = new Map(initialDocuments.map((d) => [d.id, d]));
+      let removedCount = 0;
+
+      const nextList = prev
+        .map((localDoc) => {
+          const updatedFromParent = parentMap.get(localDoc.id);
+          if (updatedFromParent) {
+            return { ...localDoc, ...updatedFromParent };
+          }
+          if (currentUser?.role === "biro_01" && !parentMap.has(localDoc.id)) {
+            return { ...localDoc, status: "dikembalikan" as const };
+          }
+          return localDoc;
+        })
+        .filter((doc) => {
+          if (
+            currentUser?.role === "biro_01" &&
+            (doc.status === "dikembalikan" || doc.status === "ditolak" || doc.status === "draft")
+          ) {
+            removedCount++;
+            return false;
+          }
+          if (statusFilter !== "ALL" && doc.status !== statusFilter) {
+            removedCount++;
+            return false;
+          }
+          return true;
+        });
+
+      if (removedCount > 0) {
+        setTotalDocuments((prevTotal) => Math.max(0, prevTotal - removedCount));
+      }
+
+      return nextList;
+    });
+  }, [initialDocuments, currentUser?.role, statusFilter]);
 
   const handleOpenGenerator = (doc: PaymentDocument, type: GeneratorType) => {
     setSelectedDocForGenerate(doc);

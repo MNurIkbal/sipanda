@@ -204,7 +204,7 @@ export const documentValidationSchema = {
       (d) => Boolean(d.file || d.existing_file_name || d.existing_file_path)
     );
 
-    if (requireAtLeastOne && validUploadedDocs.length < 3) {
+    if (requireAtLeastOne && !isEditMode && validUploadedDocs.length < 3) {
       docs.forEach((doc, idx) => {
         const hasFile = Boolean(doc.file || doc.existing_file_name || doc.existing_file_path);
         if (!hasFile && idx < 3) {

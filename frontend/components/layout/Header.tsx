@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <div className="hidden md:block">
               <h2 className="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                <span>Sistem Informasi Pengelolaan Dokumen Pembayaran</span>
+                <span>Sistem Informasi Pengelolaan Monitoring Dokumen Pembayaran</span>
               </h2>
             </div>
           </div>

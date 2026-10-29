@@ -621,6 +621,22 @@ export const SipanduProvider: React.FC<{ children: ReactNode }> = ({ children })
         verifier_id: currentUser?.id.toString(),
       });
       if (res.success) {
+        const updatedDoc = res.data || {
+          ...selectedDoc,
+          status: action === "approve" ? "lengkap_valid" : "dikembalikan",
+          legend_status: action === "approve" ? "Disetujui" : "Ditolak",
+          legend_color: action === "approve" ? "emerald" : "red",
+        };
+
+        // Update state documents secara instan tanpa harus menunggu fetchAllData atau reload
+        setDocuments((prev) => {
+          const mapped = prev.map((d) => (d.id === selectedDoc.id ? { ...d, ...updatedDoc } : d));
+          if (currentUser?.role === "biro_01" && action === "reject") {
+            return mapped.filter((d) => d.id !== selectedDoc.id);
+          }
+          return mapped;
+        });
+
         if (action === "approve") {
           addToast("success", "Dokumen Disetujui", "Dokumen telah diverifikasi dan berstatus Disetujui!");
         } else {

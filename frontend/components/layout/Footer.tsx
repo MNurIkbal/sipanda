@@ -8,7 +8,7 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 text-center">
         <p className="text-xs text-slate-500 font-medium tracking-wide">
           Copyright © {currentYear}{" "}
-          <span className="font-bold text-slate-700">SIPANDA</span> • Sistem Monitoring & Verifikasi Pembayaran. All Rights Reserved.
+          <span className="font-bold text-slate-700">SIPANDA</span> • Sistem Informasi Pengelolaan Monitoring Dokumen Pembayaran. All Rights Reserved.
         </p>
       </div>
     </footer>

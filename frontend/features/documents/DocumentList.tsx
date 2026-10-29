@@ -155,10 +155,51 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   useEffect(() => {
     fetchDocumentsFromApi();
-  }, [debouncedSearch, statusFilter, startDate, endDate, page, limit]);
+  }, [debouncedSearch, statusFilter, startDate, endDate, page, limit, currentUser?.role]);
 
-  // Sinkronisasi state lokal saat context parent me-refresh dokumen (hanya jika filter masih kosong/default dan belum dimodifikasi)
-  // Catatan: Jika user sedang memfilter (status/tanggal/search), pertahankan data hasil filter API lokal agar tidak tertimpa data unfiltered
+  // Sinkronisasi real-time dengan perubahan status dari context parent (misal: saat Biro 01 membuka detail -> status jadi 'review', atau saat Biro 01 verifikasi/tolak dokumen)
+  useEffect(() => {
+    if (!initialDocuments) return;
+    setDocuments((prev) => {
+      if (prev.length === 0) return prev;
+      const parentMap = new Map(initialDocuments.map((d) => [d.id, d]));
+      let removedCount = 0;
+
+      const nextList = prev
+        .map((localDoc) => {
+          const updatedFromParent = parentMap.get(localDoc.id);
+          if (updatedFromParent) {
+            return { ...localDoc, ...updatedFromParent };
+          }
+          if (currentUser?.role === "biro_01" && !parentMap.has(localDoc.id)) {
+            return { ...localDoc, status: "dikembalikan" as const };
+          }
+          return localDoc;
+        })
+        .filter((doc) => {
+          // 1. Jika role adalah Biro 01 dan dokumen baru saja diubah menjadi 'dikembalikan'/'ditolak' atau 'draft', otomatis hilangkan dari daftar Biro 01
+          if (
+            currentUser?.role === "biro_01" &&
+            (doc.status === "dikembalikan" || doc.status === "ditolak" || doc.status === "draft")
+          ) {
+            removedCount++;
+            return false;
+          }
+          // 2. Jika filter status sedang aktif (bukan ALL) dan status dokumen berubah tidak sesuai filter, hilangkan dari daftar
+          if (statusFilter !== "ALL" && doc.status !== statusFilter) {
+            removedCount++;
+            return false;
+          }
+          return true;
+        });
+
+      if (removedCount > 0) {
+        setTotalDocuments((prevTotal) => Math.max(0, prevTotal - removedCount));
+      }
+
+      return nextList;
+    });
+  }, [initialDocuments, currentUser?.role, statusFilter]);
 
   const getBadgeClass = (color: string) => {
     switch (color) {

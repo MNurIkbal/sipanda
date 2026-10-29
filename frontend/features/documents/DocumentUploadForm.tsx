@@ -122,10 +122,9 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     opt.toLowerCase().includes(jenisDokumenSearch.toLowerCase())
   );
 
-  // Kategori Pengadaan (Searchable Select: Pengadaan Barang / Jasa, Harwat(Harian Rawat))
   const kategoriPengadaanOptions = [
     "Pengadaan Barang / Jasa",
-    "Harwat(Harian Rawat)",
+    "Harwat(Pemeliharaan dan Perawatan)",
   ];
   const [kategoriPengadaan, setKategoriPengadaan] = useState<string>(
     (initialData as any)?.kategori_pengadaan || "Pengadaan Barang / Jasa"
@@ -314,12 +313,13 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     );
   };
 
+  const isEditOrRevision = Boolean(initialData);
+
   // Hapus Dokumen Pendukung:
-  // - Minimal 3 baris dokumen pendukung harus tetap ada
-  // - Jika baru ditambah di form: langsung hapus baris komponennya saja tanpa modal pilihan.
-  // - Jika berasal dari database: konfirmasi hapus langsung dari database.
+  // - Pada form Buat Dokumen Baru: minimal 3 baris dokumen pendukung harus tetap ada
+  // - Pada form Edit Dokumen / Revisi Dokumen: pembatasan minimal 3 dokumen dihapus (bebas menghapus baris)
   const requestRemoveSupportingDoc = (item: SupportingDocumentItem) => {
-    if (supportingDocs.length <= 3) {
+    if (!isEditOrRevision && supportingDocs.length <= 3) {
       setValidationAlert({
         isOpen: true,
         title: "Perhatian: Minimal 3 Dokumen",
@@ -489,11 +489,11 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     );
   };
 
-  // Cek apakah minimal 3 dokumen pendukung telah diunggah berkasnya
+  // Cek apakah minimal 3 dokumen pendukung telah diunggah berkasnya (hanya wajib pada Buat Dokumen Baru, tidak wajib pada Edit/Revisi Dokumen)
   const uploadedFilesCount = supportingDocs.filter(
     (d) => Boolean(d.file || d.existing_file_name || d.existing_file_path)
   ).length;
-  const isSaveDisabled = loading || uploadedFilesCount < 3;
+  const isSaveDisabled = loading || (!isEditOrRevision && uploadedFilesCount < 3);
 
   // Submit Handler (Simpan Draft atau Kirim Verifikasi) menggunakan documentValidationSchema
   const handleSubmitForm = async (status: "draft" | "menunggu_verifikasi") => {
@@ -1412,16 +1412,18 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
       {/* 3. FOOTER ACTION BUTTONS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         <div className="text-xs">
-          {uploadedFilesCount < 3 ? (
-            <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl font-bold">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-              Wajib upload minimal 3 dokumen pendukung ({uploadedFilesCount}/3 terunggah)
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-              Syarat minimal 3 dokumen pendukung terpenuhi ({uploadedFilesCount} berkas)
-            </span>
+          {!isEditOrRevision && (
+            uploadedFilesCount < 3 ? (
+              <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl font-bold">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                Wajib upload minimal 3 dokumen pendukung ({uploadedFilesCount}/3 terunggah)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                Syarat minimal 3 dokumen pendukung terpenuhi ({uploadedFilesCount} berkas)
+              </span>
+            )
           )}
         </div>
 
@@ -1444,7 +1446,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                 : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 cursor-pointer"
             }`}
             title={
-              uploadedFilesCount < 3
+              !isEditOrRevision && uploadedFilesCount < 3
                 ? `Tombol simpan dinonaktifkan: Anda harus mengunggah minimal 3 dokumen pendukung (${uploadedFilesCount}/3)`
                 : "Simpan dokumen pembayaran"
             }

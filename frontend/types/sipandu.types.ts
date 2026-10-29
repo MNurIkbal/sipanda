@@ -38,7 +38,7 @@ export interface PaymentDocument {
   tanggal_pengajuan: string;
 
   jenis_dokumen?: string;
-  kategori_pengadaan?: "Pengadaan Barang / Jasa" | "Harwat(Harian Rawat)" | string;
+  kategori_pengadaan?: "Pengadaan Barang / Jasa" | "Harwat(Pemeliharaan dan Perawatan)" | string;
   perihal?: string;
   tanggal_dokumen?: string | null;
   tanggal_diterima?: string;
