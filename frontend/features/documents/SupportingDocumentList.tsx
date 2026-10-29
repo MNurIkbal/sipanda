@@ -306,69 +306,126 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
       {/* CARD BESAR: MEMBUNGKUS CONTROL BAR (SEARCH, FILTER & LIMIT) BESERTA TABEL */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
         {/* Bagian Filter, Pencarian, & Limit Selector */}
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70">
-          <div className="relative flex-1 max-w-md">
-            <Search className="h-4 w-4 absolute left-3.5 top-3 text-slate-500" />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Cari nomor surat, uraian belanja, atau nama PPK..."
-              className="w-full pl-10 pr-9 py-2 text-sm rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 font-semibold transition shadow-2xs"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={() => setSearchInput("")}
-                className="absolute right-3 top-2.5 p-0.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                title="Hapus pencarian"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+        <div className="p-4 border-b border-slate-200 flex flex-col gap-3 bg-slate-50/70">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="h-4 w-4 absolute left-3.5 top-3 text-slate-500" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Cari nomor surat, uraian belanja, atau nama PPK..."
+                className="w-full pl-10 pr-9 py-2 text-sm rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 font-semibold transition shadow-2xs"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput("")}
+                  className="absolute right-3 top-2.5 p-0.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                  title="Hapus pencarian"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Filter Status */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-700 font-bold">Status:</span>
+                <select
+                  aria-label="Filter Berdasarkan Status Dokumen"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="text-xs border border-slate-300 bg-white hover:bg-slate-50 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none cursor-pointer transition shadow-2xs"
+                >
+                  <option value="ALL">Semua Status</option>
+                  <option value="draft">Draft</option>
+                  <option value="submit_dokumen">Submit Dokumen</option>
+                  <option value="review">Review</option>
+                  <option value="dikembalikan">Ditolak</option>
+                  <option value="menunggu_verifikasi_ulang">Pengajuan Ulang</option>
+                  <option value="lengkap_valid">Disetujui</option>
+                </select>
+              </div>
+
+              {/* Limit Selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-700 font-bold">Baris:</span>
+                <select
+                  aria-label="Jumlah baris per halaman"
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="text-xs border border-slate-300 bg-white hover:bg-slate-50 rounded-xl px-2.5 py-2 font-bold text-slate-800 outline-none cursor-pointer transition shadow-2xs"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Filter Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-700 font-bold">Status:</span>
-              <select
-                aria-label="Filter Berdasarkan Status Dokumen"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="text-xs border border-slate-300 bg-white hover:bg-slate-50 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none cursor-pointer transition shadow-2xs"
-              >
-                <option value="ALL">Semua Status</option>
-                <option value="draft">Draft</option>
-                <option value="submit_dokumen">Submit Dokumen</option>
-                <option value="review">Review</option>
-                <option value="dikembalikan">Ditolak</option>
-                <option value="menunggu_verifikasi_ulang">Pengajuan Ulang</option>
-                <option value="lengkap_valid">Disetujui</option>
-              </select>
+          {/* Sub-baris: Filter Tanggal Mulai dan Tanggal Akhir */}
+          <div className="pt-2.5 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1">
+              <span className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 shrink-0">
+                <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                <span>Filter Periode:</span>
+              </span>
+
+              {/* Input Tanggal Mulai dengan DatePicker Component */}
+              <div className="w-48 sm:w-52">
+                <DatePicker
+                  value={startDate}
+                  onChange={handleStartDateChange}
+                  placeholder="Tanggal Mulai"
+                  maxDate={endDate || undefined}
+                  hasError={!!dateErrors.startDate}
+                />
+              </div>
+
+              <span className="text-slate-400 font-bold hidden sm:inline">-</span>
+
+              {/* Input Tanggal Akhir dengan DatePicker Component */}
+              <div className="w-48 sm:w-52">
+                <DatePicker
+                  value={endDate}
+                  onChange={handleEndDateChange}
+                  placeholder="Tanggal Akhir"
+                  minDate={startDate || undefined}
+                  hasError={!!dateErrors.endDate}
+                />
+              </div>
+
+              {/* Tombol Reset Tanggal jika salah satu aktif */}
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={handleResetDateFilter}
+                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold transition shadow-2xs cursor-pointer"
+                  title="Reset Filter Tanggal"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span>Reset Tanggal</span>
+                </button>
+              )}
             </div>
 
-            {/* Limit Selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-700 font-bold">Baris:</span>
-              <select
-                aria-label="Jumlah baris per halaman"
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="text-xs border border-slate-300 bg-white hover:bg-slate-50 rounded-xl px-2.5 py-2 font-bold text-slate-800 outline-none cursor-pointer transition shadow-2xs"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-            </div>
+            {/* Error Message jika validasi skema gagal */}
+            {(dateErrors.startDate || dateErrors.endDate) && (
+              <div className="flex items-center gap-1.5 text-rose-600 font-bold bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>{dateErrors.startDate || dateErrors.endDate}</span>
+              </div>
+            )}
           </div>
         </div>
 
