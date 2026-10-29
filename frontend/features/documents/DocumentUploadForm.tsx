@@ -14,7 +14,13 @@ import {
   Building,
   HelpCircle,
   ChevronDown,
-  Search
+  Search,
+  Sparkles,
+  Loader2,
+  FileSearch,
+  ScanLine,
+  Zap,
+  RotateCcw,
 } from "lucide-react";
 import { User, PaymentDocument } from "@/types/sipandu.types";
 import { AlertDialog } from "@/components/ui/AlertDialog";
@@ -183,11 +189,29 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         tanggal: new Date().toISOString().split("T")[0],
         file: null,
       },
+      {
+        id: "doc-2",
+        jenis_dokumen: "",
+        nomor_dokumen: "",
+        tanggal: new Date().toISOString().split("T")[0],
+        file: null,
+      },
+      {
+        id: "doc-3",
+        jenis_dokumen: "",
+        nomor_dokumen: "",
+        tanggal: new Date().toISOString().split("T")[0],
+        file: null,
+      },
     ];
   });
 
   // Form validation errors state
   const [formErrors, setFormErrors] = useState<DocumentValidationError>({});
+
+  // VeriText OCR loading state per dokumen pendukung
+  const [extractingDocId, setExtractingDocId] = useState<string | null>(null);
+  const [ocrSuccessToast, setOcrSuccessToast] = useState<string | null>(null);
 
   // Dialog State untuk Konfirmasi Hapus Dokumen Pendukung
   const [docToDeleteItem, setDocToDeleteItem] = useState<SupportingDocumentItem | null>(null);
@@ -217,15 +241,16 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
   };
 
   // Hapus Dokumen Pendukung:
+  // - Minimal 3 baris dokumen pendukung harus tetap ada
   // - Jika baru ditambah di form: langsung hapus baris komponennya saja tanpa modal pilihan.
   // - Jika berasal dari database: konfirmasi hapus langsung dari database.
   const requestRemoveSupportingDoc = (item: SupportingDocumentItem) => {
-    if (supportingDocs.length <= 1) {
+    if (supportingDocs.length <= 3) {
       setValidationAlert({
         isOpen: true,
-        title: "Perhatian: Dokumen Wajib",
+        title: "Perhatian: Minimal 3 Dokumen",
         description:
-          "Pengajuan minimal harus memiliki 1 baris dokumen pendukung. Anda tidak dapat menghapus seluruh dokumen pendukung.",
+          "Pengajuan pembayaran wajib menyertakan minimal 3 berkas dokumen pendukung. Anda tidak dapat menghapus baris ini.",
       });
       return;
     }
@@ -303,6 +328,129 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     }
   };
 
+  // Handler Upload Dokumen Pendukung yang Terintegrasi dengan VeriText OCR
+  const handleFileChangeWithVeriText = async (docId: string, file: File | null) => {
+    handleUpdateDocField(docId, "file", file);
+    if (!file) return;
+
+    try {
+      setExtractingDocId(docId);
+      const res = await sipanduApi.extractVeriText(file);
+
+      if (res.success && res.data) {
+        const meta = res.data.data || res.data;
+
+        // Auto-fill field pada baris dokumen pendukung saat ini
+        if (meta.jenis_dokumen) {
+          handleUpdateDocField(docId, "jenis_dokumen", meta.jenis_dokumen);
+        }
+        if (meta.nomor_dokumen) {
+          handleUpdateDocField(docId, "nomor_dokumen", meta.nomor_dokumen);
+        }
+        if (meta.tanggal_dokumen) {
+          handleUpdateDocField(docId, "tanggal", meta.tanggal_dokumen);
+        }
+        if (meta.nilai_pembayaran) {
+          handleUpdateDocField(docId, "nilai_pembayaran", meta.nilai_pembayaran);
+        }
+        if (meta.perihal) {
+          handleUpdateDocField(docId, "uraian", meta.perihal);
+        }
+        if (meta.pihak_eksternal) {
+          handleUpdateDocField(docId, "nama_perusahaan", meta.pihak_eksternal);
+        }
+        if (meta.nomor_spk) {
+          handleUpdateDocField(docId, "nomor_spk", meta.nomor_spk);
+        }
+        if (meta.unit_kerja) {
+          handleUpdateDocField(docId, "unit_kerja", meta.unit_kerja);
+        }
+        if (meta.bank_name) {
+          handleUpdateDocField(docId, "bank_name", meta.bank_name);
+        }
+        if (meta.bank_account) {
+          handleUpdateDocField(docId, "bank_account", meta.bank_account);
+        }
+        if (meta.bank_holder) {
+          handleUpdateDocField(docId, "bank_holder", meta.bank_holder);
+        }
+        if (meta.terbilang) {
+          handleUpdateDocField(docId, "terbilang", meta.terbilang);
+        }
+        if (meta.penandatangan) {
+          handleUpdateDocField(docId, "penandatangan", meta.penandatangan);
+        }
+        if (meta.jabatan_penandatangan) {
+          handleUpdateDocField(docId, "jabatan_penandatangan", meta.jabatan_penandatangan);
+        }
+        handleUpdateDocField(docId, "metadata", meta);
+
+        // Auto-fill ke Form Data Dokumen Utama jika field di form atas masih kosong / default
+        if (meta.nomor_dokumen && (!nomorSurat || nomorSurat.trim() === "")) {
+          setNomorSurat(meta.nomor_dokumen);
+        }
+        if (meta.perihal && (!perihal || perihal.trim() === "")) {
+          setPerihal(meta.perihal);
+        }
+        if (meta.tanggal_dokumen && (!tanggalDokumen || tanggalDokumen.trim() === "")) {
+          setTanggalDokumen(meta.tanggal_dokumen);
+        }
+        if (meta.pihak_eksternal && (!pihakEksternal || pihakEksternal.trim() === "")) {
+          setPihakEksternal(meta.pihak_eksternal);
+        }
+        if (meta.nilai_pembayaran && (!nilaiPembayaran || nilaiPembayaran === "" || nilaiPembayaran === "0")) {
+          setNilaiPembayaran(new Intl.NumberFormat("id-ID").format(Number(meta.nilai_pembayaran)));
+        }
+
+        // Tampilkan toast notifikasi sukses ekstraksi
+        setOcrSuccessToast(
+          `Metadata dokumen berhasil diekstrak otomatis melalui VeriText (No: ${meta.nomor_dokumen || "-"}, Nilai: Rp ${Number(meta.nilai_pembayaran || 0).toLocaleString("id-ID")})`
+        );
+        setTimeout(() => setOcrSuccessToast(null), 6000);
+      }
+    } catch (err: any) {
+      console.warn("Ekstraksi VeriText gagal:", err);
+    } finally {
+      setExtractingDocId(null);
+    }
+  };
+
+  // Handler Hapus Berkas VeriText beserta pembersihan field metadata otomatisnya
+  const handleClearVeriTextUpload = (docId: string) => {
+    setSupportingDocs((prev) =>
+      prev.map((d) => {
+        if (d.id === docId) {
+          return {
+            ...d,
+            file: null,
+            jenis_dokumen: "",
+            nomor_dokumen: "",
+            tanggal: new Date().toISOString().split("T")[0],
+            nilai_pembayaran: 0,
+            uraian: "",
+            nama_perusahaan: "",
+            nomor_spk: "",
+            unit_kerja: "",
+            bank_name: "",
+            bank_account: "",
+            bank_holder: "",
+            terbilang: "",
+            penandatangan: "",
+            jabatan_penandatangan: "",
+            metadata: undefined,
+          };
+        }
+        return d;
+      })
+    );
+  };
+
+  // Cek apakah minimal 3 dokumen pendukung telah diunggah berkasnya
+  const uploadedFilesCount = supportingDocs.filter(
+    (d) => Boolean(d.file || d.existing_file_name || d.existing_file_path)
+  ).length;
+  const isSaveDisabled = loading || uploadedFilesCount < 3;
+
   // Submit Handler (Simpan Draft atau Kirim Verifikasi) menggunakan documentValidationSchema
   const handleSubmitForm = async (status: "draft" | "menunggu_verifikasi") => {
     const isRejected = Boolean(
@@ -367,6 +515,20 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         document_type: d.jenis_dokumen.trim() || "Dokumen Pendukung",
         nomor_dokumen: d.nomor_dokumen.trim() || "-",
         tanggal_dokumen: d.tanggal || null,
+        nilai_pembayaran: Number(d.nilai_pembayaran) || 0,
+        uraian: d.uraian || "",
+        nama_perusahaan: d.nama_perusahaan || "",
+        metadata: {
+          ...(d.metadata || {}),
+          nomor_spk: d.nomor_spk || "",
+          unit_kerja: d.unit_kerja || "",
+          bank_name: d.bank_name || "",
+          bank_account: d.bank_account || "",
+          bank_holder: d.bank_holder || "",
+          terbilang: d.terbilang || "",
+          penandatangan: d.penandatangan || "",
+          jabatan_penandatangan: d.jabatan_penandatangan || "",
+        },
       }));
     formData.append("existing_attachments", JSON.stringify(existingAttachments));
 
@@ -379,6 +541,20 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
           document_type: doc.jenis_dokumen.trim() || "Dokumen Pendukung",
           nomor_dokumen: doc.nomor_dokumen.trim() || "-",
           tanggal_dokumen: doc.tanggal || null,
+          nilai_pembayaran: Number(doc.nilai_pembayaran) || 0,
+          uraian: doc.uraian || "",
+          nama_perusahaan: doc.nama_perusahaan || "",
+          metadata: {
+            ...(doc.metadata || {}),
+            nomor_spk: doc.nomor_spk || "",
+            unit_kerja: doc.unit_kerja || "",
+            bank_name: doc.bank_name || "",
+            bank_account: doc.bank_account || "",
+            bank_holder: doc.bank_holder || "",
+            terbilang: doc.terbilang || "",
+            penandatangan: doc.penandatangan || "",
+            jabatan_penandatangan: doc.jabatan_penandatangan || "",
+          },
         });
       }
     });
@@ -402,17 +578,42 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                   : "Edit Data Dokumen Pembayaran"
                 : "Pendaftaran & Input Dokumen Pembayaran"}
             </h1>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-black">
+              <Sparkles className="h-2.5 w-2.5 text-blue-600" />
+              VeriText OCR Ready
+            </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             {initialData
               ? initialData.status === "dikembalikan" || initialData.status === "ditolak"
                 ? `Perbaiki dan lengkapi catatan revisi berkas pembayaran untuk nomor surat ${initialData.nomor_surat}.`
                 : `Perbarui informasi dan dokumen pendukung untuk nomor surat ${initialData.nomor_surat}.`
-              : "Lengkapi data berkas pembayaran dan lampirkan dokumen pendukung untuk diverifikasi oleh Biro 01 Keuangan."}
+              : "Lengkapi data berkas pembayaran atau cukup upload berkas pendukung (PDF/DOCX/Invoice) untuk diekstrak otomatis oleh VeriText."}
           </p>
         </div>
-
       </div>
+
+      {/* Banner Notifikasi Berhasil Ekstraksi VeriText */}
+      {ocrSuccessToast && (
+        <div className="p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl text-blue-900 shadow-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5 text-xs font-bold">
+            <div className="p-1.5 rounded-lg bg-blue-600 text-white shrink-0">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="font-extrabold text-blue-950 block">Ekstraksi Otomatis Berhasil!</span>
+              <span className="font-medium text-[11px] text-blue-800">{ocrSuccessToast}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOcrSuccessToast(null)}
+            className="text-xs font-bold text-blue-600 hover:text-blue-800 p-1 cursor-pointer"
+          >
+            Tutup
+          </button>
+        </div>
+      )}
 
       {/* TAMPILAN KHUSUS DOKUMEN DITOLAK (Catatan Revisi dari Verifikator & Form Penjelasan Perbaikan PPK) */}
       {initialData && (initialData.status === "dikembalikan" || initialData.status === "ditolak" || Boolean(initialData.catatan_revisi)) && (
@@ -1022,6 +1223,203 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                 </div>
               </div>
 
+              {/* Field Input Metadata Lengkap (Plaintext) Hasil Ekstraksi VeriText */}
+              <div className="space-y-3.5 pt-3 border-t border-slate-100">
+                <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                  <span>Metadata Dokumen Pendukung (Plaintext)</span>
+                  {item.metadata && (
+                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      Terisi Otomatis via VeriText OCR
+                    </span>
+                  )}
+                </div>
+
+                {/* Baris 1: Nomor PO/SPK, Nilai/Grand Total, Pihak Eksternal */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nomor PO / SPK
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: SP-1177/I/2024"
+                      value={item.nomor_spk || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "nomor_spk", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Grand Total / Nilai Nominal (Rp)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-[11px] font-bold text-slate-400">Rp</span>
+                      <input
+                        type="text"
+                        placeholder="Contoh: 134.259.000"
+                        value={
+                          item.nilai_pembayaran
+                            ? new Intl.NumberFormat("id-ID").format(Number(item.nilai_pembayaran))
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9]/g, "");
+                          handleUpdateDocField(item.id, "nilai_pembayaran", raw ? Number(raw) : 0);
+                        }}
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Pihak Eksternal / Perusahaan
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: PT Asia Sistem Indonesia"
+                      value={item.nama_perusahaan || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "nama_perusahaan", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Baris 2: Project Title / Uraian & Terbilang */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Project Title / Uraian Pekerjaan
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Pemeliharaan dan Perawatan Jaringan Dokumentasi..."
+                      value={item.uraian || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "uraian", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Terbilang
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Seratus Tiga Puluh Empat Juta..."
+                      value={item.terbilang || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "terbilang", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Baris 3: Rekening Pembayaran (Bank Name, Acc Number, Acc Name) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Bank (Please Remit)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Bank Permata"
+                      value={item.bank_name || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "bank_name", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nomor Rekening
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: 971.102.012"
+                      value={item.bank_account || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "bank_account", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Atas Nama (Acc Name)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: PT. ASIA SISTEM INDONESIA"
+                      value={item.bank_holder || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "bank_holder", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Baris 4: Unit/PPK Tujuan (Bill to) & Penandatangan (Approved by) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Tujuan Penagihan (Bill To)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: BADAN INTELIJEN NEGARA"
+                      value={item.unit_kerja || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "unit_kerja", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Penandatangan (Approved By)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Rizky Detha"
+                      value={item.penandatangan || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "penandatangan", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Jabatan Penandatangan
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Direktur"
+                      value={item.jabatan_penandatangan || ""}
+                      onChange={(e) =>
+                        handleUpdateDocField(item.id, "jabatan_penandatangan", e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Upload File Button & Info Berkas yang sudah ada */}
               <div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -1034,14 +1432,28 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                     <span>{item.existing_file_name ? "Ganti File Berkas" : "Upload File *"}</span>
                     <input
                       type="file"
+                      accept=".pdf,.docx,.doc,.xlsx,.xls,.png,.jpg,.jpeg"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
-                          handleUpdateDocField(item.id, "file", e.target.files[0]);
+                          handleFileChangeWithVeriText(item.id, e.target.files[0]);
                         }
                       }}
                     />
                   </label>
+
+                  {/* Tombol Hapus Upload VeriText (Mengosongkan Berkas & Reset Field Metadata yang Terisi) */}
+                  {(item.file || item.existing_file_name || item.nomor_dokumen || item.nilai_pembayaran) && (
+                    <button
+                      type="button"
+                      onClick={() => handleClearVeriTextUpload(item.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition shadow-2xs cursor-pointer"
+                      title="Hapus berkas dan bersihkan seluruh metadata dokumen ini"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Hapus VeriText</span>
+                    </button>
+                  )}
 
                   {/* Jika memilih file baru dari komputer */}
                   {item.file ? (
@@ -1069,6 +1481,46 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                     <span className="text-xs text-slate-400">Belum ada file dipilih</span>
                   )}
                 </div>
+
+                {/* ANIMASI SCANNER VERITEXT CANGGIH & UI/UX MODERN */}
+                {extractingDocId === item.id && (
+                  <div className="mt-3.5 relative overflow-hidden rounded-2xl border-2 border-blue-500/70 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-4 shadow-xl">
+                    {/* Laser Scanner Bar yang bergerak naik-turun */}
+                    <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-[1px] animate-[bounce_2s_infinite]"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-transparent to-blue-500/10 pointer-events-none"></div>
+
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative p-2.5 rounded-xl bg-blue-600/40 border border-blue-400/40 text-cyan-300 shadow-inner">
+                          <ScanLine className="h-6 w-6 animate-pulse" />
+                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+                          </span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-xs text-cyan-300 tracking-wider uppercase">
+                              VERITEXT OCR ENGINE ACTIVE
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-[10px] font-bold text-cyan-200 border border-cyan-400/30">
+                              AI Scanning...
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-0.5">
+                            Memindai struktur dokumen, mengekstrak Nomor Surat, Tanggal, Nominal, dan Pihak Penyedia...
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                        <div className="h-4 w-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-[11px] font-bold text-cyan-300 animate-pulse">Mengisi Form Otomatis</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {formErrors.supporting_doc_items?.[item.id]?.file && (
                   <p className="text-[10px] text-red-500 font-semibold mt-1.5">
                     {formErrors.supporting_doc_items[item.id].file}
@@ -1081,24 +1533,49 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
       </div>
 
       {/* 3. FOOTER ACTION BUTTONS */}
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer"
-        >
-          Batal
-        </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        <div className="text-xs">
+          {uploadedFilesCount < 3 ? (
+            <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl font-bold">
+              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+              Wajib upload minimal 3 dokumen pendukung ({uploadedFilesCount}/3 terunggah)
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              Syarat minimal 3 dokumen pendukung terpenuhi ({uploadedFilesCount} berkas)
+            </span>
+          )}
+        </div>
 
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => handleSubmitForm("draft")}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition cursor-pointer disabled:opacity-50"
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          <span>Simpan</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer"
+          >
+            Batal
+          </button>
+
+          <button
+            type="button"
+            disabled={isSaveDisabled}
+            onClick={() => handleSubmitForm("draft")}
+            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md ${
+              isSaveDisabled
+                ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none"
+                : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 cursor-pointer"
+            }`}
+            title={
+              uploadedFilesCount < 3
+                ? `Tombol simpan dinonaktifkan: Anda harus mengunggah minimal 3 dokumen pendukung (${uploadedFilesCount}/3)`
+                : "Simpan dokumen pembayaran"
+            }
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Simpan</span>
+          </button>
+        </div>
       </div>
 
       {/* AlertDialog Konfirmasi Hapus Dokumen Pendukung dari Database Backend */}

@@ -6,6 +6,18 @@ export interface SupportingDocumentInput {
   nomor_dokumen: string;
   tanggal: string;
   file: File | null;
+  nilai_pembayaran?: string | number;
+  uraian?: string;
+  nama_perusahaan?: string;
+  nomor_spk?: string;
+  unit_kerja?: string;
+  bank_name?: string;
+  bank_account?: string;
+  bank_holder?: string;
+  terbilang?: string;
+  penandatangan?: string;
+  jabatan_penandatangan?: string;
+  metadata?: any;
   existing_file_name?: string | null;
   existing_file_path?: string | null;
   existing_attachment_id?: number | null;
@@ -188,12 +200,23 @@ export const documentValidationSchema = {
 
     if (!docs || docs.length === 0) {
       return {
-        summaryError: "Pengajuan dokumen harus memiliki minimal 1 baris dokumen pendukung!",
+        summaryError: "Pengajuan dokumen harus memiliki minimal 3 dokumen pendukung!",
         itemErrors,
       };
     }
 
-    let hasAnyValidFile = false;
+    // Cek minimal 3 dokumen pendukung yang memiliki file
+    const validUploadedDocs = docs.filter(
+      (d) => Boolean(d.file || d.existing_file_name || d.existing_file_path)
+    );
+
+    if (requireAtLeastOne && validUploadedDocs.length < 3) {
+      return {
+        summaryError: `Wajib mengunggah minimal 3 dokumen pendukung (saat ini baru ${validUploadedDocs.length} berkas yang diunggah)!`,
+        itemErrors,
+      };
+    }
+
     let anyIncompleteRow = false;
 
     docs.forEach((doc, idx) => {
@@ -202,8 +225,6 @@ export const documentValidationSchema = {
       const hasTanggal = Boolean(doc.tanggal && doc.tanggal.trim());
       // File dianggap ada jika user memilih file baru ATAU jika dalam mode edit dan berkas sudah ada sebelumnya di database
       const hasFile = Boolean(doc.file || doc.existing_file_name || doc.existing_file_path);
-
-      if (hasFile) hasAnyValidFile = true;
 
       // Apakah ada salah satu yang diisi pada baris ini?
       const isPartiallyFilled = hasJenis || hasNomor || hasTanggal || hasFile;
@@ -220,8 +241,7 @@ export const documentValidationSchema = {
           itemErrors[doc.id] = rowErr;
           anyIncompleteRow = true;
         }
-      } else if (idx === 0 && requireAtLeastOne && isCompletelyEmpty) {
-        // Jika ke-4 inputan kosong sama sekali pada baris utama
+      } else if (idx < 3 && requireAtLeastOne && isCompletelyEmpty) {
         itemErrors[doc.id] = {
           jenis_dokumen: "Jenis dokumen wajib diisi!",
           nomor_dokumen: "Nomor dokumen wajib diisi!",
@@ -235,13 +255,6 @@ export const documentValidationSchema = {
     if (anyIncompleteRow) {
       return {
         summaryError: "Terdapat baris dokumen pendukung yang belum lengkap. Semua kolom (Jenis Dokumen, Nomor Dokumen, Tanggal, dan Upload File) harus diisi jika salah satunya telah diisi.",
-        itemErrors,
-      };
-    }
-
-    if (requireAtLeastOne && !hasAnyValidFile) {
-      return {
-        summaryError: "Wajib menyertakan minimal 1 berkas file dokumen pendukung (PDF/DOCX/JPG)!",
         itemErrors,
       };
     }

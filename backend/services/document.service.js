@@ -63,6 +63,10 @@ class DocumentService {
         document_type: meta.document_type || data[`doc_type_${idx}`] || 'Dokumen Pendukung',
         nomor_dokumen: meta.nomor_dokumen || data[`doc_num_${idx}`] || '',
         tanggal_dokumen: meta.tanggal_dokumen || data[`doc_date_${idx}`] || null,
+        nilai_pembayaran: Number(meta.nilai_pembayaran) || 0,
+        uraian: meta.uraian || '',
+        nama_perusahaan: meta.nama_perusahaan || '',
+        metadata: meta.metadata || {},
         uploaded_by_id: user_id ? parseInt(user_id) : null,
       };
     });

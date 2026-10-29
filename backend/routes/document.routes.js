@@ -41,4 +41,7 @@ router.delete('/:id', (req, res) => documentController.deleteDocument(req, res))
 // Delete Dokumen Pendukung / Attachment Tunggal dari Database
 router.delete('/attachments/:attachmentId', (req, res) => documentController.deleteAttachment(req, res));
 
+// VeriText OCR & Metadata Extraction
+router.post('/extract-veritext', upload.single('file'), (req, res) => documentController.extractDocumentMetadata(req, res));
+
 module.exports = router;

@@ -116,7 +116,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     );
   };
 
+  // Cek apakah tanggal berada di luar batas minDate atau maxDate
+  const isDateDisabled = (day: number) => {
+    const iso = formatISO(viewYear, viewMonth, day);
+    if (minDate && iso < minDate) return true;
+    if (maxDate && iso > maxDate) return true;
+    return false;
+  };
+
   const handleSelectDay = (day: number) => {
+    if (isDateDisabled(day)) return;
     const iso = formatISO(viewYear, viewMonth, day);
     onChange(iso);
     setIsOpen(false);
@@ -126,6 +135,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     e.stopPropagation();
     const now = new Date();
     const iso = formatISO(now.getFullYear(), now.getMonth(), now.getDate());
+    if (minDate && iso < minDate) return;
+    if (maxDate && iso > maxDate) return;
     setViewYear(now.getFullYear());
     setViewMonth(now.getMonth());
     onChange(iso);
@@ -245,18 +256,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               const dayNum = i + 1;
               const selected = isSelected(dayNum);
               const today = isToday(dayNum);
+              const disabledDay = isDateDisabled(dayNum);
 
               return (
                 <button
                   type="button"
                   key={`cur-${dayNum}`}
+                  disabled={disabledDay}
                   onClick={() => handleSelectDay(dayNum)}
-                  className={`h-8 rounded-lg flex items-center justify-center font-bold transition cursor-pointer text-xs ${
-                    selected
-                      ? "bg-blue-600 text-white shadow-xs"
+                  className={`h-8 rounded-lg flex items-center justify-center font-bold transition text-xs ${
+                    disabledDay
+                      ? "text-slate-300 bg-slate-50 cursor-not-allowed opacity-50 line-through"
+                      : selected
+                      ? "bg-blue-600 text-white shadow-xs cursor-pointer"
                       : today
-                      ? "bg-blue-50 text-blue-700 border border-blue-300 hover:bg-blue-100"
-                      : "text-slate-700 hover:bg-slate-100"
+                      ? "bg-blue-50 text-blue-700 border border-blue-300 hover:bg-blue-100 cursor-pointer"
+                      : "text-slate-700 hover:bg-slate-100 cursor-pointer"
                   }`}
                 >
                   {dayNum}

@@ -60,12 +60,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const [totalDocuments, setTotalDocuments] = useState(initialDocuments.length);
   const [apiLoading, setApiLoading] = useState(false);
 
-  // Filter & Search states yang hit ke backend
+  // Ambil tanggal hari ini dalam format YYYY-MM-DD
+  const getTodayIso = () => new Date().toISOString().split("T")[0];
+
+  // Filter & Search states yang hit ke backend (default: hari ini)
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(getTodayIso());
+  const [endDate, setEndDate] = useState(getTodayIso());
   const [dateErrors, setDateErrors] = useState<DateRangeFilterErrors>({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -98,8 +101,9 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   };
 
   const handleResetDateFilter = () => {
-    setStartDate("");
-    setEndDate("");
+    const today = getTodayIso();
+    setStartDate(today);
+    setEndDate(today);
     setDateErrors({});
     setPage(1);
   };
@@ -226,10 +230,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-black text-slate-900 tracking-tight">Daftar Dokumen Pembayaran</h1>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200/70 text-[10px] font-black text-blue-700">
-                <Sparkles className="h-2.5 w-2.5 text-blue-600" />
-                Live Data
-              </span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">
               Kelola, cari, dan lacak seluruh berkas pengajuan dokumen pembayaran beserta status verifikasinya.
@@ -238,7 +238,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 relative z-10">
-          {/* Tombol Refresh Data */}
           <button
             type="button"
             onClick={() => {
@@ -253,7 +252,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             <span>Refresh</span>
           </button>
 
-          {/* Tombol Input Dokumen Baru (Hanya PPK & Superadmin, Biro 01 hanya verifikasi) */}
           {currentUser?.role !== "biro_01" && (
             <button
               type="button"
@@ -267,9 +265,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         </div>
       </div>
 
-      {/* CARD BESAR: MEMBUNGKUS CONTROL BAR (SEARCH, FILTER & LIMIT) BESERTA TABEL */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-        {/* Bagian Filter, Pencarian, & Limit Selector */}
         <div className="p-4 border-b border-slate-200 flex flex-col gap-3 bg-slate-50/70">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="relative flex-1 max-w-md">
@@ -294,7 +290,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              {/* Filter Status */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-700 font-bold">Status:</span>
                 <select
@@ -316,7 +311,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 </select>
               </div>
 
-              {/* Limit Selector */}
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                 <span className="hidden sm:inline text-slate-600 font-semibold">Tampilkan:</span>
                 <select
@@ -337,7 +331,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             </div>
           </div>
 
-          {/* Sub-baris: Filter Tanggal Mulai dan Tanggal Akhir */}
           <div className="pt-2.5 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-2.5 flex-1">
               <span className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 shrink-0">
@@ -345,7 +338,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 <span>Filter Periode:</span>
               </span>
 
-              {/* Input Tanggal Mulai dengan DatePicker Component */}
               <div className="w-48 sm:w-52">
                 <DatePicker
                   value={startDate}
@@ -358,7 +350,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
               <span className="text-slate-400 font-bold hidden sm:inline">-</span>
 
-              {/* Input Tanggal Akhir dengan DatePicker Component */}
               <div className="w-48 sm:w-52">
                 <DatePicker
                   value={endDate}
@@ -369,21 +360,19 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 />
               </div>
 
-              {/* Tombol Reset Tanggal jika salah satu aktif */}
-              {(startDate || endDate) && (
+              {(startDate !== getTodayIso() || endDate !== getTodayIso()) && (
                 <button
                   type="button"
                   onClick={handleResetDateFilter}
                   className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold transition shadow-2xs cursor-pointer"
-                  title="Reset Filter Tanggal"
+                  title="Reset Filter Tanggal ke Hari Ini"
                 >
                   <X className="h-3.5 w-3.5" />
-                  <span>Reset Tanggal</span>
+                  <span>Reset ke Hari Ini</span>
                 </button>
               )}
             </div>
 
-            {/* Error Message jika validasi skema gagal */}
             {(dateErrors.startDate || dateErrors.endDate) && (
               <div className="flex items-center gap-1.5 text-rose-600 font-bold bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -393,7 +382,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           </div>
         </div>
 
-        {/* Tabel Data Dokumen */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
@@ -436,12 +424,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       openActionDropdownId === doc.id ? "relative z-30 bg-blue-50/40" : ""
                     }`}
                   >
-                    {/* Nomor Urut */}
                     <td className="px-4 py-3.5 text-center text-slate-400 group-hover:text-blue-600 font-extrabold text-xs whitespace-nowrap transition-colors">
                       {startIndex + idx + 1}
                     </td>
 
-                    {/* Nomor Surat */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <button
                         type="button"
@@ -467,20 +453,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       </div>
                     </td>
 
-                    {/* PPK & Unit Kerja */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="font-bold text-slate-900">{doc.ppk_name}</div>
                       <div className="text-xs text-slate-500 font-medium mt-0.5">{doc.unit_kerja}</div>
                     </td>
 
-                    {/* Nilai Pembayaran */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="font-black text-slate-900 text-sm font-mono tracking-tight">
                         Rp {Number(doc.nilai_pembayaran).toLocaleString("id-ID")}
                       </div>
                     </td>
 
-                    {/* Status & Legenda */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold shadow-2xs ${getBadgeClass(
@@ -496,7 +479,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       </span>
                     </td>
 
-                    {/* Lampiran Berkas */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <button
                         type="button"
@@ -508,7 +490,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       </button>
                     </td>
 
-                    {/* Aksi Dropdown Titik 3 */}
                     <td className="px-5 py-3.5 text-center whitespace-nowrap">
                       <div className="relative inline-block text-left">
                         <button
@@ -519,7 +500,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                             } else {
                               const rect = e.currentTarget.getBoundingClientRect();
                               const spaceBelow = window.innerHeight - rect.bottom;
-                              const popoverHeight = 175; // estimasi tinggi menu dokumen
+                              const popoverHeight = 175; 
                               const openUpwards = spaceBelow < popoverHeight && rect.top > popoverHeight;
 
                               setDropdownPos({
@@ -538,10 +519,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                           <MoreVertical className="h-4 w-4" />
                         </button>
 
-                        {/* Dropdown Menu Popover dengan Fixed Position (bebas dari overflow tabel) */}
                         {openActionDropdownId === doc.id && dropdownPos && (
                           <>
-                            {/* Backdrop transparan untuk menutup dropdown saat klik luar */}
                             <div
                               className="fixed inset-0 z-[120]"
                               onClick={() => setOpenActionDropdownId(null)}
@@ -554,7 +533,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                               }}
                               className="fixed w-44 rounded-xl bg-white shadow-2xl border border-slate-200 py-1.5 z-[130] text-left animate-in fade-in duration-100"
                             >
-                              {/* Lihat Detail */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -567,7 +545,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                 <span>Lihat Detail</span>
                               </button>
 
-                              {/* Edit Data Dokumen (Hanya PPK jika status draft atau ditolak) */}
                               {currentUser?.role !== "biro_01" &&
                                 (doc.status === "draft" || doc.status === "dikembalikan" || doc.status === "ditolak") &&
                                 onOpenEdit && (
@@ -588,7 +565,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                   </button>
                                 )}
 
-                              {/* Verifikasi (Biro 01 - HANYA MUNCUL JIKA STATUSNYA SUDAH 'review') */}
                               {currentUser?.role === "biro_01" && doc.status === "review" && (
                                 <button
                                   type="button"
@@ -603,7 +579,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                 </button>
                               )}
 
-                              {/* Hapus Dokumen (PPK jika status draft atau status ditolak) */}
                               {currentUser?.role !== "biro_01" &&
                                 (doc.status === "draft" || doc.status === "dikembalikan" || doc.status === "ditolak") && (
                                   <button
@@ -630,7 +605,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           </table>
         </div>
 
-        {/* Pagination Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-200 bg-slate-50/70 text-xs text-slate-700 font-semibold">
           <div>
             Menampilkan{" "}
@@ -686,7 +660,6 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         </div>
       </div>
 
-      {/* AlertDialog Konfirmasi Hapus Dokumen */}
       <AlertDialog
         isOpen={Boolean(docToDelete)}
         title="Konfirmasi Hapus Dokumen"

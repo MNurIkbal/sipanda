@@ -72,7 +72,11 @@ class DocumentRepository {
               'mime_type', a.mime_type,
               'document_type', a.document_type,
               'nomor_dokumen', a.nomor_dokumen,
-              'tanggal_dokumen', a.tanggal_dokumen
+              'tanggal_dokumen', a.tanggal_dokumen,
+              'nilai_pembayaran', a.nilai_pembayaran,
+              'uraian', a.uraian,
+              'nama_perusahaan', a.nama_perusahaan,
+              'metadata', a.metadata
             )
           ) FILTER (WHERE a.id IS NOT NULL),
           '[]'
@@ -130,7 +134,11 @@ class DocumentRepository {
               'mime_type', a.mime_type,
               'document_type', a.document_type,
               'nomor_dokumen', a.nomor_dokumen,
-              'tanggal_dokumen', a.tanggal_dokumen
+              'tanggal_dokumen', a.tanggal_dokumen,
+              'nilai_pembayaran', a.nilai_pembayaran,
+              'uraian', a.uraian,
+              'nama_perusahaan', a.nama_perusahaan,
+              'metadata', a.metadata
             )
           ) FILTER (WHERE a.id IS NOT NULL),
           '[]'
@@ -202,8 +210,9 @@ class DocumentRepository {
           const attQuery = `
             INSERT INTO document_attachments (
               document_id, file_name, file_path, file_size, mime_type,
-              document_type, uploaded_by_id, nomor_dokumen, tanggal_dokumen
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              document_type, uploaded_by_id, nomor_dokumen, tanggal_dokumen,
+              nilai_pembayaran, uraian, nama_perusahaan, metadata
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             RETURNING *
           `;
           const attRes = await client.query(attQuery, [
@@ -216,6 +225,10 @@ class DocumentRepository {
             att.uploaded_by_id || null,
             att.nomor_dokumen || '',
             att.tanggal_dokumen || null,
+            att.nilai_pembayaran || 0,
+            att.uraian || '',
+            att.nama_perusahaan || '',
+            JSON.stringify(att.metadata || {}),
           ]);
           attachments.push(attRes.rows[0]);
         }
@@ -290,8 +303,9 @@ class DocumentRepository {
       const q = `
         INSERT INTO document_attachments (
           document_id, file_name, file_path, file_size, mime_type,
-          document_type, nomor_dokumen, tanggal_dokumen
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          document_type, nomor_dokumen, tanggal_dokumen,
+          nilai_pembayaran, uraian, nama_perusahaan, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
       `;
       const res = await db.query(q, [
@@ -303,13 +317,17 @@ class DocumentRepository {
         att.document_type || 'Dokumen Pendukung',
         att.nomor_dokumen || '',
         att.tanggal_dokumen || null,
+        att.nilai_pembayaran || 0,
+        att.uraian || '',
+        att.nama_perusahaan || '',
+        JSON.stringify(att.metadata || {}),
       ]);
       inserted.push(res.rows[0]);
     }
     return inserted;
   }
 
-  async updateAttachment(attachmentId, { document_type, nomor_dokumen, tanggal_dokumen }) {
+  async updateAttachment(attachmentId, { document_type, nomor_dokumen, tanggal_dokumen, nilai_pembayaran, uraian, nama_perusahaan, metadata }) {
     const fields = [];
     const values = [];
     let idx = 1;
@@ -325,6 +343,22 @@ class DocumentRepository {
     if (tanggal_dokumen !== undefined) {
       fields.push(`tanggal_dokumen = $${idx++}`);
       values.push(tanggal_dokumen || null);
+    }
+    if (nilai_pembayaran !== undefined) {
+      fields.push(`nilai_pembayaran = $${idx++}`);
+      values.push(Number(nilai_pembayaran) || 0);
+    }
+    if (uraian !== undefined) {
+      fields.push(`uraian = $${idx++}`);
+      values.push(uraian);
+    }
+    if (nama_perusahaan !== undefined) {
+      fields.push(`nama_perusahaan = $${idx++}`);
+      values.push(nama_perusahaan);
+    }
+    if (metadata !== undefined) {
+      fields.push(`metadata = $${idx++}`);
+      values.push(JSON.stringify(metadata || {}));
     }
 
     if (fields.length === 0) return null;

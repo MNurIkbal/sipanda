@@ -211,6 +211,15 @@ export const sipanduApi = {
     });
     return res.json();
   },
+  extractVeriText: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/documents/extract-veritext`, {
+      method: "POST",
+      body: formData,
+    });
+    return res.json();
+  },
 
   // Audit Trail
   getAuditTrail: async (params?: { document_id?: number | string; search?: string; page?: number; limit?: number }) => {

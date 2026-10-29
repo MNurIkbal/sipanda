@@ -140,6 +140,35 @@ class DocumentController {
       return errorResponse(res, err.message, 400);
     }
   }
+
+  // VeriText OCR & Intelligent Document Metadata Extraction
+  async extractDocumentMetadata(req, res) {
+    try {
+      if (!req.file) {
+        return errorResponse(res, 'Silakan unggah file dokumen untuk diekstrak oleh VeriText!', 400);
+      }
+      const veritextService = require('../services/veritext.service');
+      const extractionResult = await veritextService.extractDocument(
+        req.file.path,
+        req.file.originalname,
+        req.file.mimetype
+      );
+
+      return successResponse(
+        res,
+        'Metadata dokumen berhasil diekstrak dengan sukses!',
+        {
+          file_name: req.file.originalname,
+          file_path: `/uploads/${req.file.filename}`,
+          file_size: req.file.size,
+          mime_type: req.file.mimetype,
+          ...extractionResult,
+        }
+      );
+    } catch (err) {
+      return errorResponse(res, `Gagal memproses ekstraksi VeriText: ${err.message}`, 500);
+    }
+  }
 }
 
 module.exports = new DocumentController();

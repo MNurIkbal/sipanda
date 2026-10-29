@@ -54,12 +54,15 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
   const [totalDocuments, setTotalDocuments] = useState(initialDocuments.length);
   const [apiLoading, setApiLoading] = useState(false);
 
-  // Search & Filter
+  // Ambil tanggal hari ini dalam format YYYY-MM-DD
+  const getTodayIso = () => new Date().toISOString().split("T")[0];
+
+  // Search & Filter (default: hari ini)
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(getTodayIso());
+  const [endDate, setEndDate] = useState(getTodayIso());
   const [dateErrors, setDateErrors] = useState<DateRangeFilterErrors>({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -96,8 +99,9 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
   };
 
   const handleResetDateFilter = () => {
-    setStartDate("");
-    setEndDate("");
+    const today = getTodayIso();
+    setStartDate(today);
+    setEndDate(today);
     setDateErrors({});
     setPage(1);
   };
@@ -405,16 +409,16 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
                 />
               </div>
 
-              {/* Tombol Reset Tanggal jika salah satu aktif */}
-              {(startDate || endDate) && (
+              {/* Tombol Reset Tanggal ke Hari Ini */}
+              {(startDate !== getTodayIso() || endDate !== getTodayIso()) && (
                 <button
                   type="button"
                   onClick={handleResetDateFilter}
                   className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold transition shadow-2xs cursor-pointer"
-                  title="Reset Filter Tanggal"
+                  title="Reset Filter Tanggal ke Hari Ini"
                 >
                   <X className="h-3.5 w-3.5" />
-                  <span>Reset Tanggal</span>
+                  <span>Reset ke Hari Ini</span>
                 </button>
               )}
             </div>

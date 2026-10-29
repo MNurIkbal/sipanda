@@ -63,6 +63,10 @@ CREATE TABLE IF NOT EXISTS document_attachments (
     document_type VARCHAR(100) DEFAULT 'Dokumen Pendukung',
     nomor_dokumen VARCHAR(100),
     tanggal_dokumen DATE,
+    nilai_pembayaran NUMERIC(18, 2) DEFAULT 0,
+    uraian TEXT,
+    nama_perusahaan VARCHAR(150),
+    metadata JSONB DEFAULT '{}'::jsonb,
     uploaded_by_id INT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
