@@ -434,7 +434,7 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
         </div>
 
         {/* Tabel Dokumen Pendukung */}
-        <div className="overflow-x-auto min-h-[350px]">
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-extrabold uppercase tracking-wider text-[11px]">

@@ -384,11 +384,6 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                              Lengkap
-                            </span>
-
                             <a
                               href={`${BACKEND_URL}${file.file_path}`}
                               target="_blank"
@@ -398,25 +393,6 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                               <FileDown className="h-3.5 w-3.5" />
                               Unduh
                             </a>
-                          </div>
-                        </div>
-
-                        {/* Document Intelligence Simulation Banner */}
-                        <div className="mt-3.5 pt-3 border-t border-slate-100 bg-slate-50/70 -mx-4 -mb-4 p-3.5 rounded-b-xl">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                              Document Intelligence
-                            </span>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                              Data Simulasi / Demo
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-slate-600 mt-1 flex items-center gap-2">
-                            <span>Terdeteksi: {file.document_type || "Berkas"} (88%)</span>
-                            <span>•</span>
-                            <span className="text-emerald-700 font-medium">Lengkap</span>
-                            <span>•</span>
-                            <span className="text-emerald-700 font-medium">Konsisten</span>
                           </div>
                         </div>
                       </div>

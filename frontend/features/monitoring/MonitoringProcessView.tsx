@@ -9,24 +9,21 @@ import {
   Inbox,
   Activity,
 } from "lucide-react";
-import { PaymentDocument, User } from "@/types/sipandu.types";
-import { formatDateID, formatDateTimeID } from "@/lib/dateFormat";
+import { PaymentDocument, User, AuditTrail } from "@/types/sipandu.types";
+import { formatDateTimeID } from "@/lib/dateFormat";
+import { sipanduApi } from "@/services/api.service";
 
 interface MonitoringProcessViewProps {
   documents: PaymentDocument[];
   currentUser?: User | null;
 }
 
-// 8 Tahapan standar kartu monitoring proses pembayaran
+// 4 Tahapan standar kartu monitoring proses pembayaran (selaras dengan Timeline Proses di Detail Dokumen)
 export const TIMELINE_STEPS = [
-  { key: "diterima", label: "Dokumen Diterima" },
-  { key: "terdaftar", label: "Terdaftar" },
-  { key: "diverifikasi", label: "Diverifikasi" },
-  { key: "lengkap_valid", label: "Lengkap / Valid" },
-  { key: "sedang_diproses", label: "Sedang Diproses" },
-  { key: "pengajuan_kppn", label: "Pengajuan ke KPPN" },
-  { key: "menunggu_pencairan", label: "Menunggu Pencairan" },
-  { key: "dana_cair", label: "Dana Cair" },
+  { key: "draft", label: "Draft Dokumen" },
+  { key: "submit_dokumen", label: "Submit Dokumen" },
+  { key: "review_awal", label: "Review (Biro 01)" },
+  { key: "disetujui", label: "Disetujui" },
 ];
 
 export const getActiveStepIndex = (status: string): number => {
@@ -48,71 +45,130 @@ export const getActiveStepIndex = (status: string): number => {
     case "valid":
     case "lengkap_valid":
     case "disetujui":
-      return 3;
     case "proses":
     case "sedang_diproses":
-      return 4;
     case "kppn":
     case "pengajuan_kppn":
-      return 5;
     case "menunggu_pencairan":
-      return 6;
     case "dana_cair":
     case "selesai":
     case "siap_digunakan":
-      return 7;
+      return 3;
     default:
       return 1;
   }
 };
 
-// Helper menghasilkan tahapan timeline dinamis untuk dokumen yang dipilih
-export const getDocumentTimelineSteps = (doc: PaymentDocument) => {
+// Helper menghasilkan tahapan timeline dinamis untuk dokumen yang dipilih (identik dengan DocumentDetailModal)
+export const getDocumentTimelineSteps = (doc: PaymentDocument, docAuditLogs: AuditTrail[] = []) => {
+  const submitLog = [...docAuditLogs].reverse().find((l) => l.action === "SUBMIT_DOKUMEN" || l.new_status === "submit_dokumen");
+  const reviewLog = [...docAuditLogs].reverse().find((l) => l.action === "REVIEW_DOCUMENT" || l.new_status === "review");
+  const rejectLog = [...docAuditLogs].reverse().find((l) => l.action === "VERIFY_REJECT" || l.new_status === "dikembalikan" || l.new_status === "ditolak");
+  const reviseLog = [...docAuditLogs].reverse().find((l) => l.action === "RESUBMIT_DOKUMEN" || l.action === "REVISE_DOCUMENT" || l.new_status === "menunggu_verifikasi_ulang" || l.new_status === "pengajuan_ulang");
+  const approveLog = [...docAuditLogs].reverse().find((l) => l.action === "VERIFY_APPROVE" || l.new_status === "lengkap_valid" || l.new_status === "disetujui");
+
   const isRejected = doc.status === "dikembalikan" || doc.status === "ditolak";
   const isPengajuanUlang = doc.status === "menunggu_verifikasi_ulang" || doc.status === "pengajuan_ulang";
-  const hasEverBeenRejected = isRejected || isPengajuanUlang;
-  const hasEverBeenResubmitted = isPengajuanUlang;
+  const hasEverBeenRejected = Boolean(rejectLog || isRejected || isPengajuanUlang);
+  const hasEverBeenResubmitted = Boolean(reviseLog || isPengajuanUlang);
+  const isReviewingResubmission =
+    hasEverBeenResubmitted &&
+    (doc.status === "review" || doc.status === "lengkap_valid" || doc.status === "disetujui");
 
-  const steps = [
-    { key: "diterima", label: "Dokumen Diterima" },
-    { key: "terdaftar", label: "Terdaftar" },
-    { key: "diverifikasi", label: "Diverifikasi (Review)" },
+  return [
+    {
+      key: "draft",
+      label: "Draft Dokumen",
+      date: formatDateTimeID(doc.created_at),
+    },
+    {
+      key: "submit_dokumen",
+      label: "Submit Dokumen",
+      date: submitLog?.created_at
+        ? formatDateTimeID(submitLog.created_at)
+        : doc.status !== "draft"
+        ? formatDateTimeID(doc.updated_at || doc.created_at)
+        : null,
+    },
+    {
+      key: "review_awal",
+      label: "Review (Biro 01)",
+      date: reviewLog?.created_at
+        ? formatDateTimeID(reviewLog.created_at)
+        : doc.status !== "draft" && doc.status !== "submit_dokumen"
+        ? formatDateTimeID(doc.updated_at || doc.created_at)
+        : null,
+    },
+    ...(hasEverBeenRejected
+      ? [
+          {
+            key: "ditolak",
+            label: "Ditolak (Perlu Revisi)",
+            date: rejectLog?.created_at
+              ? formatDateTimeID(rejectLog.created_at)
+              : isRejected
+              ? doc.tanggal_verifikasi
+                ? formatDateTimeID(doc.tanggal_verifikasi)
+                : formatDateTimeID(doc.updated_at || doc.created_at)
+              : null,
+            isDanger: true,
+          },
+        ]
+      : []),
+    ...(hasEverBeenResubmitted
+      ? [
+          {
+            key: "pengajuan_ulang",
+            label: "Pengajuan Ulang PPK",
+            date: reviseLog?.created_at
+              ? formatDateTimeID(reviseLog.created_at)
+              : isPengajuanUlang
+              ? formatDateTimeID(doc.updated_at || doc.created_at)
+              : null,
+            isWarning: true,
+          },
+        ]
+      : []),
+    ...(isReviewingResubmission
+      ? [
+          {
+            key: "review_ulang",
+            label: "Review Pengajuan Ulang",
+            date:
+              doc.status === "review"
+                ? formatDateTimeID(doc.updated_at || new Date().toISOString())
+                : reviewLog?.created_at
+                ? formatDateTimeID(reviewLog.created_at)
+                : null,
+          },
+        ]
+      : []),
+    {
+      key: "disetujui",
+      label: "Disetujui",
+      date: approveLog?.created_at
+        ? formatDateTimeID(approveLog.created_at)
+        : doc.status === "lengkap_valid" || doc.status === "disetujui" || doc.status === "dana_cair" || doc.status === "selesai"
+        ? doc.tanggal_verifikasi
+          ? formatDateTimeID(doc.tanggal_verifikasi)
+          : formatDateTimeID(doc.updated_at || doc.created_at)
+        : null,
+    },
   ];
-
-  if (hasEverBeenRejected) {
-    steps.push({ key: "ditolak", label: "Ditolak (Perlu Revisi)", isDanger: true } as any);
-  }
-
-  if (hasEverBeenResubmitted) {
-    steps.push({ key: "pengajuan_ulang", label: "Pengajuan Ulang PPK", isWarning: true } as any);
-    if (doc.status === "review" || doc.status === "lengkap_valid" || doc.status === "dana_cair") {
-      steps.push({ key: "review_ulang", label: "Review Pengajuan Ulang" } as any);
-    }
-  }
-
-  steps.push(
-    { key: "lengkap_valid", label: "Lengkap / Valid (Disetujui)" },
-    { key: "sedang_diproses", label: "Sedang Diproses" },
-    { key: "pengajuan_kppn", label: "Pengajuan ke KPPN" },
-    { key: "menunggu_pencairan", label: "Menunggu Pencairan" },
-    { key: "dana_cair", label: "Dana Cair" }
-  );
-
-  return steps;
 };
 
 // Helper menentukan tahapan aktif berdasarkan status dokumen dan steps dinamis
 export const getActiveDocStepIndex = (status: string, steps: any[]): number => {
   switch (status) {
     case "draft":
-      return steps.findIndex((s) => s.key === "diterima");
+      return steps.findIndex((s) => s.key === "draft");
     case "submit_dokumen":
     case "menunggu_verifikasi":
-      return steps.findIndex((s) => s.key === "terdaftar");
+      return steps.findIndex((s) => s.key === "submit_dokumen");
     case "review":
     case "sedang_diverifikasi": {
       const idxReviewUlang = steps.findIndex((s) => s.key === "review_ulang");
-      return idxReviewUlang !== -1 ? idxReviewUlang : steps.findIndex((s) => s.key === "diverifikasi");
+      return idxReviewUlang !== -1 ? idxReviewUlang : steps.findIndex((s) => s.key === "review_awal");
     }
     case "dikembalikan":
     case "ditolak":
@@ -124,46 +180,37 @@ export const getActiveDocStepIndex = (status: string, steps: any[]): number => {
     case "valid":
     case "lengkap_valid":
     case "disetujui":
-      return steps.findIndex((s) => s.key === "lengkap_valid");
     case "proses":
     case "sedang_diproses":
-      return steps.findIndex((s) => s.key === "sedang_diproses");
     case "kppn":
     case "pengajuan_kppn":
-      return steps.findIndex((s) => s.key === "pengajuan_kppn");
     case "menunggu_pencairan":
-      return steps.findIndex((s) => s.key === "menunggu_pencairan");
     case "dana_cair":
     case "selesai":
     case "siap_digunakan":
-      return steps.findIndex((s) => s.key === "dana_cair");
+      return steps.findIndex((s) => s.key === "disetujui");
     default:
-      return 1;
+      return 0;
   }
 };
 
 // Deskripsi sub-status / keterangan ringkas di bawah progress bar
 const getSubStatusDescription = (doc: PaymentDocument, stepIndex: number): string => {
-  if (doc.status === "dikembalikan") {
+  if (doc.status === "dikembalikan" || doc.status === "ditolak") {
     return doc.catatan_revisi ? `Catatan Revisi: ${doc.catatan_revisi}` : "Perlu perbaikan berkas pendukung oleh PPK";
+  }
+  if (doc.status === "menunggu_verifikasi_ulang" || doc.status === "pengajuan_ulang") {
+    return "Dokumen telah diperbaiki PPK & diajukan ulang ke Biro 01";
   }
   switch (stepIndex) {
     case 0:
-      return "Berkas fisik diterima oleh loket administrasi";
+      return "Dokumen masih berstatus Draft & belum dikirim ke Biro 01";
     case 1:
-      return "Dokumen berhasil diregistrasi & menunggu verifikasi Biro 01";
+      return "Dokumen telah disubmit & menunggu proses review Biro 01";
     case 2:
-      return "Sedang dalam proses verifikasi berkas oleh Biro 01";
+      return "Sedang dalam proses review kelengkapan berkas oleh Biro 01";
     case 3:
-      return "Berkas dinyatakan lengkap, valid, dan disetujui Biro 01";
-    case 4:
-      return "Sedang diproses pembuatan SPP / SPM";
-    case 5:
-      return "Menunggu konfirmasi pengajuan";
-    case 6:
-      return "Menunggu informasi pencairan";
-    case 7:
-      return "Dana telah berhasil dicairkan ke rekening tujuan";
+      return "Berkas dinyatakan lengkap, valid, dan telah disetujui Biro 01";
     default:
       return "Dalam proses tindak lanjut";
   }
@@ -177,18 +224,16 @@ const getUpdateDate = (doc: PaymentDocument): string => {
 
 // Badge status styling
 const getStatusBadgeStyle = (status: string, stepIndex: number) => {
-  if (status === "dikembalikan") {
+  if (status === "dikembalikan" || status === "ditolak") {
     return "bg-rose-50 text-rose-700 border-rose-200";
   }
-  if (stepIndex === 5) {
-    // Pengajuan ke KPPN (Indigo / Ungu muda seperti gambar)
-    return "bg-indigo-50/70 text-indigo-700 border-indigo-200";
+  if (status === "menunggu_verifikasi_ulang" || status === "pengajuan_ulang") {
+    return "bg-orange-50 text-orange-700 border-orange-200";
   }
-  if (stepIndex === 6) {
-    // Menunggu Pencairan (Kuning / Amber seperti gambar)
-    return "bg-amber-50/80 text-amber-700 border-amber-200";
+  if (stepIndex === 0) {
+    return "bg-slate-100 text-slate-700 border-slate-200";
   }
-  if (stepIndex >= 7 || stepIndex === 3) {
+  if (stepIndex >= 3) {
     return "bg-emerald-50 text-emerald-700 border-emerald-200";
   }
   return "bg-blue-50 text-blue-700 border-blue-200";
@@ -204,6 +249,7 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
 
   // State dokumen terpilih untuk timeline kanan
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+  const [docAuditLogs, setDocAuditLogs] = useState<AuditTrail[]>([]);
 
   // Filter dokumen berdasarkan search
   const filteredDocuments = useMemo(() => {
@@ -255,9 +301,36 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
     return documents.find((d) => d.id === selectedDocId) || paginatedDocuments[0] || null;
   }, [documents, selectedDocId, paginatedDocuments]);
 
+  // Ambil audit trail dokumen terpilih agar tahapan & waktu di Timeline Proses akurat
+  useEffect(() => {
+    let isMounted = true;
+    if (!activeDoc?.id) {
+      setDocAuditLogs([]);
+      return;
+    }
+
+    sipanduApi
+      .getAuditTrail({ document_id: activeDoc.id })
+      .then((res) => {
+        if (res.success && res.data && isMounted) {
+          const logsData = Array.isArray(res.data) ? res.data : res.data.logs || [];
+          setDocAuditLogs(logsData);
+        } else if (isMounted) {
+          setDocAuditLogs([]);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setDocAuditLogs([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeDoc?.id]);
+
   const activeDocTimelineSteps = useMemo(() => {
-    return activeDoc ? getDocumentTimelineSteps(activeDoc) : [];
-  }, [activeDoc]);
+    return activeDoc ? getDocumentTimelineSteps(activeDoc, docAuditLogs) : [];
+  }, [activeDoc, docAuditLogs]);
 
   const activeDocStepIndex = activeDoc ? getActiveDocStepIndex(activeDoc.status, activeDocTimelineSteps) : 0;
 
@@ -345,38 +418,31 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold border ${badgeStyle}`}
                       >
-                        {stepIndex >= 7 && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />}
+                        {stepIndex >= 3 && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />}
                         {labelStatus}
                       </span>
                     </div>
                   </div>
 
-                  {/* Segmented Progress Bar 5 Segmen */}
-                  <div className="mt-4 grid grid-cols-5 gap-1.5 items-center">
-                    {[0, 1, 2, 3, 4].map((segIdx) => {
-                      let segCompleted = false;
-                      let segActive = false;
-
-                      if (segIdx === 0) {
-                        segCompleted = stepIndex > 1;
-                        segActive = stepIndex <= 1;
-                      } else if (segIdx === 1) {
-                        segCompleted = stepIndex > 2;
-                        segActive = stepIndex === 2;
-                      } else if (segIdx === 2) {
-                        segCompleted = stepIndex > 4;
-                        segActive = stepIndex === 3 || stepIndex === 4;
-                      } else if (segIdx === 3) {
-                        segCompleted = stepIndex > 6;
-                        segActive = stepIndex === 5 || stepIndex === 6;
-                      } else if (segIdx === 4) {
-                        segCompleted = stepIndex >= 7; // Dana Cair = Alur Selesai (Rampung)
-                        segActive = false;
-                      }
+                  {/* Segmented Progress Bar 4 Segmen (Draft, Submit, Review Biro 01, Disetujui) */}
+                  <div className="mt-4 grid grid-cols-4 gap-1.5 items-center">
+                    {[0, 1, 2, 3].map((segIdx) => {
+                      const isApprovedDoc =
+                        doc.status === "lengkap_valid" ||
+                        doc.status === "disetujui" ||
+                        doc.status === "dana_cair" ||
+                        doc.status === "selesai";
+                      const segCompleted = segIdx < stepIndex || (segIdx === 3 && isApprovedDoc);
+                      const segActive = segIdx === stepIndex && !isApprovedDoc;
 
                       let barColor = "bg-slate-100"; // Segmen belum tercapai
-                      if (doc.status === "dikembalikan") {
-                        if (segIdx <= 1) barColor = "bg-rose-500";
+                      if ((doc.status === "dikembalikan" || doc.status === "ditolak") && segIdx === 2) {
+                        barColor = "bg-rose-500";
+                      } else if (
+                        (doc.status === "menunggu_verifikasi_ulang" || doc.status === "pengajuan_ulang") &&
+                        segIdx === 2
+                      ) {
+                        barColor = "bg-orange-500";
                       } else if (segCompleted) {
                         barColor = "bg-emerald-500"; // Hijau untuk segmen selesai
                       } else if (segActive) {
@@ -493,42 +559,38 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
               <>
                 {/* Header Timeline: Nomor Surat Dokumen Terpilih */}
                 <div className="pb-4 border-b border-slate-100 flex items-center justify-between">
-                  <h2 className="text-sm font-extrabold text-slate-900 tracking-tight">
-                    {activeDoc.nomor_surat}
-                  </h2>
+                  <div>
+                    <h2 className="text-sm font-extrabold text-slate-900 tracking-tight">
+                      Timeline Proses
+                    </h2>
+                    <p className="text-[11px] font-semibold text-blue-600 mt-0.5">
+                      {activeDoc.nomor_surat}
+                    </p>
+                  </div>
                   <span className="text-[11px] font-semibold text-slate-400">
                     {activeDoc.unit_kerja || "Unit Kerja"}
                   </span>
                 </div>
 
-                {/* Vertical Stepper Timeline Steps */}
-                <div className="relative mt-6 pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-3 before:w-[2px] before:bg-slate-100">
+                {/* Vertical Stepper Timeline Steps (Identik dengan Detail Daftar Dokumen) */}
+                <div className="relative mt-5 pl-6 space-y-5 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
                   {activeDocTimelineSteps.map((step, idx) => {
-                    const isPassed = idx < activeDocStepIndex;
-                    const isCurrent = idx === activeDocStepIndex;
-                    
-                    let stepDate: string | null = null;
-                    if (step.key === "diterima") {
-                      stepDate = formatDateID(activeDoc.tanggal_diterima || activeDoc.created_at, { format: "numeric" });
-                    } else if (step.key === "terdaftar") {
-                      stepDate = formatDateTimeID(activeDoc.created_at, { format: "numeric" });
-                    } else if (step.key === "diverifikasi" || step.key === "ditolak") {
-                      stepDate = activeDoc.tanggal_verifikasi
-                        ? formatDateTimeID(activeDoc.tanggal_verifikasi, { format: "numeric" })
-                        : activeDoc.updated_at
-                        ? formatDateTimeID(activeDoc.updated_at, { format: "numeric" })
-                        : null;
-                    } else if (idx <= activeDocStepIndex && activeDoc.updated_at) {
-                      stepDate = formatDateTimeID(activeDoc.updated_at, { format: "numeric" });
-                    }
+                    const isDisetujuiFinal =
+                      step.key === "disetujui" &&
+                      (activeDoc.status === "lengkap_valid" ||
+                        activeDoc.status === "disetujui" ||
+                        activeDoc.status === "dana_cair" ||
+                        activeDoc.status === "selesai");
+                    const isPassed = idx < activeDocStepIndex || isDisetujuiFinal;
+                    const isCurrent = idx === activeDocStepIndex && !isDisetujuiFinal;
 
                     return (
-                      <div key={step.key} className="relative flex items-start">
-                        {/* Bullet Icon */}
-                        <div className="absolute -left-8 mt-0.5 flex items-center justify-center bg-white">
+                      <div key={step.key} className="relative flex items-start gap-3">
+                        {/* Dot / Icon */}
+                        <div className="absolute -left-6 mt-0.5 flex items-center justify-center bg-white">
                           {isPassed ? (
-                            <div className="w-5 h-5 rounded-full bg-white text-emerald-600 flex items-center justify-center">
-                              <CheckCircle2 className="h-5 w-5 fill-emerald-50 text-emerald-600" />
+                            <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                              <CheckCircle2 className="h-4 w-4" />
                             </div>
                           ) : isCurrent ? (
                             (step as any).isDanger ? (
@@ -545,30 +607,30 @@ export const MonitoringProcessView: React.FC<MonitoringProcessViewProps> = ({
                               </div>
                             )
                           ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-slate-200 bg-white" />
+                            <div className="w-5 h-5 rounded-full border-2 border-slate-300 bg-white" />
                           )}
                         </div>
 
-                        {/* Text Label & Waktu */}
-                        <div className="min-w-0 flex-1 ml-1">
+                        {/* Label & Date */}
+                        <div className="min-w-0 flex-1">
                           <p
-                            className={`text-xs ${
-                              isCurrent
+                            className={`text-xs font-semibold ${
+                              isPassed
+                                ? "text-slate-800"
+                                : isCurrent
                                 ? (step as any).isDanger
                                   ? "text-rose-600 font-bold"
                                   : (step as any).isWarning
                                   ? "text-orange-600 font-bold"
                                   : "text-blue-600 font-bold"
-                                : isPassed
-                                ? "text-slate-800 font-semibold"
                                 : "text-slate-400 font-normal"
                             }`}
                           >
                             {step.label}
                           </p>
-                          {stepDate && (
+                          {(step as any).date && (
                             <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                              {stepDate}
+                              {(step as any).date}
                             </p>
                           )}
                         </div>
