@@ -641,7 +641,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         </div>
       )}
 
-      {/* TAMPILAN KHUSUS DOKUMEN DITOLAK (Catatan Revisi dari Verifikator & Form Penjelasan Perbaikan PPK) */}
       {initialData && (initialData.status === "dikembalikan" || initialData.status === "ditolak" || Boolean(initialData.catatan_revisi)) && (
         <div className="bg-white rounded-2xl border border-rose-200 shadow-xs p-6 md:p-7 space-y-4 animate-in fade-in duration-200">
           {/* Card Catatan Revisi dari Verifikator Biro 01 */}
