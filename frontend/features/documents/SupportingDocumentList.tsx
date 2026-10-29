@@ -22,12 +22,16 @@ import {
   FileCheck2,
   Clock,
   ArrowUpRight,
+  Calendar,
+  AlertCircle,
 } from "lucide-react";
 import { PaymentDocument, User } from "@/types/sipandu.types";
 import { formatDateID } from "@/lib/dateFormat";
 import { sipanduApi } from "@/services/api.service";
 import { GenerateOfficialDocModal } from "./GenerateOfficialDocModal";
 import { GeneratorType, printOfficialDoc } from "@/lib/officialDocPdf";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { dateRangeFilterSchema, DateRangeFilterErrors } from "@/schemas/document.schema";
 
 interface SupportingDocumentListProps {
   documents?: PaymentDocument[];
@@ -54,6 +58,9 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [dateErrors, setDateErrors] = useState<DateRangeFilterErrors>({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -69,6 +76,32 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
   // Loading kirim ke Biro 01
   const [submittingDocId, setSubmittingDocId] = useState<number | null>(null);
 
+  // Handle filter tanggal dengan skema validasi
+  const handleStartDateChange = (val: string) => {
+    setStartDate(val);
+    const result = dateRangeFilterSchema.validate({ startDate: val, endDate });
+    setDateErrors(result.errors);
+    if (result.isValid) {
+      setPage(1);
+    }
+  };
+
+  const handleEndDateChange = (val: string) => {
+    setEndDate(val);
+    const result = dateRangeFilterSchema.validate({ startDate, endDate: val });
+    setDateErrors(result.errors);
+    if (result.isValid) {
+      setPage(1);
+    }
+  };
+
+  const handleResetDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setDateErrors({});
+    setPage(1);
+  };
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchInput);
@@ -79,11 +112,17 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
   }, [searchInput]);
 
   const fetchDocumentsFromApi = async () => {
+    if (dateErrors.startDate || dateErrors.endDate) {
+      return;
+    }
+
     try {
       setApiLoading(true);
       const res = await sipanduApi.getDocuments({
         search: debouncedSearch,
         status: statusFilter,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
         page,
         limit,
         user_role: currentUser?.role,
@@ -107,7 +146,7 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
 
   useEffect(() => {
     fetchDocumentsFromApi();
-  }, [debouncedSearch, statusFilter, page, limit]);
+  }, [debouncedSearch, statusFilter, startDate, endDate, page, limit]);
 
   const handleOpenGenerator = (doc: PaymentDocument, type: GeneratorType) => {
     setSelectedDocForGenerate(doc);

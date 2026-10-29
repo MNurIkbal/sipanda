@@ -446,3 +446,46 @@ export const revisiDocumentSchema = {
     };
   },
 };
+
+// Schema Validasi Rentang Tanggal Filter Dokumen (Daftar Dokumen & Dokumen Pendukung)
+export interface DateRangeFilterInput {
+  startDate: string;
+  endDate: string;
+}
+
+export interface DateRangeFilterErrors {
+  startDate?: string;
+  endDate?: string;
+}
+
+export const dateRangeFilterSchema = {
+  validate: (
+    input: DateRangeFilterInput
+  ): { isValid: boolean; errors: DateRangeFilterErrors } => {
+    const errors: DateRangeFilterErrors = {};
+
+    // Validasi format tanggal YYYY-MM-DD jika diisi
+    const isValidFormat = (val: string) => /^\d{4}-\d{2}-\d{2}$/.test(val);
+
+    if (input.startDate && !isValidFormat(input.startDate)) {
+      errors.startDate = "Format tanggal mulai tidak valid (YYYY-MM-DD)!";
+    }
+
+    if (input.endDate && !isValidFormat(input.endDate)) {
+      errors.endDate = "Format tanggal akhir tidak valid (YYYY-MM-DD)!";
+    }
+
+    // Validasi logika rentang tanggal jika kedua tanggal terisi
+    if (input.startDate && input.endDate && isValidFormat(input.startDate) && isValidFormat(input.endDate)) {
+      if (input.startDate > input.endDate) {
+        errors.startDate = "Tanggal mulai tidak boleh melebihi tanggal akhir!";
+        errors.endDate = "Tanggal akhir tidak boleh mendahului tanggal mulai!";
+      }
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+    };
+  },
+};

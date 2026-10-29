@@ -98,6 +98,8 @@ export const sipanduApi = {
     search?: string;
     unit_kerja?: string;
     jenis_dokumen?: string;
+    start_date?: string;
+    end_date?: string;
     page?: number;
     limit?: number;
     user_role?: string;
@@ -107,6 +109,8 @@ export const sipanduApi = {
     if (params?.search) query.append("search", params.search);
     if (params?.unit_kerja && params.unit_kerja !== "ALL") query.append("unit_kerja", params.unit_kerja);
     if (params?.jenis_dokumen && params.jenis_dokumen !== "ALL") query.append("jenis_dokumen", params.jenis_dokumen);
+    if (params?.start_date) query.append("start_date", params.start_date);
+    if (params?.end_date) query.append("end_date", params.end_date);
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
     if (params?.user_role) query.append("user_role", params.user_role);

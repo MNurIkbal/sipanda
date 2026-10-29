@@ -20,11 +20,15 @@ import {
   Clock,
   ArrowUpRight,
   Filter,
+  Calendar,
+  AlertCircle,
 } from "lucide-react";
 import { PaymentDocument, User } from "@/types/sipandu.types";
 import { AlertDialog } from "@/components/ui/AlertDialog";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { formatDateID } from "@/lib/dateFormat";
 import { sipanduApi } from "@/services/api.service";
+import { dateRangeFilterSchema, DateRangeFilterErrors } from "@/schemas/document.schema";
 
 interface DocumentListProps {
   documents?: PaymentDocument[];
@@ -60,6 +64,9 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [dateErrors, setDateErrors] = useState<DateRangeFilterErrors>({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -71,6 +78,32 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const [docToDelete, setDocToDelete] = useState<PaymentDocument | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Handle change tanggal dengan validasi skema
+  const handleStartDateChange = (val: string) => {
+    setStartDate(val);
+    const result = dateRangeFilterSchema.validate({ startDate: val, endDate });
+    setDateErrors(result.errors);
+    if (result.isValid) {
+      setPage(1);
+    }
+  };
+
+  const handleEndDateChange = (val: string) => {
+    setEndDate(val);
+    const result = dateRangeFilterSchema.validate({ startDate, endDate: val });
+    setDateErrors(result.errors);
+    if (result.isValid) {
+      setPage(1);
+    }
+  };
+
+  const handleResetDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setDateErrors({});
+    setPage(1);
+  };
+
   // Debounce search input (350ms) agar tidak memborbardir API pada setiap ketukan keyboard
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -81,13 +114,20 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     return () => clearTimeout(handler);
   }, [searchInput]);
 
-  // Hit Backend API untuk Search, Status, Page, dan Size (Limit)
+  // Hit Backend API untuk Search, Status, Date Range, Page, dan Size (Limit)
   const fetchDocumentsFromApi = async () => {
+    // Jika ada error validasi tanggal, jangan hit ke backend dengan rentang tidak valid
+    if (dateErrors.startDate || dateErrors.endDate) {
+      return;
+    }
+
     try {
       setApiLoading(true);
       const res = await sipanduApi.getDocuments({
         search: debouncedSearch,
         status: statusFilter,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
         page,
         limit,
         user_role: currentUser?.role,
@@ -111,7 +151,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   useEffect(() => {
     fetchDocumentsFromApi();
-  }, [debouncedSearch, statusFilter, page, limit]);
+  }, [debouncedSearch, statusFilter, startDate, endDate, page, limit]);
 
   // Sinkronisasi state lokal saat context parent me-refresh dokumen
   useEffect(() => {
@@ -230,70 +270,126 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       {/* CARD BESAR: MEMBUNGKUS CONTROL BAR (SEARCH, FILTER & LIMIT) BESERTA TABEL */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
         {/* Bagian Filter, Pencarian, & Limit Selector */}
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70">
-          <div className="relative flex-1 max-w-md">
-            <Search className="h-4 w-4 absolute left-3.5 top-3 text-slate-500" />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Cari nomor surat, uraian belanja, atau nama PPK..."
-              className="w-full pl-10 pr-9 py-2 text-sm rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 font-semibold transition shadow-2xs"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={() => setSearchInput("")}
-                className="absolute right-3 top-2.5 p-0.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                title="Hapus pencarian"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+        <div className="p-4 border-b border-slate-200 flex flex-col gap-3 bg-slate-50/70">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="h-4 w-4 absolute left-3.5 top-3 text-slate-500" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Cari nomor surat, uraian belanja, atau nama PPK..."
+                className="w-full pl-10 pr-9 py-2 text-sm rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 font-semibold transition shadow-2xs"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput("")}
+                  className="absolute right-3 top-2.5 p-0.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                  title="Hapus pencarian"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Filter Status */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-700 font-bold">Status:</span>
+                <select
+                  aria-label="Filter Berdasarkan Status Dokumen"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="text-xs border border-slate-300 bg-white hover:bg-slate-50 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none cursor-pointer transition shadow-2xs"
+                >
+                  <option value="ALL">Semua Status</option>
+                  <option value="draft">Draft</option>
+                  <option value="submit_dokumen">Submit Dokumen</option>
+                  <option value="review">Review</option>
+                  <option value="dikembalikan">Ditolak</option>
+                  <option value="menunggu_verifikasi_ulang">Pengajuan Ulang</option>
+                  <option value="lengkap_valid">Disetujui</option>
+                </select>
+              </div>
+
+              {/* Limit Selector */}
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <span className="hidden sm:inline text-slate-600 font-semibold">Tampilkan:</span>
+                <select
+                  aria-label="Jumlah Dokumen Per Halaman"
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="px-3 py-2 rounded-xl border border-slate-300 bg-white font-bold text-slate-800 outline-none cursor-pointer hover:bg-slate-50 transition shadow-2xs"
+                >
+                  <option value={5}>5 baris</option>
+                  <option value={10}>10 baris</option>
+                  <option value={20}>20 baris</option>
+                  <option value={50}>50 baris</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Sub-baris: Filter Tanggal Mulai dan Tanggal Akhir */}
+          <div className="pt-2.5 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1">
+              <span className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 shrink-0">
+                <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                <span>Filter Periode:</span>
+              </span>
 
-            {/* Filter Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-700 font-bold">Status:</span>
-              <select
-                aria-label="Filter Berdasarkan Status Dokumen"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="text-xs border border-slate-300 bg-white hover:bg-slate-50 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none cursor-pointer transition shadow-2xs"
-              >
-                <option value="ALL">Semua Status</option>
-                <option value="draft">Draft</option>
-                <option value="submit_dokumen">Submit Dokumen</option>
-                <option value="review">Review</option>
-                <option value="dikembalikan">Ditolak</option>
-                <option value="menunggu_verifikasi_ulang">Pengajuan Ulang</option>
-                <option value="lengkap_valid">Disetujui</option>
-              </select>
+              {/* Input Tanggal Mulai dengan DatePicker Component */}
+              <div className="w-48 sm:w-52">
+                <DatePicker
+                  value={startDate}
+                  onChange={handleStartDateChange}
+                  placeholder="Tanggal Mulai"
+                  maxDate={endDate || undefined}
+                  hasError={!!dateErrors.startDate}
+                />
+              </div>
+
+              <span className="text-slate-400 font-bold hidden sm:inline">-</span>
+
+              {/* Input Tanggal Akhir dengan DatePicker Component */}
+              <div className="w-48 sm:w-52">
+                <DatePicker
+                  value={endDate}
+                  onChange={handleEndDateChange}
+                  placeholder="Tanggal Akhir"
+                  minDate={startDate || undefined}
+                  hasError={!!dateErrors.endDate}
+                />
+              </div>
+
+              {/* Tombol Reset Tanggal jika salah satu aktif */}
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={handleResetDateFilter}
+                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold transition shadow-2xs cursor-pointer"
+                  title="Reset Filter Tanggal"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span>Reset Tanggal</span>
+                </button>
+              )}
             </div>
 
-            {/* Limit Selector */}
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-              <span className="hidden sm:inline text-slate-600 font-semibold">Tampilkan:</span>
-              <select
-                aria-label="Jumlah Dokumen Per Halaman"
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="px-3 py-2 rounded-xl border border-slate-300 bg-white font-bold text-slate-800 outline-none cursor-pointer hover:bg-slate-50 transition shadow-2xs"
-              >
-                <option value={5}>5 baris</option>
-                <option value={10}>10 baris</option>
-                <option value={20}>20 baris</option>
-                <option value={50}>50 baris</option>
-              </select>
-            </div>
+            {/* Error Message jika validasi skema gagal */}
+            {(dateErrors.startDate || dateErrors.endDate) && (
+              <div className="flex items-center gap-1.5 text-rose-600 font-bold bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>{dateErrors.startDate || dateErrors.endDate}</span>
+              </div>
+            )}
           </div>
         </div>
 

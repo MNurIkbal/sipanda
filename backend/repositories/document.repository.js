@@ -2,7 +2,7 @@ const PaymentDocument = require('../models/document.model');
 const db = require('../config/db');
 
 class DocumentRepository {
-  async findAll({ status, search, unit_kerja, jenis_dokumen, page, limit, user_role } = {}) {
+  async findAll({ status, search, unit_kerja, jenis_dokumen, start_date, end_date, page, limit, user_role } = {}) {
     let baseWhere = `WHERE 1=1`;
     const params = [];
 
@@ -26,6 +26,17 @@ class DocumentRepository {
     if (jenis_dokumen && jenis_dokumen !== 'ALL') {
       params.push(jenis_dokumen.trim());
       baseWhere += ` AND d.jenis_dokumen = $${params.length}`;
+    }
+
+    // Filter rentang tanggal berdasarkan tanggal_pengajuan atau tanggal_dokumen
+    if (start_date && start_date.trim()) {
+      params.push(start_date.trim());
+      baseWhere += ` AND (COALESCE(d.tanggal_pengajuan, d.tanggal_dokumen, d.created_at::date) >= $${params.length}::date)`;
+    }
+
+    if (end_date && end_date.trim()) {
+      params.push(end_date.trim());
+      baseWhere += ` AND (COALESCE(d.tanggal_pengajuan, d.tanggal_dokumen, d.created_at::date) <= $${params.length}::date)`;
     }
 
     if (search) {
