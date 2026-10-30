@@ -404,217 +404,289 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
         </div>
       </div>
 
-      {/* 3. ANALITIK DISTRIBUSI STATUS TIMELINE & RINGKASAN REALISASI ANGGARAN */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Panel Kiri (7 Kolom): Pipeline & Distribusi Status Berkas Sesuai Timeline Proses Lengkap */}
-        <div className="lg:col-span-7 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
-                  <Activity className="h-4 w-4" />
+      {/* 3. ANALITIK DISTRIBUSI STATUS TIMELINE & RINGKASAN REALISASI ANGGARAN (2 KOLOM SEJAJAR) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Panel Kiri (Kolom 7 dari 12): Grafik Garis Tren Modern (Height & Width Pas dengan Card Kanan) */}
+        <div className="lg:col-span-7 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-col justify-between h-full">
+          <div className="flex flex-col h-full">
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 shadow-xs">
+                    <Activity className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 tracking-tight">
+                      Grafik Tren &amp; Distribusi Status Dokumen
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Visualisasi grafik kurva garis alur berkas
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900">
-                    Timeline &amp; Distribusi Status Dokumen
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Ringkasan tahapan dokumen mulai dari Draft, Submit, Review, Ditolak, Pengajuan Ulang, hingga Disetujui
-                  </p>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-extrabold border border-slate-200">
+                    Total: {totalDocs} Berkas
+                  </span>
                 </div>
               </div>
-              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-extrabold border border-slate-200">
-                Total: {totalDocs} Berkas
-              </span>
             </div>
 
-            <div className="mt-4 space-y-2.5 text-xs">
-              {/* Bar 1: Draft Dokumen */}
-              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-                    <span>Draft Dokumen</span>
-                  </span>
-                  <span className="font-black text-slate-700 bg-white px-2.5 py-0.5 rounded-md border border-slate-200">
-                    {draftCount} Berkas
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-slate-400 to-slate-600 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (draftCount / Math.max(1, totalDocs)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
+            {/* Area Line Chart SVG Full Height di dalam Card */}
+            <div className="flex-1 flex flex-col justify-between pt-4">
+              {(() => {
+                const stages = [
+                  { label: "1. Draft", value: draftCount, color: "#64748b", desc: "Berkas konsep awal PPK" },
+                  { label: "2. Submit", value: submitCount, color: "#f59e0b", desc: "Menunggu pemeriksaan berkas" },
+                  { label: "3. Review", value: reviewCount, color: "#3b82f6", desc: "Sedang diuji oleh Biro 01" },
+                  ...(currentUser?.role !== "biro_01"
+                    ? [{ label: "4. Ditolak", value: rejectedCount, color: "#f43f5e", desc: "Dikembalikan untuk revisi PPK" }]
+                    : []),
+                  { label: currentUser?.role === "biro_01" ? "4. Ulang" : "5. Ulang", value: resubmittedCount, color: "#f97316", desc: "Pasca revisi / perbaikan PPK" },
+                  { label: currentUser?.role === "biro_01" ? "5. Selesai" : "6. Selesai", value: approvedCount, color: "#10b981", desc: "Lolos verifikasi lengkap & valid" },
+                ];
 
-              {/* Bar 2: Submit Dokumen */}
-              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
-                    <span>Submit Dokumen</span>
-                  </span>
-                  <span className="font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">
-                    {submitCount} Berkas
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (submitCount / Math.max(1, totalDocs)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
+                const maxVal = Math.max(1, ...stages.map((s) => s.value));
+                // Dimensi SVG Canvas Full Height & Proportion
+                const width = 640;
+                const height = 280;
+                const paddingX = 42;
+                const paddingY = 40;
+                const innerWidth = width - paddingX * 2;
+                const innerHeight = height - paddingY * 2;
 
-              {/* Bar 3: Review (Biro 01) */}
-              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                    <span>Review (Biro 01)</span>
-                  </span>
-                  <span className="font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
-                    {reviewCount} Berkas
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (reviewCount / Math.max(1, totalDocs)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
+                // Titik koordinat
+                const step = stages.length > 1 ? innerWidth / (stages.length - 1) : innerWidth;
+                const points = stages.map((s, idx) => {
+                  const x = paddingX + idx * step;
+                  const ratio = s.value / maxVal;
+                  const y = height - paddingY - ratio * innerHeight;
+                  return { ...s, x, y };
+                });
 
-              {/* Bar 4: Ditolak (Perlu Revisi) - Disembunyikan untuk role biro_01 */}
-              {currentUser?.role !== "biro_01" && (
-                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                  <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-                      <span>Ditolak (Perlu Revisi)</span>
-                    </span>
-                    <span className="font-black text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200">
-                      {rejectedCount} Berkas
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
+                // Path kurva halus (Smooth Cubic Bezier)
+                let pathD = `M ${points[0].x} ${points[0].y}`;
+                for (let i = 0; i < points.length - 1; i++) {
+                  const p0 = points[i];
+                  const p1 = points[i + 1];
+                  const midX = (p0.x + p1.x) / 2;
+                  pathD += ` C ${midX} ${p0.y}, ${midX} ${p1.y}, ${p1.x} ${p1.y}`;
+                }
+
+                // Path area gradien di bawah kurva
+                const areaD = `${pathD} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`;
+
+                return (
+                  <div className="flex-1 flex flex-col justify-between rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50/40 via-white to-white p-3 sm:p-4">
+                    {/* SVG Graphic dengan Tooltip Saat Disorot (Titik Diam / Tidak Bergerak) */}
+                    <div className="relative w-full flex-1 flex items-center">
+                      <svg
+                        viewBox={`0 0 ${width} ${height}`}
+                        className="w-full h-64 sm:h-72 lg:h-80 overflow-visible"
+                        preserveAspectRatio="none"
+                      >
+                        <defs>
+                          {/* Gradien Area Bawah Garis */}
+                          <linearGradient id="lineAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                            <stop offset="60%" stopColor="#6366f1" stopOpacity="0.10" />
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                          </linearGradient>
+
+                          {/* Gradien Stroke Garis Utama */}
+                          <linearGradient id="lineStrokeGradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#64748b" />
+                            <stop offset="25%" stopColor="#f59e0b" />
+                            <stop offset="50%" stopColor="#3b82f6" />
+                            <stop offset="75%" stopColor="#f97316" />
+                            <stop offset="100%" stopColor="#10b981" />
+                          </linearGradient>
+
+                          {/* Glow Filter */}
+                          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#3b82f6" floodOpacity="0.25" />
+                          </filter>
+                        </defs>
+
+                        {/* Garis Grid Horizontal */}
+                        <line
+                          x1={paddingX}
+                          y1={paddingY}
+                          x2={width - paddingX}
+                          y2={paddingY}
+                          stroke="#e2e8f0"
+                          strokeDasharray="4 4"
+                          strokeWidth="1.2"
+                        />
+                        <line
+                          x1={paddingX}
+                          y1={paddingY + innerHeight / 2}
+                          x2={width - paddingX}
+                          y2={paddingY + innerHeight / 2}
+                          stroke="#e2e8f0"
+                          strokeDasharray="4 4"
+                          strokeWidth="1.2"
+                        />
+                        <line
+                          x1={paddingX}
+                          y1={height - paddingY}
+                          x2={width - paddingX}
+                          y2={height - paddingY}
+                          stroke="#cbd5e1"
+                          strokeWidth="1.5"
+                        />
+
+                        {/* Area Gradient Fill */}
+                        <path d={areaD} fill="url(#lineAreaGradient)" />
+
+                        {/* Garis Kurva Utama */}
+                        <path
+                          d={pathD}
+                          fill="none"
+                          stroke="url(#lineStrokeGradient)"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          filter="url(#glow)"
+                        />
+
+                        {/* Titik Point (Nodes) pada Garis - Diam / Tidak Berubah Ukuran Saat Hover */}
+                        {points.map((pt, i) => (
+                          <g key={i} className="cursor-pointer group">
+                            {/* Area sensitif hover */}
+                            <circle cx={pt.x} cy={pt.y} r="25" fill="transparent" />
+
+                            {/* Garis Bantu Vertikal ke Dasar */}
+                            <line
+                              x1={pt.x}
+                              y1={pt.y}
+                              x2={pt.x}
+                              y2={height - paddingY}
+                              stroke={pt.color}
+                              strokeDasharray="4 4"
+                              strokeWidth="1.2"
+                              opacity="0.35"
+                            />
+
+                            {/* Halo Lingkaran Luar (Statis, Tidak Membesar / Bergerak) */}
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r="8"
+                              fill={pt.color}
+                              opacity="0.20"
+                            />
+
+                            {/* Titik Putih Utama dengan Border Warna (Statis) */}
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r="5"
+                              fill="#ffffff"
+                              stroke={pt.color}
+                              strokeWidth="3"
+                            />
+
+                            {/* Nilai Tetap Di Atas Titik */}
+                            <text
+                              x={pt.x}
+                              y={Math.max(16, pt.y - 12)}
+                              textAnchor="middle"
+                              fontSize="11"
+                              fontWeight="900"
+                              fill={pt.color}
+                              className="select-none pointer-events-none"
+                            >
+                              {pt.value}
+                            </text>
+
+                            {/* Tooltip Card Saat Titik Disorot / Hover (Hanya Tooltip yang Muncul) */}
+                            <g className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                              <rect
+                                x={Math.min(width - 140, Math.max(10, pt.x - 70))}
+                                y={Math.max(6, pt.y - 56)}
+                                width="140"
+                                height="40"
+                                rx="10"
+                                fill="#0f172a"
+                                opacity="0.95"
+                                filter="url(#glow)"
+                              />
+                              <text
+                                x={Math.min(width - 70, Math.max(80, pt.x))}
+                                y={Math.max(22, pt.y - 40)}
+                                textAnchor="middle"
+                                fontSize="11"
+                                fontWeight="800"
+                                fill="#ffffff"
+                              >
+                                {pt.label}: {pt.value} Berkas
+                              </text>
+                              <text
+                                x={Math.min(width - 70, Math.max(80, pt.x))}
+                                y={Math.max(36, pt.y - 26)}
+                                textAnchor="middle"
+                                fontSize="9.5"
+                                fontWeight="500"
+                                fill="#94a3b8"
+                              >
+                                {totalDocs > 0 ? `${Math.round((pt.value / totalDocs) * 100)}% dari total` : "0%"}
+                              </text>
+                            </g>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+
+                    {/* Label Sumbu X yang Tertata Rapi */}
                     <div
-                      className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-500"
+                      className="grid gap-1.5 pt-3 border-t border-slate-100"
                       style={{
-                        width: `${Math.min(100, (rejectedCount / Math.max(1, totalDocs)) * 100)}%`,
+                        gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))`,
                       }}
-                    ></div>
+                    >
+                      {stages.map((stg, i) => (
+                        <div key={i} className="flex flex-col items-center text-center px-0.5">
+                          <span className="text-[11px] sm:text-xs font-extrabold text-slate-800 truncate w-full">
+                            {stg.label}
+                          </span>
+                          <span
+                            className="text-[10px] font-black px-2 py-0.5 rounded-full mt-1 border border-slate-200/80 shadow-2xs truncate max-w-full"
+                            style={{ color: stg.color, backgroundColor: `${stg.color}15` }}
+                          >
+                            {stg.value} Berkas
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Bar 5: Pengajuan Ulang */}
-              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-orange-500"></span>
-                    <span>Pengajuan Ulang</span>
-                  </span>
-                  <span className="font-black text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200">
-                    {resubmittedCount} Berkas
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (resubmittedCount / Math.max(1, totalDocs)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Bar 6: Disetujui */}
-              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                    <span>Disetujui</span>
-                  </span>
-                  <span className="font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                    {approvedCount} Berkas
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (approvedCount / Math.max(1, totalDocs)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Mini Stepper Tahapan Timeline Proses di Bagian Bawah Panel Kiri */}
-          <div className={`mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 ${currentUser?.role === "biro_01" ? "xl:grid-cols-5" : "xl:grid-cols-6"} gap-2 text-center`}>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/70">
-              <div className="text-[9px] font-bold text-slate-500 uppercase truncate">1. Draft</div>
-              <div className="text-sm font-black text-slate-800 mt-0.5">{draftCount}</div>
-            </div>
-            <div className="p-2 rounded-xl bg-amber-50/60 border border-amber-200/70">
-              <div className="text-[9px] font-bold text-amber-700 uppercase truncate">2. Submit</div>
-              <div className="text-sm font-black text-amber-700 mt-0.5">{submitCount}</div>
-            </div>
-            <div className="p-2 rounded-xl bg-blue-50/60 border border-blue-200/70">
-              <div className="text-[9px] font-bold text-blue-600 uppercase truncate">3. Review</div>
-              <div className="text-sm font-black text-blue-700 mt-0.5">{reviewCount}</div>
-            </div>
-            {currentUser?.role !== "biro_01" && (
-              <div className="p-2 rounded-xl bg-rose-50/60 border border-rose-200/70">
-                <div className="text-[9px] font-bold text-rose-600 uppercase truncate">4. Ditolak</div>
-                <div className="text-sm font-black text-rose-700 mt-0.5">{rejectedCount}</div>
-              </div>
-            )}
-            <div className="p-2 rounded-xl bg-orange-50/60 border border-orange-200/70">
-              <div className="text-[9px] font-bold text-orange-600 uppercase truncate">
-                {currentUser?.role === "biro_01" ? "4. Pengajuan Ulang" : "5. Pengajuan Ulang"}
-              </div>
-              <div className="text-sm font-black text-orange-700 mt-0.5">{resubmittedCount}</div>
-            </div>
-            <div className="p-2 rounded-xl bg-emerald-50/60 border border-emerald-200/70">
-              <div className="text-[9px] font-bold text-emerald-600 uppercase truncate">
-                {currentUser?.role === "biro_01" ? "5. Disetujui" : "6. Disetujui"}
-              </div>
-              <div className="text-sm font-black text-emerald-700 mt-0.5">{approvedCount}</div>
+                );
+              })()}
             </div>
           </div>
         </div>
 
-        {/* Panel Kanan (5 Kolom): Ringkasan Nilai Anggaran Berdasarkan 6 Status Timeline */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs flex flex-col justify-between">
+        {/* Panel Kanan (Kolom 5 dari 12): Rekapitulasi Nilai Pembayaran (Tinggi dan Lebar Pas Sesuai Grid) */}
+        <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-col justify-between h-full">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
-                  <BarChart3 className="h-4 w-4" />
+                <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-xs">
+                  <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">
+                  <h3 className="text-base font-black text-slate-900 tracking-tight">
                     Rekapitulasi Nilai Pembayaran
                   </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Akumulasi nominal anggaran untuk setiap tahapan status dokumen
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Akumulasi nominal anggaran per tahapan
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* 6 Kartu Ringkasan Nominal Sesuai Timeline Status */}
-            <div className="mt-4 space-y-2">
+            {/* List Ringkasan Nominal Sesuai Timeline Status */}
+            <div className="space-y-2 mt-3.5">
               {/* 1. Nilai Draft Dokumen */}
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
                 <div className="flex items-center gap-2.5">
@@ -626,7 +698,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                       Draft Dokumen
                     </div>
                     <div className="text-[10px] text-slate-500 font-medium">
-                      {draftCount} berkas draft
+                      {draftCount} berkas
                     </div>
                   </div>
                 </div>
@@ -648,7 +720,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                       Submit Dokumen
                     </div>
                     <div className="text-[10px] text-amber-700 font-medium">
-                      {submitCount} berkas disubmit
+                      {submitCount} berkas
                     </div>
                   </div>
                 </div>
@@ -670,7 +742,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                       Review (Biro 01)
                     </div>
                     <div className="text-[10px] text-blue-700 font-medium">
-                      {reviewCount} berkas sedang direview
+                      {reviewCount} berkas
                     </div>
                   </div>
                 </div>
@@ -681,27 +753,29 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                 </div>
               </div>
 
-              {/* 4. Nilai Ditolak */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/60 border border-rose-200/80">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-7 w-7 rounded-lg bg-rose-500 text-white flex items-center justify-center shadow-xs">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-extrabold text-rose-950">
-                      Ditolak (Perlu Revisi)
+              {/* 4. Nilai Ditolak - Disembunyikan untuk role biro_01 */}
+              {currentUser?.role !== "biro_01" && (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/60 border border-rose-200/80">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-rose-500 text-white flex items-center justify-center shadow-xs">
+                      <AlertTriangle className="h-3.5 w-3.5" />
                     </div>
-                    <div className="text-[10px] text-rose-700 font-medium">
-                      {rejectedCount} berkas ditolak / revisi
+                    <div>
+                      <div className="text-xs font-extrabold text-rose-950">
+                        Ditolak
+                      </div>
+                      <div className="text-[10px] text-rose-700 font-medium">
+                        {rejectedCount} berkas
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-black text-rose-700">
+                      Rp {totalNilaiDitolak.toLocaleString("id-ID")}
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs font-black text-rose-700">
-                    Rp {totalNilaiDitolak.toLocaleString("id-ID")}
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* 5. Nilai Pengajuan Ulang */}
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-orange-50/60 border border-orange-200/80">
@@ -714,7 +788,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                       Pengajuan Ulang
                     </div>
                     <div className="text-[10px] text-orange-700 font-medium">
-                      {resubmittedCount} berkas diajukan ulang
+                      {resubmittedCount} berkas
                     </div>
                   </div>
                 </div>
@@ -736,7 +810,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                       Disetujui
                     </div>
                     <div className="text-[10px] text-emerald-700 font-medium">
-                      {approvedCount} berkas telah disetujui
+                      {approvedCount} berkas
                     </div>
                   </div>
                 </div>
@@ -751,13 +825,13 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
 
           {/* Distribusi Unit Kerja Teratas */}
           {topUnits.length > 0 && (
-            <div className="mt-5 pt-4 border-t border-slate-100">
-              <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
                 <span>Unit Kerja / PPK Teraktif</span>
                 <span>Nominal</span>
               </div>
-              <div className="space-y-2">
-                {topUnits.slice(0, 3).map((u) => (
+              <div className="space-y-1.5">
+                {topUnits.slice(0, 2).map((u) => (
                   <div
                     key={u.name}
                     className="flex items-center justify-between text-xs py-1 px-2 rounded-lg hover:bg-slate-50 transition"

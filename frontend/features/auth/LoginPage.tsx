@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Lock,
   Mail,
@@ -384,14 +385,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
         </div>
 
-        {/* RIGHT COLUMN: Clean Login Form (Lg: 5 cols) */}
         <div className="col-span-1 lg:col-span-5 p-8 sm:p-12 xl:p-14 flex flex-col justify-between bg-white order-1 lg:order-2">
 
           <div className="w-full max-w-md mx-auto my-auto">
-            {/* Header Brand Logo & Name */}
             <div className="flex items-center gap-3 mb-8">
-              <div className="p-2.5 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md">
-                <FileCheck2 className="h-6 w-6" />
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 shadow-sm flex items-center justify-center">
+                <Image
+                  src="/bg.png"
+                  alt="Logo SIPANDA"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 object-contain"
+                  priority
+                />
               </div>
               <div>
                 <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">
@@ -502,8 +508,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   </p>
                 )}
               </div>
-
-              {/* Tombol Masuk */}
               <button
                 type="submit"
                 disabled={loading}
@@ -523,21 +527,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </button>
             </form>
           </div>
-
           <div className="text-center pt-6 text-xs text-slate-400">
             &copy; {new Date().getFullYear()} SIPANDA
           </div>
-
         </div>
-
       </div>
-
-      {/* MODAL LUPA PASSWORD / RESET VIA GMAIL (LIGHT THEME) */}
       {isForgotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-150 text-slate-800">
-
-            {/* Header Modal */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
@@ -556,14 +553,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 ✕
               </button>
             </div>
-
             {forgotError && (
               <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
                 <span className="font-semibold">{forgotError}</span>
               </div>
             )}
-
             {forgotStep === "input_email" && (
               <form onSubmit={handleRequestResetLinkSubmit} className="mt-4 space-y-4 text-xs">
                 <div>
@@ -585,7 +580,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     Sistem akan mengirimkan pesan email SMTP yang memuat tautan aman untuk membuat kata sandi baru.
                   </p>
                 </div>
-
                 <div className="pt-2 flex items-center justify-end gap-2.5">
                   <button
                     type="button"
@@ -614,8 +608,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </div>
               </form>
             )}
-
-            {/* STEP 2: Email Tautan Terkirim */}
             {forgotStep === "email_sent" && (
               <div className="py-4 text-center space-y-4 animate-in fade-in duration-150">
                 <div className="w-14 h-14 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center mx-auto text-blue-600">
@@ -628,13 +620,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   </p>
                   <p className="text-xs font-bold text-blue-700 mt-1">{forgotEmail}</p>
                 </div>
-
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] text-left space-y-1">
                   <p>• Periksa kotak masuk (Inbox) atau folder Spam pada email Anda.</p>
                   <p>• Buka email dan klik tautan untuk melanjutkan pembuatan kata sandi baru.</p>
                   <p>• Tautan berlaku selama <strong>15 menit</strong> sejak dikirimkan.</p>
                 </div>
-
                 <div className="pt-2 flex items-center justify-between border-t border-slate-100">
                   <button
                     type="button"
@@ -657,7 +647,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
         </div>
       )}
-
     </div>
   );
 };
