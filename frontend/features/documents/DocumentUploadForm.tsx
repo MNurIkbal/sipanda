@@ -101,14 +101,14 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         const activeUnits = res.data.filter((item: any) => item.is_active !== false);
         setUnitKerjaOptions(activeUnits.map((item: any) => item.nama));
       }
-    }).catch(() => {});
+    }).catch(() => { });
 
     sipanduApi.getMasterJenisDokumen().then((res) => {
       if (res.success && res.data && res.data.length > 0) {
         const activeDocs = res.data.filter((item: any) => item.is_active !== false);
         setJenisDokumenOptions(activeDocs.map((item: any) => item.nama));
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const [isUnitPpkOpen, setIsUnitPpkOpen] = useState(false);
@@ -164,7 +164,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     (initialData as any)?.catatan_perbaikan || ""
   );
 
-  // 2. Dokumen Pendukung (Minimal 1, bisa tambah lebih dari 1)
+  // 2. Dokumen Pendukung
   const [supportingDocs, setSupportingDocs] = useState<SupportingDocumentItem[]>(() => {
     if (initialData?.attachments && initialData.attachments.length > 0) {
       return initialData.attachments.map((att) => {
@@ -211,22 +211,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         file: null,
         params: {},
       },
-      {
-        id: "doc-2",
-        jenis_dokumen: "",
-        nomor_dokumen: "",
-        tanggal: new Date().toISOString().split("T")[0],
-        file: null,
-        params: {},
-      },
-      {
-        id: "doc-3",
-        jenis_dokumen: "",
-        nomor_dokumen: "",
-        tanggal: new Date().toISOString().split("T")[0],
-        file: null,
-        params: {},
-      },
     ];
   });
 
@@ -250,10 +234,9 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     description: "",
   });
 
-  // Tambah Dokumen Pendukung
+  // Tambah Dokumen Pendukung (Menambahkan item baru di baris paling atas)
   const handleAddSupportingDoc = () => {
     setSupportingDocs((prev) => [
-      ...prev,
       {
         id: `doc-${Date.now()}`,
         jenis_dokumen: "",
@@ -262,6 +245,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         file: null,
         params: {},
       },
+      ...prev,
     ]);
   };
 
@@ -298,20 +282,8 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
   const isEditOrRevision = Boolean(initialData);
 
-  // Hapus Dokumen Pendukung:
-  // - Pada form Buat Dokumen Baru: minimal 3 baris dokumen pendukung harus tetap ada
-  // - Pada form Edit Dokumen / Revisi Dokumen: pembatasan minimal 3 dokumen dihapus (bebas menghapus baris)
+  // Hapus Dokumen Pendukung
   const requestRemoveSupportingDoc = (item: SupportingDocumentItem) => {
-    if (!isEditOrRevision && supportingDocs.length <= 3) {
-      setValidationAlert({
-        isOpen: true,
-        title: "Perhatian: Minimal 3 Dokumen",
-        description:
-          "Pengajuan pembayaran wajib menyertakan minimal 3 berkas dokumen pendukung. Anda tidak dapat menghapus baris ini.",
-      });
-      return;
-    }
-
     // Jika bukan dari database (baru ditambah user), langsung hapus komponennya
     if (!item.existing_attachment_id) {
       setSupportingDocs((prev) => prev.filter((d) => d.id !== item.id));
@@ -387,8 +359,45 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
   // Handler Upload Dokumen Pendukung yang Terintegrasi dengan VeriText OCR
   const handleFileChangeWithVeriText = async (docId: string, file: File | null) => {
+    if (!file) {
+      handleUpdateDocField(docId, "file", null);
+      return;
+    }
+
+    // Validasi ekstensi: hanya PDF dan Word
+    const fileName = file.name.toLowerCase();
+    const isValidExt = fileName.endsWith(".pdf") || fileName.endsWith(".docx") || fileName.endsWith(".doc");
+    if (!isValidExt) {
+      setFormErrors((prev) => ({
+        ...prev,
+        supporting_doc_items: {
+          ...prev.supporting_doc_items,
+          [docId]: {
+            ...prev.supporting_doc_items?.[docId],
+            file: "Hanya berkas format PDF (.pdf) dan Word (.docx, .doc) yang diperbolehkan!",
+          },
+        },
+      }));
+      return;
+    }
+
+    // Validasi ukuran: maksimal 10 MB per dokumen
+    const maxSizeBytes = 10 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setFormErrors((prev) => ({
+        ...prev,
+        supporting_doc_items: {
+          ...prev.supporting_doc_items,
+          [docId]: {
+            ...prev.supporting_doc_items?.[docId],
+            file: `Ukuran berkas melebihi batas maksimal 10 MB (${(file.size / (1024 * 1024)).toFixed(2)} MB)!`,
+          },
+        },
+      }));
+      return;
+    }
+
     handleUpdateDocField(docId, "file", file);
-    if (!file) return;
 
     try {
       setExtractingDocId(docId);
@@ -409,16 +418,58 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
               k !== "raw_text_snippet" &&
               k !== "file_name"
             ) {
-              extractedParams[k] = String(v);
+              const valStr = String(v).trim();
+              // Jangan masukkan value 'Seri' yang merupakan kesalahan potong OCR pada Faktur Pajak
+              if (k === "Nomor Dokumen" && /^seri$/i.test(valStr)) {
+                return;
+              }
+              extractedParams[k] = valStr;
             }
           });
+        }
+
+        // Simpan jenis dokumen / judul berkas hasil VeriText ke dalam params jika belum ada
+        if (meta.jenis_dokumen && !extractedParams["Jenis Dokumen"] && !extractedParams["Judul Dokumen"]) {
+          extractedParams["Jenis Dokumen"] = String(meta.jenis_dokumen);
+        }
+
+        // Tentukan nomor dokumen yang paling akurat
+        const bestNomorDokumen =
+          (meta.nomor_dokumen && !/^seri$/i.test(String(meta.nomor_dokumen).trim()) ? String(meta.nomor_dokumen) : "") ||
+          extractedParams["Kode dan Nomor Seri Faktur Pajak"] ||
+          extractedParams["Nomor Faktur Pajak"] ||
+          extractedParams["Kwitansi No."] ||
+          extractedParams["Invoice Number"] ||
+          extractedParams["Nomor Dokumen"] ||
+          "";
+
+        // Tambahkan juga field ringkasan hasil ekstrak jika belum ada di params
+        if (bestNomorDokumen && !extractedParams["Nomor Dokumen"] && !extractedParams["Kwitansi No."] && !extractedParams["Invoice Number"] && !extractedParams["Nomor Faktur Pajak"] && !extractedParams["Kode dan Nomor Seri Faktur Pajak"]) {
+          extractedParams["Nomor Dokumen"] = bestNomorDokumen;
+        }
+        if (meta.tanggal_dokumen && !extractedParams["Tanggal"] && !extractedParams["Date"] && !extractedParams["Tanggal Faktur"]) {
+          extractedParams["Tanggal"] = String(meta.tanggal_dokumen);
+        }
+        if (meta.pihak_eksternal && !extractedParams["Perusahaan / Pihak Eksternal"] && !extractedParams["Nama Pengusaha Kena Pajak"]) {
+          extractedParams["Perusahaan / Pihak Eksternal"] = String(meta.pihak_eksternal);
+        }
+        if (meta.unit_kerja && !extractedParams["Bill To"] && !extractedParams["Sudah terima dari"] && !extractedParams["Nama Pembeli"]) {
+          extractedParams["Unit Kerja / Pembeli"] = String(meta.unit_kerja);
+        }
+        if (meta.perihal && !extractedParams["Untuk Pembayaran"] && !extractedParams["Project Title"] && !extractedParams["Perihal"] && !extractedParams["Uraian Pekerjaan"]) {
+          extractedParams["Perihal / Untuk Pembayaran"] = String(meta.perihal);
+        }
+        if (meta.nilai_pembayaran && !extractedParams["Total Nilai Transaksi"] && !extractedParams["Banyaknya uang"] && !extractedParams["GRAND TOTAL"] && !extractedParams["Total Price (IDR)"]) {
+          extractedParams["Total Nilai Transaksi"] = `Rp${Number(meta.nilai_pembayaran).toLocaleString("id-ID")}`;
         }
 
         // Auto-fill field utama & params dinamis pada baris dokumen pendukung saat ini
         if (meta.jenis_dokumen) {
           handleUpdateDocField(docId, "jenis_dokumen", meta.jenis_dokumen);
         }
-        if (meta.nomor_dokumen) {
+        if (bestNomorDokumen) {
+          handleUpdateDocField(docId, "nomor_dokumen", bestNomorDokumen);
+        } else if (meta.nomor_dokumen && !/^seri$/i.test(String(meta.nomor_dokumen).trim())) {
           handleUpdateDocField(docId, "nomor_dokumen", meta.nomor_dokumen);
         }
         if (meta.tanggal_dokumen) {
@@ -472,19 +523,19 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     );
   };
 
-  // Cek apakah minimal 3 dokumen pendukung telah diunggah berkasnya (hanya wajib pada Buat Dokumen Baru, tidak wajib pada Edit/Revisi Dokumen)
+  // Cek apakah berkas dokumen pendukung terunggah
   const uploadedFilesCount = supportingDocs.filter(
     (d) => Boolean(d.file || d.existing_file_name || d.existing_file_path)
   ).length;
-  const isSaveDisabled = loading || (!isEditOrRevision && uploadedFilesCount < 3);
+  const isSaveDisabled = loading;
 
   // Submit Handler (Simpan Draft atau Kirim Verifikasi) menggunakan documentValidationSchema
   const handleSubmitForm = async (status: "draft" | "menunggu_verifikasi") => {
     const isRejected = Boolean(
       initialData &&
-        (initialData.status === "dikembalikan" ||
-          initialData.status === "ditolak" ||
-          Boolean(initialData.catatan_revisi))
+      (initialData.status === "dikembalikan" ||
+        initialData.status === "ditolak" ||
+        Boolean(initialData.catatan_revisi))
     );
 
     // Jalankan validasi schema dengan opsi is_edit_mode dan is_rejected
@@ -510,7 +561,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
     if (!validation.isValid) {
       setFormErrors(validation.errors);
-      
+
       // Auto-focus atau scroll ke error pertama
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -579,7 +630,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
   return (
     <div className="w-full space-y-6 pb-12 font-sans">
-      
+
       {/* HEADER FORM UTAMA (Title & Tombol Aksi) */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -597,12 +648,11 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
               ? initialData.status === "dikembalikan" || initialData.status === "ditolak"
                 ? `Perbaiki dan lengkapi catatan revisi berkas pembayaran untuk nomor surat ${initialData.nomor_surat}.`
                 : `Perbarui informasi dan dokumen pendukung untuk nomor surat ${initialData.nomor_surat}.`
-              : "Lengkapi data berkas pembayaran atau cukup upload berkas pendukung (PDF/DOCX/Invoice) untuk diekstrak otomatis oleh VeriText."}
+              : "Lengkapi data berkas pembayaran atau cukup upload berkas pendukung  untuk diekstrak otomatis oleh VeriText."}
           </p>
         </div>
       </div>
 
-      {/* Banner Notifikasi Berhasil Ekstraksi VeriText */}
       {ocrSuccessToast && (
         <div className="p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl text-blue-900 shadow-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5 text-xs font-bold">
@@ -626,7 +676,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
 
       {initialData && (initialData.status === "dikembalikan" || initialData.status === "ditolak" || Boolean(initialData.catatan_revisi)) && (
         <div className="bg-white rounded-2xl border border-rose-200 shadow-xs p-6 md:p-7 space-y-4 animate-in fade-in duration-200">
-          {/* Card Catatan Revisi dari Verifikator Biro 01 */}
           <div className="p-4 bg-gradient-to-r from-rose-50/90 to-red-50/90 border border-rose-200 rounded-xl text-rose-900 shadow-2xs">
             <div className="flex items-center gap-2 font-black text-xs text-rose-900 uppercase tracking-wider mb-1">
               <span className="p-1 rounded-full bg-rose-200/80 text-rose-700">!</span>
@@ -637,7 +686,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             </div>
           </div>
 
-          {/* Form Penjelasan Catatan Perbaikan PPK */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
@@ -656,11 +704,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                   setFormErrors((prev) => ({ ...prev, catatan_perbaikan: undefined }));
                 }
               }}
-              className={`w-full px-4 py-3 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 text-xs font-medium leading-relaxed transition ${
-                formErrors.catatan_perbaikan
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                  : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
-              }`}
+              className={`w-full px-4 py-3 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 text-xs font-medium leading-relaxed transition ${formErrors.catatan_perbaikan
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
+                : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
+                }`}
             />
             {formErrors.catatan_perbaikan && (
               <p className="text-[11px] text-red-500 font-semibold mt-1">
@@ -671,7 +718,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         </div>
       )}
 
-      {/* 1. CARD SECTION DATA DOKUMEN (Sesuai Gambar 1) */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 md:p-8">
         <div className="pb-4 mb-6 border-b border-slate-100 flex items-center justify-between">
           <div>
@@ -679,13 +725,11 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
               Data Dokumen
             </h2>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Informasi primer surat pengajuan transaksi pembayaran SPP/SPM.
-            </p>
+              Silakan unggah dokumen pengajuan pembayaran sebagai persyaratan administrasi dan proses verifikasi.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
-          {/* Baris 1 */}
           <div>
             <label className="block font-bold text-slate-700 mb-1.5">
               Nomor Surat / Nomor Dokumen <span className="text-red-500">*</span>
@@ -698,11 +742,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                 setNomorSurat(e.target.value);
                 if (formErrors.nomor_surat) setFormErrors((prev) => ({ ...prev, nomor_surat: undefined }));
               }}
-              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${
-                formErrors.nomor_surat
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                  : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
-              }`}
+              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${formErrors.nomor_surat
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
+                : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
+                }`}
             />
             {formErrors.nomor_surat && (
               <p className="text-[11px] text-red-500 font-semibold mt-1">
@@ -718,11 +761,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             </label>
             <div
               onClick={() => setIsJenisDokumenOpen(!isJenisDokumenOpen)}
-              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white cursor-pointer flex items-center justify-between font-medium transition hover:border-slate-300 ${
-                formErrors.jenis_dokumen
-                  ? "border-red-400 bg-red-50/20"
-                  : "border-slate-200/90"
-              }`}
+              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white cursor-pointer flex items-center justify-between font-medium transition hover:border-slate-300 ${formErrors.jenis_dokumen
+                ? "border-red-400 bg-red-50/20"
+                : "border-slate-200/90"
+                }`}
             >
               <span className={jenisDokumen ? "text-slate-900 font-semibold" : "text-slate-400"}>
                 {jenisDokumen || "Pilih atau cari jenis dokumen..."}
@@ -783,11 +825,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                             setIsJenisDokumenOpen(false);
                             setJenisDokumenSearch("");
                           }}
-                          className={`px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-between font-semibold ${
-                            jenisDokumen === opt
-                              ? "bg-blue-50 text-blue-700"
-                              : "text-slate-700 hover:bg-slate-100"
-                          }`}
+                          className={`px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-between font-semibold ${jenisDokumen === opt
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-700 hover:bg-slate-100"
+                            }`}
                         >
                           <span>{opt}</span>
                           {jenisDokumen === opt && (
@@ -805,7 +846,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
           {/* Kategori Pengadaan: Searchable Select */}
           <div className="relative">
             <label className="block font-bold text-slate-700 mb-1.5">
-              Kategori Pengadaan <span className="text-red-500">*</span>
+              Kategori <span className="text-red-500">*</span>
             </label>
             <div
               onClick={() => setIsKategoriPengadaanOpen(!isKategoriPengadaanOpen)}
@@ -863,11 +904,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                             setIsKategoriPengadaanOpen(false);
                             setKategoriPengadaanSearch("");
                           }}
-                          className={`px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-between font-semibold ${
-                            kategoriPengadaan === opt
-                              ? "bg-blue-50 text-blue-700"
-                              : "text-slate-700 hover:bg-slate-100"
-                          }`}
+                          className={`px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-between font-semibold ${kategoriPengadaan === opt
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-700 hover:bg-slate-100"
+                            }`}
                         >
                           <span>{opt}</span>
                           {kategoriPengadaan === opt && (
@@ -894,11 +934,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                 setPerihal(e.target.value);
                 if (formErrors.perihal) setFormErrors((prev) => ({ ...prev, perihal: undefined }));
               }}
-              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${
-                formErrors.perihal
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                  : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
-              }`}
+              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${formErrors.perihal
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
+                : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
+                }`}
             />
             {formErrors.perihal && (
               <p className="text-[11px] text-red-500 font-semibold mt-1">
@@ -960,11 +999,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                 setPihakEksternal(e.target.value);
                 if (formErrors.pihak_eksternal) setFormErrors((prev) => ({ ...prev, pihak_eksternal: undefined }));
               }}
-              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${
-                formErrors.pihak_eksternal
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
-                  : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
-              }`}
+              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 font-medium transition ${formErrors.pihak_eksternal
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400 bg-red-50/20"
+                : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-500"
+                }`}
             />
             {formErrors.pihak_eksternal && (
               <p className="text-[11px] text-red-500 font-semibold mt-1">
@@ -980,11 +1018,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             </label>
             <div
               onClick={() => setIsUnitPpkOpen(!isUnitPpkOpen)}
-              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white cursor-pointer flex items-center justify-between font-medium transition hover:border-slate-300 ${
-                formErrors.unit_kerja
-                  ? "border-red-400 bg-red-50/20"
-                  : "border-slate-200/90"
-              }`}
+              className={`w-full px-3.5 py-2.5 rounded-xl border bg-white cursor-pointer flex items-center justify-between font-medium transition hover:border-slate-300 ${formErrors.unit_kerja
+                ? "border-red-400 bg-red-50/20"
+                : "border-slate-200/90"
+                }`}
             >
               <span className={unitPpk ? "text-slate-900 font-semibold" : "text-slate-400"}>
                 {unitPpk || "Pilih atau cari Unit / PPK..."}
@@ -1047,11 +1084,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                             setIsUnitPpkOpen(false);
                             setUnitPpkSearch("");
                           }}
-                          className={`px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-between font-semibold ${
-                            unitPpk === unit
-                              ? "bg-blue-50 text-blue-700"
-                              : "text-slate-700 hover:bg-slate-100"
-                          }`}
+                          className={`px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-between font-semibold ${unitPpk === unit
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-700 hover:bg-slate-100"
+                            }`}
                         >
                           <span>{unit}</span>
                           {unitPpk === unit && (
@@ -1083,11 +1119,10 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                   setNilaiPembayaran(formatted);
                   if (formErrors.nilai_pembayaran) setFormErrors((prev) => ({ ...prev, nilai_pembayaran: undefined }));
                 }}
-                className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border bg-white font-bold transition focus:outline-none ${
-                  formErrors.nilai_pembayaran
-                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400 bg-red-50/20 text-slate-900"
-                    : "border-slate-200/90 focus:border-blue-500 text-slate-900"
-                }`}
+                className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border bg-white font-bold transition focus:outline-none ${formErrors.nilai_pembayaran
+                  ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400 bg-red-50/20 text-slate-900"
+                  : "border-slate-200/90 focus:border-blue-500 text-slate-900"
+                  }`}
               />
             </div>
             {formErrors.nilai_pembayaran && (
@@ -1148,9 +1183,16 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
               className="rounded-2xl border border-slate-200/90 p-5 bg-white relative transition hover:border-slate-300"
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="font-extrabold text-xs text-slate-800">
-                  Dokumen {index + 1}
-                </span>
+                <div className="flex items-center gap-2.5">
+                  <span className="font-extrabold text-xs text-slate-800">
+                    Dokumen {index + 1}
+                  </span>
+                  {item.jenis_dokumen && (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      {item.jenis_dokumen}
+                    </span>
+                  )}
+                </div>
 
                 <button
                   type="button"
@@ -1291,7 +1333,7 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-blue-500 shrink-0" />
                         <span>
-                          Unggah berkas (PDF/Word/Excel/Gambar) agar sistem mengekstrak field input secara <strong>dinamis</strong> sesuai isi metadata berkas tersebut.
+                          Unggah berkas (<strong>PDF / Word</strong>, maks. <strong>10 MB</strong>) agar sistem mengekstrak field input secara <strong>dinamis</strong> sesuai isi metadata berkas tersebut.
                         </span>
                       </div>
                     </div>
@@ -1302,16 +1344,15 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
               {/* Upload File Button & Info Berkas yang sudah ada */}
               <div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-2xs cursor-pointer ${
-                    formErrors.supporting_doc_items?.[item.id]?.file
-                      ? "border-red-400 bg-red-50/30 text-red-700"
-                      : "border-slate-200"
-                  }`}>
+                  <label className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-2xs cursor-pointer ${formErrors.supporting_doc_items?.[item.id]?.file
+                    ? "border-red-400 bg-red-50/30 text-red-700"
+                    : "border-slate-200"
+                    }`}>
                     <Upload className="h-4 w-4 text-slate-500" />
                     <span>{item.existing_file_name ? "Ganti File Berkas" : "Upload File *"}</span>
                     <input
                       type="file"
-                      accept=".pdf,.docx,.doc,.xlsx,.xls,.png,.jpg,.jpeg"
+                      accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
                       className="hidden"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
@@ -1339,15 +1380,15 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                       <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
                       <span className="font-semibold truncate max-w-xs">{item.file.name}</span>
                       <span className="text-[10px] text-blue-500">
-                        ({(item.file.size / 1024).toFixed(1)} KB - File Baru)
+                        ({(item.file.size / 1024).toFixed(1)} KB
                       </span>
-                      <button
+                      {/* <button
                         type="button"
                         onClick={() => handleUpdateDocField(item.id, "file", null)}
                         className="ml-2 text-rose-500 hover:text-rose-700 font-bold text-[10px] cursor-pointer"
                       >
                         Batal
-                      </button>
+                      </button> */}
                     </div>
                   ) : item.existing_file_name ? (
                     <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/80">
@@ -1370,21 +1411,17 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         </div>
       </div>
 
-      {/* 3. FOOTER ACTION BUTTONS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         <div className="text-xs">
-          {!isEditOrRevision && (
-            uploadedFilesCount < 3 ? (
-              <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl font-bold">
-                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                Wajib upload minimal 3 dokumen pendukung ({uploadedFilesCount}/3 terunggah)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                Syarat minimal 3 dokumen pendukung terpenuhi ({uploadedFilesCount} berkas)
-              </span>
-            )
+          {uploadedFilesCount > 0 ? (
+            <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              {uploadedFilesCount} berkas dokumen pendukung terunggah
+            </span>
+          ) : (
+            <span className="text-slate-400 font-medium">
+              Belum ada berkas pendukung diunggah
+            </span>
           )}
         </div>
 
@@ -1401,24 +1438,17 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
             type="button"
             disabled={isSaveDisabled}
             onClick={() => handleSubmitForm("draft")}
-            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md ${
-              isSaveDisabled
-                ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none"
-                : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 cursor-pointer"
-            }`}
-            title={
-              !isEditOrRevision && uploadedFilesCount < 3
-                ? `Tombol simpan dinonaktifkan: Anda harus mengunggah minimal 3 dokumen pendukung (${uploadedFilesCount}/3)`
-                : "Simpan dokumen pembayaran"
-            }
-          >
+            className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md ${isSaveDisabled
+              ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none"
+              : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 cursor-pointer"
+              }`}
+            title="Simpan dokumen pembayaran">
             <CheckCircle2 className="h-4 w-4" />
             <span>Simpan</span>
           </button>
         </div>
       </div>
 
-      {/* AlertDialog Konfirmasi Hapus Dokumen Pendukung dari Database Backend */}
       <AlertDialog
         isOpen={Boolean(docToDeleteItem)}
         title="Hapus Dokumen Pendukung dari Database"
@@ -1430,7 +1460,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
         onCancel={() => setDocToDeleteItem(null)}
       />
 
-      {/* AlertDialog Validasi Form */}
       <AlertDialog
         isOpen={validationAlert.isOpen}
         title={validationAlert.title}

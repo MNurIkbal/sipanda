@@ -423,7 +423,7 @@ export const Header: React.FC<HeaderProps> = ({
                           ? "Biro 01 Keuangan"
                           : currentUser?.role === "superadmin"
                           ? "Superadmin"
-                          : "PPK (Pejabat Pembuat Komitmen)"}
+                          : "PPK"}
                       </div>
                     </div>
 

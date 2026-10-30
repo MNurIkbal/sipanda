@@ -24,51 +24,46 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
 }) => {
   const [docType, setDocType] = useState<GeneratorType>(initialType);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Synced states based on image template
   const [instansi, setInstansi] = useState("BADAN INTELIJEN NEGARA");
   const [judulSurat, setJudulSurat] = useState("BERITA ACARA PENYELESAIAN PEKERJAAN");
   const [nomorDokumen, setNomorDokumen] = useState("");
   const [namaPekerjaan, setNamaPekerjaan] = useState("");
-  const [bebanDipa, setBebanDipa] = useState("ATAS BEBAN DIPA BIN TAHUN ANGGARAN 2024");
+  const [bebanDipa, setBebanDipa] = useState("");
 
   // Paragraf Pembuka
-  const [hari, setHari] = useState("Senin");
-  const [tanggalTerbilang, setTanggalTerbilang] = useState("Tiga Puluh");
-  const [bulanTerbilang, setBulanTerbilang] = useState("September");
-  const [tahunTerbilang, setTahunTerbilang] = useState("Dua Ribu Dua Puluh Empat");
+  const [hari, setHari] = useState("");
+  const [tanggalTerbilang, setTanggalTerbilang] = useState("");
+  const [bulanTerbilang, setBulanTerbilang] = useState("");
+  const [tahunTerbilang, setTahunTerbilang] = useState("");
 
   // Pihak 1 (PPK)
-  const [pihak1Nama, setPihak1Nama] = useState("Edy Susanto, S.H., M.H.");
-  const [pihak1Jabatan, setPihak1Jabatan] = useState("Pejabat Pembuat Komitmen BIN");
-  const [pihak1Alamat, setPihak1Alamat] = useState("Jalan Seno Raya Pejaten Timur Pasar Minggu Jakarta Selatan");
-  const [pihak1AtasNama, setPihak1AtasNama] = useState("Badan Intelijen Negara, selanjutnya disebut PPK.");
+  const [pihak1Nama, setPihak1Nama] = useState("");
+  const [pihak1Jabatan, setPihak1Jabatan] = useState("");
+  const [pihak1Alamat, setPihak1Alamat] = useState("");
+  const [pihak1AtasNama, setPihak1AtasNama] = useState("");
 
   // Pihak 2 (Penyedia)
-  const [pihak2Nama, setPihak2Nama] = useState("Rizky Detha");
-  const [pihak2Jabatan, setPihak2Jabatan] = useState("Direktur PT. Asia Sistem Indonesia");
-  const [pihak2Alamat, setPihak2Alamat] = useState(
-    "Gedung Sentral Senayan II Lt. 16, Jl. Asia Afrika No. 8, Jakarta Pusat 10270"
-  );
-  const [pihak2AtasNama, setPihak2AtasNama] = useState(
-    "PT. Asia Sistem Indonesia, yang selanjutnya disebut PENYEDIA."
-  );
+  const [pihak2Nama, setPihak2Nama] = useState("");
+  const [pihak2Jabatan, setPihak2Jabatan] = useState("");
+  const [pihak2Alamat, setPihak2Alamat] = useState("");
+  const [pihak2AtasNama, setPihak2AtasNama] = useState("");
 
   // Dasar-dasar Berdasarkan hal-hal sebagai berikut:
   const [suratPerjanjian, setSuratPerjanjian] = useState("");
-  const [buktiKerja, setBuktiKerja] = useState(
-    "Bukti Kerja Pekerjaan Pemeliharaan dan Perawatan Jaringan Dokumentasi dan Informasi Hukum (JDIH) bulan September 2024."
-  );
+  const [buktiKerja, setBuktiKerja] = useState("");
 
   // Uraian & Prosentase
-  const [presentasePenyedia, setPresentasePenyedia] = useState("75%");
+  const [presentasePenyedia, setPresentasePenyedia] = useState("");
   const [lokasiPekerjaan, setLokasiPekerjaan] = useState("Jakarta");
   const [instansiPenerima, setInstansiPenerima] = useState("Badan Intelijen Negara");
 
   // Field Spesifik BAST
-  const [bastPenyelesaianNomor, setBastPenyelesaianNomor] = useState("BAPP-2406 / XI /2024");
-  const [bastPenyelesaianTanggal, setBastPenyelesaianTanggal] = useState("29 November 2024");
-  const [bastPeriodePekerjaan, setBastPeriodePekerjaan] = useState("bulan September s.d. November 2024");
+  const [bastPenyelesaianNomor, setBastPenyelesaianNomor] = useState("");
+  const [bastPenyelesaianTanggal, setBastPenyelesaianTanggal] = useState("");
+  const [bastPeriodePekerjaan, setBastPeriodePekerjaan] = useState("");
 
   // Field Spesifik BAP (Berita Acara Pembayaran)
   const [bapTanggalSurat, setBapTanggalSurat] = useState("02 Desember 2024");
@@ -98,11 +93,11 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
   // Signatures
   const [ttdKiriJabatan1, setTtdKiriJabatan1] = useState("Kepala Badan Intelijen Negara");
   const [ttdKiriJabatan2, setTtdKiriJabatan2] = useState("Pejabat Pembuat Komitmen");
-  const [ttdKiriNama, setTtdKiriNama] = useState("Edy Susanto, S.H., M.H.");
+  const [ttdKiriNama, setTtdKiriNama] = useState("");
 
-  const [ttdKananInstansi, setTtdKananInstansi] = useState("PT. Asia Sistem Indonesia");
-  const [ttdKananJabatan, setTtdKananJabatan] = useState("Direktur");
-  const [ttdKananNama, setTtdKananNama] = useState("Rizky Detha");
+  const [ttdKananInstansi, setTtdKananInstansi] = useState("");
+  const [ttdKananJabatan, setTtdKananJabatan] = useState("");
+  const [ttdKananNama, setTtdKananNama] = useState("");
   const [includeMaterai, setIncludeMaterai] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -119,41 +114,104 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
   }, [doc, initialType, isOpen]);
 
   const applyDocDataForType = (type: GeneratorType, currentDoc: PaymentDocument) => {
+    setErrors({});
     const savedData = currentDoc.official_docs_data?.[type]?.formData;
+
+    // Cari lampiran invoice / dokumen tagihan untuk mengambil metadata pihak penyedia
+    const invoiceAtt = (currentDoc.attachments || []).find((att) => {
+      const docTypeLower = (att.document_type || "").toLowerCase();
+      const fileNameLower = (att.file_name || "").toLowerCase();
+      return docTypeLower.includes("invoice") || fileNameLower.includes("invoice");
+    });
+
+    const invoiceParams = (invoiceAtt?.params || invoiceAtt?.metadata || {}) as Record<string, any>;
+
+    // Helper untuk mencari nilai dari invoice metadata
+    const getInvoiceValue = (keys: string[]): string => {
+      for (const k of keys) {
+        const normK = k.toLowerCase();
+        for (const [paramK, paramV] of Object.entries(invoiceParams)) {
+          if (paramK.toLowerCase() === normK && paramV) {
+            return String(paramV).trim();
+          }
+        }
+      }
+      return "";
+    };
+
+    // Ekstrak metadata invoice untuk pihak penyedia
+    const invoicePerusahaan =
+      getInvoiceValue(["Perusahaan / Pihak Eksternal", "Nama Perusahaan", "Perusahaan", "Company", "Nama Pengusaha Kena Pajak"]) ||
+      invoiceAtt?.nama_perusahaan ||
+      currentDoc.pihak_eksternal ||
+      "";
+
+    const invoicePimpinan =
+      getInvoiceValue(["Approved By", "Approved by", "Nama Pimpinan", "Direktur", "Nama Direktur", "Pimpinan", "Penandatangan"]) ||
+      "";
+
+    const invoiceJabatan =
+      getInvoiceValue(["Jabatan", "Position", "Title"]) ||
+      (invoicePerusahaan ? `Direktur ${invoicePerusahaan}` : "");
+
+    const invoiceJabatanPerusahaan =
+      invoicePimpinan && invoiceJabatan
+        ? `${invoiceJabatan}`
+        : invoicePerusahaan
+        ? `Direktur ${invoicePerusahaan}`
+        : "";
+
+    const invoiceAlamat =
+      getInvoiceValue(["Alamat Perusahaan", "Alamat Kantor", "Alamat", "Address", "Alamat Kantor Penyedia"]) ||
+      "";
+
+    const invoiceAtasNama = invoicePerusahaan
+      ? `${invoicePerusahaan}, yang selanjutnya disebut PENYEDIA.`
+      : "";
+
+    const invoiceTtdKananInstansi = invoicePerusahaan;
+    const invoiceTtdKananJabatan = getInvoiceValue(["Jabatan"]) || "Direktur";
+    const invoiceTtdKananNama = invoicePimpinan;
 
     if (savedData) {
       setInstansi(savedData.instansi || "BADAN INTELIJEN NEGARA");
       setJudulSurat(savedData.judulSurat || getDefaultTitle(type));
-      setNomorDokumen(savedData.nomorDokumen || `${type}-${currentDoc.id || "2079"} / IX / 2024`);
-      setNamaPekerjaan(savedData.namaPekerjaan || currentDoc.perihal || currentDoc.nama_kegiatan || "");
-      setBebanDipa(savedData.bebanDipa || "ATAS BEBAN DIPA BIN TAHUN ANGGARAN 2024");
-      setHari(savedData.hari || "Senin");
-      setTanggalTerbilang(savedData.tanggalTerbilang || "Tiga Puluh");
-      setBulanTerbilang(savedData.bulanTerbilang || "September");
-      setTahunTerbilang(savedData.tahunTerbilang || "Dua Ribu Dua Puluh Empat");
-      setPihak1Nama(savedData.pihak1Nama || currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
-      setPihak1Jabatan(savedData.pihak1Jabatan || "Pejabat Pembuat Komitmen BIN");
-      setPihak1Alamat(savedData.pihak1Alamat || "Jalan Seno Raya Pejaten Timur Pasar Minggu Jakarta Selatan");
-      setPihak1AtasNama(savedData.pihak1AtasNama || "Badan Intelijen Negara, selanjutnya disebut PPK.");
-      setPihak2Nama(savedData.pihak2Nama || "Rizky Detha");
-      setPihak2Jabatan(savedData.pihak2Jabatan || (currentDoc.pihak_eksternal ? `Direktur ${currentDoc.pihak_eksternal}` : "Direktur PT. Asia Sistem Indonesia"));
-      setPihak2Alamat(savedData.pihak2Alamat || "Gedung Sentral Senayan II Lt. 16, Jl. Asia Afrika No. 8, Jakarta Pusat 10270");
-      setPihak2AtasNama(savedData.pihak2AtasNama || (currentDoc.pihak_eksternal ? `${currentDoc.pihak_eksternal}, yang selanjutnya disebut PENYEDIA.` : "PT. Asia Sistem Indonesia, yang selanjutnya disebut PENYEDIA."));
-      setSuratPerjanjian(savedData.suratPerjanjian || (currentDoc.nomor_surat ? `Surat Perjanjian Nomor : ${currentDoc.nomor_surat} tanggal 8 Januari 2024;` : "Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;"));
-      setBuktiKerja(savedData.buktiKerja || "Bukti Kerja Pekerjaan Pemeliharaan dan Perawatan Jaringan Dokumentasi dan Informasi Hukum (JDIH) bulan September 2024.");
-      setPresentasePenyedia(savedData.presentasePenyedia || "75%");
+      setNomorDokumen(savedData.nomorDokumen || "");
+      setNamaPekerjaan(savedData.namaPekerjaan || "");
+      setBebanDipa(savedData.bebanDipa || "");
+      setHari(savedData.hari || "");
+      setTanggalTerbilang(savedData.tanggalTerbilang || "");
+      setBulanTerbilang(savedData.bulanTerbilang || "");
+      setTahunTerbilang(savedData.tahunTerbilang || "");
+      setPihak1Nama(savedData.pihak1Nama || "");
+      setPihak1Jabatan(savedData.pihak1Jabatan || "");
+      setPihak1Alamat(savedData.pihak1Alamat || "");
+      setPihak1AtasNama(savedData.pihak1AtasNama || "");
+
+      // Pihak 2 (Penyedia)
+      setPihak2Nama(savedData.pihak2Nama || invoicePimpinan || "");
+      setPihak2Jabatan(savedData.pihak2Jabatan || invoiceJabatanPerusahaan || "");
+      setPihak2Alamat(savedData.pihak2Alamat || invoiceAlamat || "");
+      setPihak2AtasNama(savedData.pihak2AtasNama || invoiceAtasNama || "");
+
+      setSuratPerjanjian(savedData.suratPerjanjian || "");
+      setBuktiKerja(savedData.buktiKerja || "");
+      setPresentasePenyedia(savedData.presentasePenyedia || "");
       setLokasiPekerjaan(savedData.lokasiPekerjaan || "Jakarta");
       setInstansiPenerima(savedData.instansiPenerima || "Badan Intelijen Negara");
       setTtdKiriJabatan1(savedData.ttdKiriJabatan1 || "Kepala Badan Intelijen Negara");
       setTtdKiriJabatan2(savedData.ttdKiriJabatan2 || "Pejabat Pembuat Komitmen");
-      setTtdKiriNama(savedData.ttdKiriNama || currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
-      setTtdKananInstansi(savedData.ttdKananInstansi || currentDoc.pihak_eksternal || "PT. Asia Sistem Indonesia");
-      setTtdKananJabatan(savedData.ttdKananJabatan || "Direktur");
-      setTtdKananNama(savedData.ttdKananNama || "Rizky Detha");
-      setBastPenyelesaianNomor(savedData.bastPenyelesaianNomor || "BAPP-2406 / XI /2024");
-      setBastPenyelesaianTanggal(savedData.bastPenyelesaianTanggal || "29 November 2024");
-      setBastPeriodePekerjaan(savedData.bastPeriodePekerjaan || "bulan September s.d. November 2024");
-      setBapTanggalSurat(savedData.bapTanggalSurat || "02 Desember 2024");
+      setPihak1Nama(savedData.ttdKiriNama || savedData.pihak1Nama || "");
+      setTtdKiriNama(savedData.ttdKiriNama || savedData.pihak1Nama || "");
+
+      setTtdKananInstansi(savedData.ttdKananInstansi || invoiceTtdKananInstansi || "");
+      setTtdKananJabatan(savedData.ttdKananJabatan || invoiceTtdKananJabatan || "Direktur");
+      setTtdKananNama(savedData.ttdKananNama || invoiceTtdKananNama || "");
+
+      setBastPenyelesaianNomor(savedData.bastPenyelesaianNomor || "");
+      setBastPenyelesaianTanggal(savedData.bastPenyelesaianTanggal || "");
+      setBastPeriodePekerjaan(savedData.bastPeriodePekerjaan || "");
+      setBapTanggalSurat(savedData.bapTanggalSurat || "");
       setBapDasarList(savedData.bapDasarList || [
         "Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;",
         "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2079/IX/2024 tanggal 30 September 2024;",
@@ -161,95 +219,148 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
         "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2406/XI/2024 tanggal 29 November 2024;",
         "Berita Acara Serah Terima Pekerjaan Nomor : BAST-1969/XI/2024 tanggal 29 November 2024.",
       ]);
-      setBapPeriodePembayaran(savedData.bapPeriodePembayaran || "bulan September s/d November 2024");
-      setBapNilaiPembayaranAngka(savedData.bapNilaiPembayaranAngka || "134.259.000");
-      setBapNilaiPembayaranTerbilang(
-        savedData.bapNilaiPembayaranTerbilang || "Seratus tiga puluh empat juta dua ratus lima puluh sembilan ribu rupiah"
-      );
+      setBapPeriodePembayaran(savedData.bapPeriodePembayaran || "");
+      setBapNilaiPembayaranAngka(savedData.bapNilaiPembayaranAngka || "");
+      setBapNilaiPembayaranTerbilang(savedData.bapNilaiPembayaranTerbilang || "");
       setBapKppn(savedData.bapKppn || "Kantor Pelayanan Perbendaharaan Negara (KPPN) Jakarta V");
-      setBapNilaiKontrak(savedData.bapNilaiKontrak || "537.036.000,-");
-      setBapNilaiBapLalu(savedData.bapNilaiBapLalu || "358.024.000,-");
-      setBapNilaiPekerjaanSaatIni(savedData.bapNilaiPekerjaanSaatIni || "134.259.000,-");
-      setBapDikurangiLalu(savedData.bapDikurangiLalu || "358.024.000,-");
-      setBapSisaPembayaran(savedData.bapSisaPembayaran || "44.753.000,-");
-      setBapNilaiDibayarkan(savedData.bapNilaiDibayarkan || "134.259.000,-");
-      setBapTotalBapIni(savedData.bapTotalBapIni || "492.283.000,-");
+      setBapNilaiKontrak(savedData.bapNilaiKontrak || "");
+      setBapNilaiBapLalu(savedData.bapNilaiBapLalu || "");
+      setBapNilaiPekerjaanSaatIni(savedData.bapNilaiPekerjaanSaatIni || "");
+      setBapDikurangiLalu(savedData.bapDikurangiLalu || "");
+      setBapSisaPembayaran(savedData.bapSisaPembayaran || "");
+      setBapNilaiDibayarkan(savedData.bapNilaiDibayarkan || "");
+      setBapTotalBapIni(savedData.bapTotalBapIni || "");
       setIncludeMaterai(savedData.includeMaterai !== false);
     } else {
       setInstansi("BADAN INTELIJEN NEGARA");
       setJudulSurat(getDefaultTitle(type));
-      setNomorDokumen(
-        type === "BAST"
-          ? "BAST- 1969 / XI / 2024"
-          : type === "BAP"
-          ? "BAP- 2026/ XII / 2024"
-          : `${type}-${currentDoc.id || "2079"} / IX / 2024`
-      );
-      setNamaPekerjaan(currentDoc.perihal || currentDoc.nama_kegiatan || "Pemeliharaan dan Perawatan Jaringan Dokumentasi dan Informasi Hukum (JDIH)");
-      setBebanDipa("ATAS BEBAN DIPA BIN TAHUN ANGGARAN 2024");
-      setHari(type === "BAST" ? "Jumat" : "Senin");
-      setTanggalTerbilang(type === "BAST" ? "Dua Puluh Sembilan" : type === "BAP" ? "Dua" : "Tiga Puluh");
-      setBulanTerbilang(type === "BAST" ? "November" : type === "BAP" ? "Desember" : "September");
-      setTahunTerbilang("Dua Ribu Dua Puluh Empat");
-      setPihak1Nama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
-      setPihak1Jabatan("Pejabat Pembuat Komitmen BIN");
-      setPihak1Alamat("Jalan Seno Raya Pejaten Timur Pasar Minggu Jakarta Selatan");
-      setPihak1AtasNama(
-        type === "BAP"
-          ? "Badan Intelijen Negara, yang untuk selanjutnya disebut PPK"
-          : "Badan Intelijen Negara, selanjutnya disebut PPK."
-      );
-      setPihak2Nama("Rizky Detha");
-      setPihak2Jabatan(currentDoc.pihak_eksternal ? `Direktur ${currentDoc.pihak_eksternal}` : "Direktur PT. Asia Sistem Indonesia");
-      setPihak2Alamat("Gedung Sentral Senayan II Lt. 16, Jl. Asia Afrika No. 8, Jakarta Pusat 10270");
-      setPihak2AtasNama(
-        type === "BAP"
-          ? `PT. Asia Sistem Indonesia, yang untuk selanjutnya disebut PENYEDIA`
-          : (currentDoc.pihak_eksternal ? `${currentDoc.pihak_eksternal}, yang selanjutnya disebut PENYEDIA.` : "PT. Asia Sistem Indonesia, yang selanjutnya disebut PENYEDIA.")
-      );
-      setSuratPerjanjian(currentDoc.nomor_surat ? `Surat Perjanjian Nomor : ${currentDoc.nomor_surat} tanggal 8 Januari 2024;` : "Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;");
-      setBuktiKerja("Bukti Kerja Pekerjaan Pemeliharaan dan Perawatan Jaringan Dokumentasi dan Informasi Hukum (JDIH) bulan September 2024.");
-      setPresentasePenyedia(type === "BAST" ? "91.67%" : "75%");
-      setLokasiPekerjaan("Jakarta");
-      setInstansiPenerima("Badan Intelijen Negara");
-      setBastPenyelesaianNomor("BAPP-2406 / XI /2024");
-      setBastPenyelesaianTanggal("29 November 2024");
-      setBastPeriodePekerjaan("bulan September s.d. November 2024");
-      setBapTanggalSurat("02 Desember 2024");
-      setBapDasarList([
-        "Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;",
-        "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2079/IX/2024 tanggal 30 September 2024;",
-        "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2249/X/2024 tanggal 31 Oktober 2024;",
-        "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2406/XI/2024 tanggal 29 November 2024;",
-        "Berita Acara Serah Terima Pekerjaan Nomor : BAST-1969/XI/2024 tanggal 29 November 2024.",
-      ]);
-      setBapPeriodePembayaran("bulan September s/d November 2024");
-      setBapNilaiPembayaranAngka("134.259.000");
-      setBapNilaiPembayaranTerbilang(
-        "Seratus tiga puluh empat juta dua ratus lima puluh sembilan ribu rupiah"
-      );
-      setBapKppn("Kantor Pelayanan Perbendaharaan Negara (KPPN) Jakarta V");
-      setBapNilaiKontrak("537.036.000,-");
-      setBapNilaiBapLalu("358.024.000,-");
-      setBapNilaiPekerjaanSaatIni("134.259.000,-");
-      setBapDikurangiLalu("358.024.000,-");
-      setBapSisaPembayaran("44.753.000,-");
-      setBapNilaiDibayarkan("134.259.000,-");
-      setBapTotalBapIni("492.283.000,-");
-      setTtdKiriJabatan1("Kepala Badan Intelijen Negara");
-      setTtdKiriJabatan2("Pejabat Pembuat Komitmen");
-      setTtdKiriNama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
-      setTtdKananInstansi(currentDoc.pihak_eksternal || "PT. Asia Sistem Indonesia");
-      setTtdKananJabatan("Direktur");
-      setTtdKananNama("Rizky Detha");
+
+      // Untuk form BAST, kosongkan seluruh field berikut sesuai instruksi pengguna:
+      if (type === "BAST") {
+        setNomorDokumen("");
+        setNamaPekerjaan("");
+        setBebanDipa("");
+        setHari("");
+        setTanggalTerbilang("");
+        setBulanTerbilang("");
+        setTahunTerbilang("");
+        setPihak1Nama("");
+        setPihak1Jabatan("");
+        setPihak1Alamat("");
+        setPihak1AtasNama("");
+        setPresentasePenyedia("");
+        setBastPenyelesaianNomor("");
+        setBastPeriodePekerjaan("");
+        setBastPenyelesaianTanggal("");
+        setTtdKiriNama("");
+
+        // Pihak 2 (Penyedia) & TTD Kanan diambil dari metadata invoice
+        setPihak2Nama(invoicePimpinan);
+        setPihak2Jabatan(invoiceJabatanPerusahaan);
+        setPihak2Alamat(invoiceAlamat);
+        setPihak2AtasNama(invoiceAtasNama);
+        setTtdKananInstansi(invoiceTtdKananInstansi);
+        setTtdKananJabatan(invoiceTtdKananJabatan);
+        setTtdKananNama(invoiceTtdKananNama);
+      } else {
+        // Untuk selain BAST (BAP/BAPP)
+        setNomorDokumen(type === "BAP" ? "BAP- 2026/ XII / 2024" : `${type}-${currentDoc.id || "2079"} / IX / 2024`);
+        setNamaPekerjaan(currentDoc.perihal || currentDoc.nama_kegiatan || "");
+        setBebanDipa("ATAS BEBAN DIPA BIN TAHUN ANGGARAN 2024");
+        setHari("Senin");
+        setTanggalTerbilang(type === "BAP" ? "Dua" : "Tiga Puluh");
+        setBulanTerbilang(type === "BAP" ? "Desember" : "September");
+        setTahunTerbilang("Dua Ribu Dua Puluh Empat");
+        setPihak1Nama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
+        setPihak1Jabatan("Pejabat Pembuat Komitmen BIN");
+        setPihak1Alamat("Jalan Seno Raya Pejaten Timur Pasar Minggu Jakarta Selatan");
+        setPihak1AtasNama(
+          type === "BAP"
+            ? "Badan Intelijen Negara, yang untuk selanjutnya disebut PPK"
+            : "Badan Intelijen Negara, selanjutnya disebut PPK."
+        );
+        setPihak2Nama(invoicePimpinan);
+        setPihak2Jabatan(invoiceJabatanPerusahaan || (currentDoc.pihak_eksternal ? `Direktur ${currentDoc.pihak_eksternal}` : ""));
+        setPihak2Alamat(invoiceAlamat || "Gedung Sentral Senayan II Lt. 16, Jl. Asia Afrika No. 8, Jakarta Pusat 10270");
+        setPihak2AtasNama(
+          invoiceAtasNama || (currentDoc.pihak_eksternal ? `${currentDoc.pihak_eksternal}, yang selanjutnya disebut PENYEDIA.` : "")
+        );
+        setSuratPerjanjian(currentDoc.nomor_surat ? `Surat Perjanjian Nomor : ${currentDoc.nomor_surat} tanggal 8 Januari 2024;` : "");
+        setBuktiKerja("");
+        setPresentasePenyedia("75%");
+        setLokasiPekerjaan("Jakarta");
+        setInstansiPenerima("Badan Intelijen Negara");
+        setBastPenyelesaianNomor("");
+        setBastPenyelesaianTanggal("");
+        setBastPeriodePekerjaan("");
+        setBapTanggalSurat("02 Desember 2024");
+        setBapDasarList([
+          "Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;",
+          "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2079/IX/2024 tanggal 30 September 2024;",
+          "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2249/X/2024 tanggal 31 Oktober 2024;",
+          "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2406/XI/2024 tanggal 29 November 2024;",
+          "Berita Acara Serah Terima Pekerjaan Nomor : BAST-1969/XI/2024 tanggal 29 November 2024.",
+        ]);
+        setBapPeriodePembayaran("bulan September s/d November 2024");
+        setBapNilaiPembayaranAngka(currentDoc.nilai_pembayaran ? new Intl.NumberFormat("id-ID").format(currentDoc.nilai_pembayaran) : "");
+        setBapNilaiPembayaranTerbilang("");
+        setBapKppn("Kantor Pelayanan Perbendaharaan Negara (KPPN) Jakarta V");
+        setBapNilaiKontrak("");
+        setBapNilaiBapLalu("");
+        setBapNilaiPekerjaanSaatIni("");
+        setBapDikurangiLalu("");
+        setBapSisaPembayaran("");
+        setBapNilaiDibayarkan("");
+        setBapTotalBapIni("");
+        setTtdKiriJabatan1("Kepala Badan Intelijen Negara");
+        setTtdKiriJabatan2("Pejabat Pembuat Komitmen");
+        setTtdKiriNama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
+        setTtdKananInstansi(invoiceTtdKananInstansi || currentDoc.pihak_eksternal || "");
+        setTtdKananJabatan(invoiceTtdKananJabatan || "Direktur");
+        setTtdKananNama(invoiceTtdKananNama);
+      }
       setIncludeMaterai(true);
     }
   };
 
   if (!isOpen || !doc) return null;
 
-  // Handler Generate Dokumen & Buka PDF Langsung
+  // Handler Generate Dokumen & Buka PDF Langsung dengan Skema Validasi
   const handleGenerateAndExport = async () => {
+    // Validasi input khusus dokumen BAST (semua input wajib diisi)
+    if (docType === "BAST") {
+      const newErrors: Record<string, string> = {};
+
+      if (!nomorDokumen.trim()) newErrors.nomorDokumen = "Nomor Dokumen wajib diisi";
+      if (!namaPekerjaan.trim()) newErrors.namaPekerjaan = "Nama Pekerjaan (Tentang) wajib diisi";
+      if (!bebanDipa.trim()) newErrors.bebanDipa = "Beban DIPA wajib diisi";
+      if (!hari.trim()) newErrors.hari = "Hari wajib diisi";
+      if (!tanggalTerbilang.trim()) newErrors.tanggalTerbilang = "Tanggal (Terbilang) wajib diisi";
+      if (!bulanTerbilang.trim()) newErrors.bulanTerbilang = "Bulan wajib diisi";
+      if (!tahunTerbilang.trim()) newErrors.tahunTerbilang = "Tahun (Terbilang) wajib diisi";
+      if (!pihak1Nama.trim()) newErrors.pihak1Nama = "Nama Lengkap & Gelar PPK wajib diisi";
+      if (!pihak1Jabatan.trim()) newErrors.pihak1Jabatan = "Jabatan PPK wajib diisi";
+      if (!pihak1Alamat.trim()) newErrors.pihak1Alamat = "Alamat Kantor PPK wajib diisi";
+      if (!pihak1AtasNama.trim()) newErrors.pihak1AtasNama = "Bertindak untuk dan atas nama (PPK) wajib diisi";
+      if (!presentasePenyedia.trim()) newErrors.presentasePenyedia = "Presentase Pekerjaan Diserahkan / Diterima wajib diisi";
+      if (!bastPenyelesaianNomor.trim()) newErrors.bastPenyelesaianNomor = "Dasar Berita Acara Penyelesaian Pekerjaan (Nomor BAPP) wajib diisi";
+      if (!bastPeriodePekerjaan.trim()) newErrors.bastPeriodePekerjaan = "Periode Pekerjaan wajib diisi";
+      if (!bastPenyelesaianTanggal.trim()) newErrors.bastPenyelesaianTanggal = "Tanggal Berita Acara Penyelesaian Pekerjaan (BAPP) wajib diisi";
+      if (!ttdKiriNama.trim()) newErrors.ttdKiriNama = "Tanda Tangan Kiri (PPK) wajib diisi";
+      if (!pihak2Nama.trim()) newErrors.pihak2Nama = "Nama Pimpinan / Direktur wajib diisi";
+      if (!pihak2Jabatan.trim()) newErrors.pihak2Jabatan = "Jabatan & Perusahaan wajib diisi";
+      if (!pihak2Alamat.trim()) newErrors.pihak2Alamat = "Alamat Kantor Penyedia wajib diisi";
+      if (!pihak2AtasNama.trim()) newErrors.pihak2AtasNama = "Bertindak untuk dan atas nama (Penyedia) wajib diisi";
+      if (!ttdKananNama.trim()) newErrors.ttdKananNama = "Tanda Tangan Kanan (Penyedia) wajib diisi";
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+    }
+
+    setErrors({});
+
     const currentFormData = {
       instansi,
       judulSurat,
@@ -324,7 +435,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/85 backdrop-blur-md overflow-hidden animate-fade-in font-sans">
       <div className="relative w-full max-w-6xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col z-[10000]">
-        
+
         {/* Header Modal */}
         <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white px-6 py-4.5 flex items-center justify-between border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
@@ -387,31 +498,58 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 />
               </div>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nomor Dokumen</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Nomor Dokumen {docType === "BAST" && <span className="text-red-500">*</span>}
+                </label>
                 <input
                   type="text"
                   value={nomorDokumen}
-                  onChange={(e) => setNomorDokumen(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                  onChange={(e) => {
+                    setNomorDokumen(e.target.value);
+                    if (errors.nomorDokumen) setErrors((prev) => ({ ...prev, nomorDokumen: "" }));
+                  }}
+                  placeholder="Masukkan Nomor Dokumen..."
+                  className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                    errors.nomorDokumen ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
                 />
+                {errors.nomorDokumen && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.nomorDokumen}</p>}
               </div>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Beban DIPA</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Beban DIPA {docType === "BAST" && <span className="text-red-500">*</span>}
+                </label>
                 <input
                   type="text"
                   value={bebanDipa}
-                  onChange={(e) => setBebanDipa(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                  onChange={(e) => {
+                    setBebanDipa(e.target.value);
+                    if (errors.bebanDipa) setErrors((prev) => ({ ...prev, bebanDipa: "" }));
+                  }}
+                  placeholder="Contoh: ATAS BEBAN DIPA BIN TAHUN ANGGARAN 2024"
+                  className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                    errors.bebanDipa ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
                 />
+                {errors.bebanDipa && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.bebanDipa}</p>}
               </div>
               <div className="md:col-span-2">
-                <label className="block font-bold text-slate-700 mb-1">Nama Pekerjaan (Tentang)</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Nama Pekerjaan (Tentang) {docType === "BAST" && <span className="text-red-500">*</span>}
+                </label>
                 <textarea
                   rows={2}
                   value={namaPekerjaan}
-                  onChange={(e) => setNamaPekerjaan(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                  onChange={(e) => {
+                    setNamaPekerjaan(e.target.value);
+                    if (errors.namaPekerjaan) setErrors((prev) => ({ ...prev, namaPekerjaan: "" }));
+                  }}
+                  placeholder="Masukkan Nama Pekerjaan..."
+                  className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                    errors.namaPekerjaan ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
                 />
+                {errors.namaPekerjaan && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.namaPekerjaan}</p>}
               </div>
             </div>
           </div>
@@ -424,44 +562,76 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Hari</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Hari {docType === "BAST" && <span className="text-red-500">*</span>}
+                </label>
                 <input
                   type="text"
                   value={hari}
-                  onChange={(e) => setHari(e.target.value)}
-                  placeholder="Senin"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                  onChange={(e) => {
+                    setHari(e.target.value);
+                    if (errors.hari) setErrors((prev) => ({ ...prev, hari: "" }));
+                  }}
+                  placeholder="Contoh: Senin"
+                  className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                    errors.hari ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
                 />
+                {errors.hari && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.hari}</p>}
               </div>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Tanggal (Terbilang)</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Tanggal (Terbilang) {docType === "BAST" && <span className="text-red-500">*</span>}
+                </label>
                 <input
                   type="text"
                   value={tanggalTerbilang}
-                  onChange={(e) => setTanggalTerbilang(e.target.value)}
-                  placeholder="Tiga Puluh"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                  onChange={(e) => {
+                    setTanggalTerbilang(e.target.value);
+                    if (errors.tanggalTerbilang) setErrors((prev) => ({ ...prev, tanggalTerbilang: "" }));
+                  }}
+                  placeholder="Contoh: Tiga Puluh"
+                  className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                    errors.tanggalTerbilang ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
                 />
+                {errors.tanggalTerbilang && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.tanggalTerbilang}</p>}
               </div>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Bulan</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Bulan {docType === "BAST" && <span className="text-red-500">*</span>}
+                </label>
                 <input
                   type="text"
                   value={bulanTerbilang}
-                  onChange={(e) => setBulanTerbilang(e.target.value)}
-                  placeholder="September"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                  onChange={(e) => {
+                    setBulanTerbilang(e.target.value);
+                    if (errors.bulanTerbilang) setErrors((prev) => ({ ...prev, bulanTerbilang: "" }));
+                  }}
+                  placeholder="Contoh: September"
+                  className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                    errors.bulanTerbilang ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
                 />
+                {errors.bulanTerbilang && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.bulanTerbilang}</p>}
               </div>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Tahun (Terbilang)</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Tahun (Terbilang) {docType === "BAST" && <span className="text-red-500">*</span>}
+                </label>
                 <input
                   type="text"
                   value={tahunTerbilang}
-                  onChange={(e) => setTahunTerbilang(e.target.value)}
-                  placeholder="Dua Ribu Dua Puluh Empat"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                  onChange={(e) => {
+                    setTahunTerbilang(e.target.value);
+                    if (errors.tahunTerbilang) setErrors((prev) => ({ ...prev, tahunTerbilang: "" }));
+                  }}
+                  placeholder="Contoh: Dua Ribu Dua Puluh Empat"
+                  className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                    errors.tahunTerbilang ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                  }`}
                 />
+                {errors.tahunTerbilang && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.tahunTerbilang}</p>}
               </div>
             </div>
           </div>
@@ -476,40 +646,76 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </h3>
               <div className="space-y-2.5">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Nama Lengkap & Gelar</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Nama Lengkap & Gelar {docType === "BAST" && <span className="text-red-500">*</span>}
+                  </label>
                   <input
                     type="text"
                     value={pihak1Nama}
-                    onChange={(e) => setPihak1Nama(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    onChange={(e) => {
+                      setPihak1Nama(e.target.value);
+                      if (errors.pihak1Nama) setErrors((prev) => ({ ...prev, pihak1Nama: "" }));
+                    }}
+                    placeholder="Masukkan Nama Lengkap & Gelar PPK..."
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.pihak1Nama ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.pihak1Nama && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.pihak1Nama}</p>}
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Jabatan</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Jabatan {docType === "BAST" && <span className="text-red-500">*</span>}
+                  </label>
                   <input
                     type="text"
                     value={pihak1Jabatan}
-                    onChange={(e) => setPihak1Jabatan(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    onChange={(e) => {
+                      setPihak1Jabatan(e.target.value);
+                      if (errors.pihak1Jabatan) setErrors((prev) => ({ ...prev, pihak1Jabatan: "" }));
+                    }}
+                    placeholder="Contoh: Pejabat Pembuat Komitmen BIN"
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.pihak1Jabatan ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.pihak1Jabatan && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.pihak1Jabatan}</p>}
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Alamat Kantor</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Alamat Kantor {docType === "BAST" && <span className="text-red-500">*</span>}
+                  </label>
                   <input
                     type="text"
                     value={pihak1Alamat}
-                    onChange={(e) => setPihak1Alamat(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    onChange={(e) => {
+                      setPihak1Alamat(e.target.value);
+                      if (errors.pihak1Alamat) setErrors((prev) => ({ ...prev, pihak1Alamat: "" }));
+                    }}
+                    placeholder="Masukkan Alamat Kantor PPK..."
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.pihak1Alamat ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.pihak1Alamat && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.pihak1Alamat}</p>}
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Bertindak untuk dan atas nama</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Bertindak untuk dan atas nama {docType === "BAST" && <span className="text-red-500">*</span>}
+                  </label>
                   <input
                     type="text"
                     value={pihak1AtasNama}
-                    onChange={(e) => setPihak1AtasNama(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    onChange={(e) => {
+                      setPihak1AtasNama(e.target.value);
+                      if (errors.pihak1AtasNama) setErrors((prev) => ({ ...prev, pihak1AtasNama: "" }));
+                    }}
+                    placeholder="Contoh: Badan Intelijen Negara, selanjutnya disebut PPK."
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.pihak1AtasNama ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.pihak1AtasNama && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.pihak1AtasNama}</p>}
                 </div>
               </div>
             </div>

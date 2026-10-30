@@ -477,12 +477,12 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body - 2 Columns (Matching Screenshot 2) */}
+        {/* Modal Body - 2 Columns: Kiri Lebar (9-10 Cols), Kanan Ramping (2-3 Cols) */}
         <div className="p-4 md:p-6 overflow-y-auto space-y-6 flex-1">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             
-            {/* LEFT COLUMN (8 cols): Informasi Dokumen & Dokumen Pendukung */}
-            <div className="lg:col-span-8 space-y-6">
+            {/* LEFT COLUMN (Diperlebar menjadi 9 atau 10 cols): Informasi Dokumen & Dokumen Pendukung */}
+            <div className="lg:col-span-9 xl:col-span-10 space-y-6">
               
               {/* Card 1: Informasi Dokumen */}
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-6">
@@ -551,7 +551,7 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                   {/* Row 4 */}
                   <div>
                     <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase block mb-1">
-                      KATEGORI PENGADAAN
+                      KATEGORI 
                     </span>
                     <span className="font-semibold text-slate-800 text-sm">
                       {document.kategori || (document as any).kategori_pengadaan || "Pengadaan Barang / Jasa"}
@@ -590,10 +590,10 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                   <div className="grid grid-cols-1 xl:grid-cols-12 divide-y xl:divide-y-0 xl:divide-x divide-slate-200/80">
                     
                     {/* ======================================================== */}
-                    {/* PANEL KIRI (4 Cols): Daftar Kartu Dokumen Pendukung       */}
+                    {/* PANEL KIRI (3 Cols): Daftar Kartu Dokumen Pendukung       */}
                     {/* ======================================================== */}
-                    <div className="xl:col-span-4 p-5 bg-slate-50/40 flex flex-col">
-                      <div className="mb-4">
+                    <div className="xl:col-span-3 p-4 bg-slate-50/40 flex flex-col">
+                      <div className="mb-3.5">
                         <h3 className="font-extrabold text-slate-800 text-sm tracking-tight">
                           Dokumen Pendukung ({attachmentsList.length})
                         </h3>
@@ -711,9 +711,9 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                     </div>
 
                     {/* ======================================================== */}
-                    {/* PANEL KANAN (8 Cols): Preview & Data Teridentifikasi     */}
+                    {/* PANEL KANAN (9 Cols): Preview & Data Teridentifikasi     */}
                     {/* ======================================================== */}
-                    <div className="xl:col-span-8 flex flex-col bg-white">
+                    <div className="xl:col-span-9 flex flex-col bg-white">
                       {activeAttachment && activeGroupedMeta && (
                         <>
                           {/* Top Bar: Tabs (Preview Dokumen | Data Teridentifikasi) + Unduh Dokumen */}
@@ -1056,12 +1056,12 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
               </div>
             </div>
 
-            {/* RIGHT COLUMN (4 cols): Aksi, Timeline Proses, Riwayat Status */}
-            <div className="lg:col-span-4 space-y-6">
+            {/* RIGHT COLUMN (Dipersempit menjadi 3 atau 2 cols): Timeline Proses & Riwayat Status */}
+            <div className="lg:col-span-3 xl:col-span-2 space-y-5">
               
               {/* Card 1: Timeline Proses */}
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-5">
-                <h4 className="font-bold text-slate-800 text-xs mb-4">Timeline Proses</h4>
+              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4">
+                <h4 className="font-bold text-slate-800 text-xs mb-3.5">Timeline Proses</h4>
 
                 <div className="relative pl-6 space-y-5 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
                   {timelineSteps.map((step, idx) => {

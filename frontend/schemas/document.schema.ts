@@ -194,28 +194,37 @@ export const documentValidationSchema = {
 
     if (!docs || docs.length === 0) {
       return {
-        summaryError: "Pengajuan dokumen harus memiliki minimal 3 dokumen pendukung!",
+        summaryError: null,
         itemErrors,
       };
     }
 
-    // Cek minimal 3 dokumen pendukung yang memiliki file
-    const validUploadedDocs = docs.filter(
-      (d) => Boolean(d.file || d.existing_file_name || d.existing_file_path)
-    );
+    // Validasi ukuran maksimal (10 MB) dan format berkas (PDF & Word saja)
+    const allowedExtensions = [".pdf", ".docx", ".doc"];
+    const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
 
-    if (requireAtLeastOne && !isEditMode && validUploadedDocs.length < 3) {
-      docs.forEach((doc, idx) => {
-        const hasFile = Boolean(doc.file || doc.existing_file_name || doc.existing_file_path);
-        if (!hasFile && idx < 3) {
+    docs.forEach((doc) => {
+      if (doc.file) {
+        const fileName = doc.file.name.toLowerCase();
+        const hasValidExt = allowedExtensions.some((ext) => fileName.endsWith(ext));
+        if (!hasValidExt) {
           itemErrors[doc.id] = {
-            file: "File lampiran wajib diunggah!",
+            ...(itemErrors[doc.id] || {}),
+            file: "Hanya berkas format PDF (.pdf) dan Word (.docx, .doc) yang diperbolehkan!",
+          };
+        } else if (doc.file.size > maxSizeBytes) {
+          itemErrors[doc.id] = {
+            ...(itemErrors[doc.id] || {}),
+            file: `Ukuran berkas melebihi batas maksimal 10 MB (${(doc.file.size / (1024 * 1024)).toFixed(2)} MB)!`,
           };
         }
-      });
+      }
+    });
 
+    if (Object.keys(itemErrors).length > 0) {
+      const firstMsg = Object.values(itemErrors)[0]?.file;
       return {
-        summaryError: `Wajib mengunggah minimal 3 dokumen pendukung (saat ini baru ${validUploadedDocs.length} berkas yang diunggah)!`,
+        summaryError: firstMsg || "Terdapat berkas yang tidak memenuhi ketentuan ukuran (maks 10 MB) atau format (PDF/Word)!",
         itemErrors,
       };
     }

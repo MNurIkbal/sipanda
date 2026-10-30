@@ -24,10 +24,10 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
   const pihak1Jabatan = savedData.pihak1Jabatan || "Pejabat Pembuat Komitmen BIN";
   const pihak1Alamat = savedData.pihak1Alamat || "Jalan Seno Raya Pejaten Timur Pasar Minggu Jakarta Selatan";
   const pihak1AtasNama = savedData.pihak1AtasNama || "Badan Intelijen Negara, selanjutnya disebut PPK.";
-  const pihak2Nama = savedData.pihak2Nama || "Rizky Detha";
-  const pihak2Jabatan = savedData.pihak2Jabatan || (doc.pihak_eksternal ? `Direktur ${doc.pihak_eksternal}` : "Direktur PT. Asia Sistem Indonesia");
+  const pihak2Nama = savedData.pihak2Nama || "";
+  const pihak2Jabatan = savedData.pihak2Jabatan || (doc.pihak_eksternal ? `Direktur ${doc.pihak_eksternal}` : "");
   const pihak2Alamat = savedData.pihak2Alamat || "Gedung Sentral Senayan II Lt. 16, Jl. Asia Afrika No. 8, Jakarta Pusat 10270";
-  const pihak2AtasNama = savedData.pihak2AtasNama || (doc.pihak_eksternal ? `${doc.pihak_eksternal}, yang selanjutnya disebut PENYEDIA.` : "PT. Asia Sistem Indonesia, yang selanjutnya disebut PENYEDIA.");
+  const pihak2AtasNama = savedData.pihak2AtasNama || (doc.pihak_eksternal ? `${doc.pihak_eksternal}, yang selanjutnya disebut PENYEDIA.` : " yang selanjutnya disebut PENYEDIA.");
   const suratPerjanjian = savedData.suratPerjanjian || (doc.nomor_surat ? `Surat Perjanjian Nomor : ${doc.nomor_surat} tanggal 8 Januari 2024;` : "Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;");
   const buktiKerja = savedData.buktiKerja || "Bukti Kerja Pekerjaan Pemeliharaan dan Perawatan Jaringan Dokumentasi dan Informasi Hukum (JDIH) bulan September 2024.";
   const presentasePenyedia = savedData.presentasePenyedia || (type === "BAST" ? "91.67%" : "75%");
@@ -63,9 +63,9 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
   const ttdKiriJabatan1 = savedData.ttdKiriJabatan1 || "Kepala Badan Intelijen Negara";
   const ttdKiriJabatan2 = savedData.ttdKiriJabatan2 || "Pejabat Pembuat Komitmen";
   const ttdKiriNama = savedData.ttdKiriNama || doc.ppk_name || "Edy Susanto, S.H., M.H.";
-  const ttdKananInstansi = savedData.ttdKananInstansi || doc.pihak_eksternal || "PT. Asia Sistem Indonesia";
-  const ttdKananJabatan = savedData.ttdKananJabatan || "Direktur";
-  const ttdKananNama = savedData.ttdKananNama || "Rizky Detha";
+  const ttdKananInstansi = savedData.ttdKananInstansi || doc.pihak_eksternal || "";
+  const ttdKananJabatan = savedData.ttdKananJabatan || "";
+  const ttdKananNama = savedData.ttdKananNama || "";
 
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
@@ -232,9 +232,8 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
     <body>
       <div class="header-instansi">${instansi}</div>
 
-      ${
-        type === "BAP"
-          ? `
+      ${type === "BAP"
+      ? `
       <table class="table-header-bap">
         <tr>
           <td style="width: 50%; text-align: center; font-weight: bold; font-size: 10pt; text-transform: uppercase;">
@@ -255,7 +254,7 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
         </tr>
       </table>
       `
-          : `
+      : `
       <div class="title-section">
         <div class="main-title">${judulSurat}</div>
         <div class="doc-num">${nomorDokumen}</div>
@@ -264,7 +263,7 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
         <div class="beban-dipa">${bebanDipa}</div>
       </div>
       `
-      }
+    }
 
       <div class="p-intro">
         &mdash;&mdash;&mdash;&mdash;&mdash; Pada hari ini <strong>${hari}</strong> tanggal <strong>${tanggalTerbilang}</strong> bulan <strong>${bulanTerbilang}</strong> tahun <strong>${tahunTerbilang}</strong>, yang bertanda tangan di bawah ini : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
@@ -312,9 +311,8 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
         Dalam hal ini bertindak untuk dan atas nama <strong>${pihak2AtasNama}</strong>
       </div>
 
-      ${
-        type === "BAST"
-          ? `
+      ${type === "BAST"
+      ? `
       <div class="paragraph" style="margin-top: 10px; margin-bottom: 8px;">
         &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; Dengan ini <strong>PPK</strong> dan <strong>PENYEDIA</strong> menyatakan sebagai berikut : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
       </div>
@@ -331,8 +329,8 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
         &mdash;&mdash;&mdash;&mdash;&mdash; Demikian Berita Acara Serah Terima Pekerjaan ini dibuat dengan sesungguhnya dan ditanda tangani oleh kedua pihak untuk dipergunakan sebagaimana mestinya. &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
       </div>
       `
-          : type === "BAP"
-          ? `
+      : type === "BAP"
+        ? `
       <div class="paragraph" style="margin-bottom: 4px;">
         Berdasarkan hal-hal sebagai berikut: &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
       </div>
@@ -412,7 +410,7 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
         Demikian Berita Acara Pembayaran ini dibuat untuk dipergunakan sebagaimana mestinya. &mdash;&mdash;&mdash;&mdash;&mdash;
       </div>
       `
-          : `
+        : `
       <div class="paragraph">
         Berdasarkan hal-hal sebagai berikut : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
       </div>
@@ -454,7 +452,7 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
         &mdash;&mdash;&mdash;&mdash;&mdash; Demikian ${judulSurat} ini dibuat dengan sesungguhnya dan ditanda tangani oleh kedua pihak untuk dipergunakan sebagaimana mestinya. &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
       </div>
       `
-      }
+    }
 
       <table class="ttd-section">
         <tr>
