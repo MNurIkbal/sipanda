@@ -45,6 +45,127 @@ const LIGHT_SLIDES = [
 ];
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+  // Ref for particles canvas (Constellation / Network Effect like particles.js)
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", handleResize);
+
+    // Konfigurasi Partikel & Garis Jaring-jaring (Constellation / Mesh)
+    const particleCount = Math.min(Math.floor((width * height) / 12000), 110);
+    const connectionDistance = 140;
+
+    interface Particle {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      radius: number;
+    }
+
+    const particles: Particle[] = [];
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.9,
+        vy: (Math.random() - 0.5) * 0.9,
+        radius: Math.random() * 1.8 + 1.2,
+      });
+    }
+
+    // Interaktivitas Mouse
+    let mouse = { x: -1000, y: -1000, radius: 160 };
+    const handleMouseMove = (e: MouseEvent) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    };
+    const handleMouseLeave = () => {
+      mouse.x = -1000;
+      mouse.y = -1000;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseleave", handleMouseLeave);
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // Gambar koneksi / garis antar titik partikel (Konstelasi jaring)
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < connectionDistance) {
+            const alpha = (1 - dist / connectionDistance) * 0.28;
+            ctx.strokeStyle = `rgba(30, 41, 59, ${alpha})`; // Garis jaring warna gelap/slate transparan
+            ctx.lineWidth = 0.9;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+
+        // Garis penghubung ke kursor mouse
+        const mdx = particles[i].x - mouse.x;
+        const mdy = particles[i].y - mouse.y;
+        const mDist = Math.hypot(mdx, mdy);
+        if (mDist < mouse.radius) {
+          const mAlpha = (1 - mDist / mouse.radius) * 0.35;
+          ctx.strokeStyle = `rgba(37, 99, 235, ${mAlpha})`; // Aksen biru saat dekat kursor
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.stroke();
+        }
+      }
+
+      // Gambar titik partikel
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Bounce saat menabrak batas layar
+        if (p.x < 0 || p.x > width) p.vx *= -1;
+        if (p.y < 0 || p.y > height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(30, 41, 59, 0.65)"; // Titik gelap elegan tanpa background pekat
+        ctx.fill();
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseleave", handleMouseLeave);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -169,6 +290,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         ></div>
       </div>
 
+      {/* Particles Network / Constellation Canvas Full Screen */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none z-0 w-full h-full"
+      />
+
       {/* Main Container: Slider Gambar Full di KIRI (7 Cols), Form di KANAN (5 Cols) */}
       <div className="w-full max-w-7xl relative z-10 bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 shadow-[0_25px_70px_-15px_rgba(15,23,42,0.12),0_0_35px_rgba(59,130,246,0.08)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[700px]">
 
@@ -197,9 +324,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
           {/* Header Title inside Showcase */}
           <div className="relative z-10 flex items-center justify-between">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-white/40 shadow-sm text-xs font-bold text-slate-800">
-              <span>Portal Verifikasi & Monitoring Pembayaran</span>
-            </div>
+            
           </div>
 
           {/* Bottom Slider Info & Controls Over Full Background */}

@@ -280,23 +280,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
     );
   };
 
-  // Tambah field kustom baru ke dalam `params` dokumen pendukung
-  const handleAddCustomDynamicParam = (docId: string) => {
-    setSupportingDocs((prev) =>
-      prev.map((d) => {
-        if (d.id !== docId) return d;
-        const existingCount = Object.keys(d.params || {}).length + 1;
-        const newKey = `Field Tambahan ${existingCount}`;
-        const nextParams = { ...(d.params || {}), [newKey]: "" };
-        return {
-          ...d,
-          params: nextParams,
-          metadata: nextParams,
-        };
-      })
-    );
-  };
-
   // Hapus satu field dari `params` dinamis dokumen pendukung
   const handleRemoveDynamicParam = (docId: string, paramKey: string) => {
     setSupportingDocs((prev) =>
@@ -1260,24 +1243,12 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                 <div className="space-y-3.5 pb-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <span>Metadata Dinamis Dokumen (Disimpan ke JSON Params)</span>
                       {item.params && Object.keys(item.params).length > 0 && (
                         <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 normal-case">
                           {Object.keys(item.params).length} Field Terdeteksi Otomatis via VeriText OCR
                         </span>
                       )}
                     </div>
-
-                    {(item.file || item.existing_file_name || (item.params && Object.keys(item.params).length > 0)) && (
-                      <button
-                        type="button"
-                        onClick={() => handleAddCustomDynamicParam(item.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-[11px] font-bold transition cursor-pointer"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span>Tambah Field Params</span>
-                      </button>
-                    )}
                   </div>
 
                   {item.params && Object.keys(item.params).length > 0 ? (
@@ -1323,14 +1294,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                           Unggah berkas (PDF/Word/Excel/Gambar) agar sistem mengekstrak field input secara <strong>dinamis</strong> sesuai isi metadata berkas tersebut.
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleAddCustomDynamicParam(item.id)}
-                        className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-bold transition cursor-pointer"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span>Input Manual</span>
-                      </button>
                     </div>
                   )}
                 </div>
@@ -1371,7 +1334,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                     </button>
                   )}
 
-                  {/* Jika memilih file baru dari komputer */}
                   {item.file ? (
                     <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200/70">
                       <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
@@ -1388,7 +1350,6 @@ export const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
                       </button>
                     </div>
                   ) : item.existing_file_name ? (
-                    /* Jika file sudah ada di database dari pengajuan sebelumnya */
                     <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/80">
                       <FileText className="h-4 w-4 text-emerald-600 shrink-0" />
                       <span className="font-semibold truncate max-w-xs">{item.existing_file_name}</span>

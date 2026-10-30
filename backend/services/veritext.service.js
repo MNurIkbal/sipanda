@@ -44,23 +44,53 @@ class VeriTextService {
 
   /**
    * Ekstrak pasangan key-value dinamis dari dokumen teks bebas (misal: "Nama : Budi", "Jenis Kelamin : Laki-laki")
+   * maupun format tabel Markdown "| Key | : | Value |" dari VeriText OCR
    */
   extractGenericKeyValuePairs(text) {
     const dynamicParams = {};
     if (!text) return dynamicParams;
 
-    // 1. Pisahkan per baris jika memungkinkan, atau cari pola "Label : Value"
+    // 1. Pisahkan per baris jika memungkinkan, atau cari pola "Label : Value" / tabel Markdown
     const lines = text.split(/[\r\n]+/);
     for (const rawLine of lines) {
       const line = rawLine.trim();
       if (!line) continue;
+
+      // Pola Tabel Markdown: "| Key | : | Value |" atau "| Key | Value |"
+      if (line.startsWith('|') && line.endsWith('|')) {
+        const cols = line
+          .split('|')
+          .map((c) => c.trim())
+          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+
+        // Abaikan baris separator markdown "|---|---|"
+        if (cols.every((c) => /^[\-:\s]*$/.test(c))) continue;
+
+        if (cols.length >= 3 && (cols[1] === ':' || cols[1] === '=')) {
+          const k = cols[0].replace(/[:=]$/, '').trim();
+          const v = cols.slice(2).join(' ').trim();
+          if (k && v && k.length <= 45 && v.length <= 350) {
+            dynamicParams[k] = v;
+          }
+          continue;
+        } else if (cols.length === 2) {
+          const k = cols[0].replace(/[:=]$/, '').trim();
+          const v = cols[1].replace(/^[:=]\s*/, '').trim();
+          const isRemitGarbage = /please\s*remit|permata\s*acc|indonesia\s*acc/i.test(k);
+          if (k && v && k.length <= 45 && v.length <= 350 && !/^no\.?$/i.test(k) && !isRemitGarbage) {
+            dynamicParams[k] = v;
+          }
+          continue;
+        }
+      }
 
       // Pola "Key : Value" atau "Key = Value"
       const kvMatch = line.match(/^([A-Za-z0-9\s\/\.\-\(\)&_]{2,45}?)\s*[:=]\s*(.+)$/);
       if (kvMatch) {
         const key = kvMatch[1].trim();
         const val = kvMatch[2].trim();
-        if (key && val && !/^https?$/i.test(key) && val.length <= 300) {
+        const isRemitGarbage = /please\s*remit|permata\s*acc|indonesia\s*acc/i.test(key);
+        if (key && val && !/^https?$/i.test(key) && val.length <= 350 && !isRemitGarbage) {
           dynamicParams[key] = val;
         }
       }
@@ -82,20 +112,25 @@ class VeriTextService {
   }
 
   /**
-   * Ekstrak tabel dan struktur paragraf langsung dari XML Word (.docx) agar setiap field pada file (seperti file A atau file B) terambil dinamis
+   * Ekstrak tabel dan struktur paragraf langsung dari XML Word (.docx) agar setiap field pada file (seperti Kwitansi, Invoice, BAST, Surat) terambil dinamis dan utuh
    */
   extractStructuredDocxParams(xml) {
     const params = {};
     if (!xml) return params;
 
+    // Bersihkan XML per paragraf (<w:p>) dan satukan <w:t> tanpa memutus kata di tengah run XML
     const cleanCell = (str) =>
       str
-        .replace(/<[^>]+>/g, ' ')
+        .replace(/<\/w:p>/g, '\n')
+        .replace(/<w:br[^>]*\/?>/g, '\n')
+        .replace(/<w:tab[^>]*\/?>/g, ' ')
+        .replace(/<[^>]+>/g, '')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
-        .replace(/\s+/g, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n+/g, ' ')
         .trim();
 
     // Ambil paragraf di luar tabel terlebih dahulu
@@ -104,8 +139,23 @@ class VeriTextService {
       .map((m) => cleanCell(m[0]))
       .filter(Boolean);
 
-    // Deteksi pasangan "Key : Value" di paragraf
+    // Deteksi pasangan "Key : Value" dan tanggal tempat/surat di paragraf
     for (const p of paragraphs) {
+      // Cek apakah baris diawali "No: ... Jakarta, 02 Desember 2024"
+      const noAndDateMatch = p.match(/^No\.?\s*:\s*([^\s]+)\s+([A-Za-z]+,\s*\d{1,2}\s+[A-Za-z]+\s+\d{4})$/i);
+      if (noAndDateMatch) {
+        params['No'] = noAndDateMatch[1].trim();
+        params['Tanggal'] = noAndDateMatch[2].trim();
+        continue;
+      }
+
+      // Cek apakah baris adalah tempat & tanggal surat (misal: "Jakarta, 02 Desember 2024")
+      const cityDateMatch = p.match(/^([A-Za-z\s]{3,25}),\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})$/);
+      if (cityDateMatch) {
+        params['Tanggal'] = `${cityDateMatch[1].trim()}, ${cityDateMatch[2].trim()}`;
+        continue;
+      }
+
       const kv = p.match(/^([A-Za-z0-9\s\/\.\-\(\)&_]{2,40}?)\s*:\s*(.+)$/);
       if (kv) {
         const k = kv[1].trim();
@@ -159,9 +209,15 @@ class VeriTextService {
           }
         }
       } else {
-        // Tabel key-value (2 atau 3 kolom)
+        // Tabel key-value (2 atau 3 kolom, termasuk format Kwitansi [Key, ':', Value])
         for (const r of rows) {
-          if (r.length >= 2) {
+          if (r.length >= 3 && (r[1] === ':' || r[1] === '=' || r[1] === '')) {
+            const k = r[0].replace(/[:=]$/, '').trim();
+            const v = r.slice(2).filter(Boolean).join(' ').replace(/^[:=]\s*/, '').trim();
+            if (k && v && k.length <= 45 && !/^please remit$/i.test(k)) {
+              params[k] = v;
+            }
+          } else if (r.length >= 2) {
             const k = r[0].replace(/:$/, '').trim();
             const v = r[1].replace(/^:\s*/, '').trim();
             if (k && v && k.length <= 45 && !/^please remit$/i.test(k)) {
@@ -251,20 +307,28 @@ class VeriTextService {
     }
 
     const dateMatch = text.match(/(?:Date|Tanggal)[:\s\t|]+([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4}|[0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
-    let rawDateStr = '';
-    if (dateMatch && dateMatch[1]) {
-      rawDateStr = dateMatch[1].trim();
-      if (!hasKey('Date') && !hasKey('Tanggal')) {
-        setParamIfMissing('Date', rawDateStr);
+    const cityDateMatch = text.match(/\b([A-Za-z]{3,20}),\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\b/);
+    let rawDateStr = params['Tanggal'] || params['Date'] || '';
+    if (!rawDateStr) {
+      if (cityDateMatch && cityDateMatch[2]) {
+        rawDateStr = cityDateMatch[2].trim();
+        if (!hasKey('Date') && !hasKey('Tanggal')) {
+          setParamIfMissing('Tanggal', `${cityDateMatch[1].trim()}, ${cityDateMatch[2].trim()}`);
+        }
+      } else if (dateMatch && dateMatch[1]) {
+        rawDateStr = dateMatch[1].trim();
+        if (!hasKey('Date') && !hasKey('Tanggal')) {
+          setParamIfMissing('Date', rawDateStr);
+        }
       }
     }
     const tanggalDokumen = this.parseIndonesianDate(rawDateStr || text) || new Date().toISOString().split('T')[0];
 
-    const titleMatch = text.match(/(?:Project\s*Title|Perihal|Uraian\s*Pekerjaan|Nama\s*Pekerjaan)[:\s\t|]+([^|\n\r]+?)(?=(?:PO\s*\/|PO\/SPK|\bDate\b|Invoice|Terms|Bill to|No\b|\t|$))/i);
-    let perihal = params['Project Title'] || params['Perihal'] || '';
+    const titleMatch = text.match(/(?:Project\s*Title|Perihal|Untuk\s*Pembayaran|Uraian\s*Pekerjaan|Nama\s*Pekerjaan)[:\s\t|]+([^|\n\r]+?)(?=(?:PO\s*\/|PO\/SPK|\bDate\b|Invoice|Terms|Bill to|Terbilang|No\b|\t|$))/i);
+    let perihal = params['Project Title'] || params['Perihal'] || params['Untuk Pembayaran'] || '';
     if (titleMatch && titleMatch[1] && !perihal) {
       perihal = titleMatch[1].trim();
-      setParamIfMissing('Project Title', perihal);
+      setParamIfMissing('Untuk Pembayaran', perihal);
     }
 
     const spkMatch = text.match(/(?:PO\s*\/\s*SPK\s*Number|Nomor\s*SPK|Nomor\s*Kontrak)[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
@@ -272,11 +336,23 @@ class VeriTextService {
       setParamIfMissing('PO/SPK Number', spkMatch[1].trim());
     }
 
+    const kwitansiNumMatch = text.match(/(?:Kwitansi|Kuitansi)\s*(?:No\.?|Nomor|Number)?[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
     const invoiceNumMatch = text.match(/Invoice\s*(?:Number|No|Nomor)?[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
     const generalNumMatch = text.match(/(?:Nomor\s*Surat|Nomor\s*Dokumen|Nomor|No\.)[:\s\t|]+([A-Za-z0-9\/\.\-_]+)/i);
-    let nomorDokumen = params['Invoice Number'] || params['Nomor Dokumen'] || params['Nomor Surat'] || '';
+    let nomorDokumen =
+      params['Kwitansi No.'] ||
+      params['Kwitansi No'] ||
+      params['No. Kwitansi'] ||
+      params['Invoice Number'] ||
+      params['Nomor Dokumen'] ||
+      params['Nomor Surat'] ||
+      params['No'] ||
+      '';
     if (!nomorDokumen) {
-      if (invoiceNumMatch && invoiceNumMatch[1]) {
+      if (kwitansiNumMatch && kwitansiNumMatch[1]) {
+        nomorDokumen = kwitansiNumMatch[1].trim();
+        setParamIfMissing('Kwitansi No.', nomorDokumen);
+      } else if (invoiceNumMatch && invoiceNumMatch[1]) {
         nomorDokumen = invoiceNumMatch[1].trim();
         setParamIfMissing('Invoice Number', nomorDokumen);
       } else if (spkMatch && spkMatch[1]) {
@@ -287,24 +363,51 @@ class VeriTextService {
       }
     }
 
-    const billToMatch = text.match(/Bill\s*to[:\s\t|]+([A-Za-z0-9\.\s,]+?)(?=(?:PO\/SPK|Invoice\s*Number|Terms|No\s+Description|$))/i);
-    let unitKerja = params['Bill To'] || '';
+    const billToMatch = text.match(/(?:Bill\s*to|Sudah\s*terima\s*dari)[:\s\t|]+([A-Za-z0-9\.\s,]+?)(?=(?:PO\/SPK|Invoice\s*Number|Banyaknya\s*uang|Terms|No\s+Description|\n|\r|\||$))/i);
+    let unitKerja = params['Bill To'] || params['Sudah terima dari'] || '';
     if (billToMatch && billToMatch[1] && !unitKerja) {
       unitKerja = billToMatch[1].trim();
-      setParamIfMissing('Bill To', unitKerja);
-    }
-
-    const grandTotalMatch = text.match(/(?:GRAND\s*TOTAL|Total\s*Price|Jumlah|Nilai\s*Pembayaran)[^\d]*Rp\.?\s*([\d\.,]+)/i);
-    let nilaiPembayaran = 0;
-    if (grandTotalMatch && grandTotalMatch[1]) {
-      const rawNum = grandTotalMatch[1].replace(/\./g, '').replace(/,/g, '.');
-      nilaiPembayaran = parseFloat(rawNum) || 0;
-      if (!hasKey('GRAND TOTAL') && !hasKey('Total Price (IDR)')) {
-        setParamIfMissing('GRAND TOTAL', `Rp${grandTotalMatch[1].trim()}`);
+      if (/kwitansi|kuitansi/i.test(jenisDokumen)) {
+        setParamIfMissing('Sudah terima dari', unitKerja);
+      } else {
+        setParamIfMissing('Bill To', unitKerja);
       }
     }
 
-    const terbilangMatch = text.match(/Terbilang[:\s\t|]+([^\n\r|]+?)(?=(?:Please Remit|Approved by|Bank\s*Name|Acc\s*Name|$))/i);
+    // Cek nominal dari params terlebih dahulu (seperti 'Banyaknya uang', 'GRAND TOTAL', 'Total Price(IDR)')
+    let nilaiPembayaran = 0;
+    const paramNominalRaw =
+      params['Banyaknya uang'] ||
+      params['Banyaknya Uang'] ||
+      params['GRAND TOTAL'] ||
+      params['Total Price(IDR)'] ||
+      params['Total Price (IDR)'] ||
+      params['Nilai Pembayaran'] ||
+      '';
+    if (paramNominalRaw) {
+      const m = String(paramNominalRaw).match(/([\d\.]{4,})/);
+      if (m && m[1]) {
+        nilaiPembayaran = parseFloat(m[1].replace(/\./g, '')) || 0;
+      }
+    }
+
+    const grandTotalMatch = text.match(/(?:GRAND\s*TOTAL|Total\s*Price|Banyaknya\s*uang|Jumlah|Nilai\s*Pembayaran|sebesar)[^\d]*Rp\.?\s*([\d\.,]+)/i);
+    if (grandTotalMatch && grandTotalMatch[1]) {
+      const cleanNumStr = grandTotalMatch[1].replace(/[,-]+$/, '').trim();
+      const rawNum = cleanNumStr.replace(/\./g, '').replace(/,/g, '.');
+      if (!nilaiPembayaran) {
+        nilaiPembayaran = parseFloat(rawNum) || 0;
+      }
+      if (/kwitansi|kuitansi/i.test(jenisDokumen)) {
+        if (!hasKey('Banyaknya uang')) {
+          setParamIfMissing('Banyaknya uang', `Rp${cleanNumStr},-`);
+        }
+      } else if (!hasKey('GRAND TOTAL') && !hasKey('Total Price (IDR)') && !hasKey('Total Price(IDR)') && !hasKey('Banyaknya uang')) {
+        setParamIfMissing('Nominal Pembayaran', `Rp${cleanNumStr}`);
+      }
+    }
+
+    const terbilangMatch = text.match(/Terbilang[:\s\t|]+([^\n\r|]+?)(?=(?:Please Remit|Approved by|Bank\s*Name|Acc\s*Name|Jakarta,|$))/i);
     if (terbilangMatch && terbilangMatch[1]) {
       setParamIfMissing('Terbilang', terbilangMatch[1].trim());
     }
@@ -369,12 +472,14 @@ class VeriTextService {
       // Ekstrak struktur tabel dan paragraf dari XML terlebih dahulu
       const structuredParams = this.extractStructuredDocxParams(xml);
 
-      // Konversi tag paragraf dan baris tabel menjadi newline agar ekstraksi key-value akurat
+      // Konversi tag paragraf dan baris tabel menjadi newline tanpa spasi di tengah run <w:t>
       const cleanText = xml
         .replace(/<\/w:p>/g, '\n')
         .replace(/<\/w:tr>/g, '\n')
         .replace(/<\/w:tc>/g, ' | ')
-        .replace(/<[^>]+>/g, ' ')
+        .replace(/<w:tab[^>]*\/?>/g, ' ')
+        .replace(/<w:br[^>]*\/?>/g, '\n')
+        .replace(/<[^>]+>/g, '')
         .replace(/&amp;/g, '&')
         .replace(/[ \t]+/g, ' ')
         .trim();
