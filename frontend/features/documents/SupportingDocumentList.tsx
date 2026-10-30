@@ -32,6 +32,7 @@ import { GenerateOfficialDocModal } from "./GenerateOfficialDocModal";
 import { GeneratorType, printOfficialDoc } from "@/lib/officialDocPdf";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { dateRangeFilterSchema, DateRangeFilterErrors } from "@/schemas/document.schema";
+import { AlertDialog } from "@/components/ui/AlertDialog";
 
 interface SupportingDocumentListProps {
   documents?: PaymentDocument[];
@@ -78,6 +79,10 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
 
   // Loading kirim ke Biro 01
   const [submittingDocId, setSubmittingDocId] = useState<number | null>(null);
+
+  // Dialog Alert State untuk Reset Dokumen
+  const [docToReset, setDocToReset] = useState<PaymentDocument | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Handle filter tanggal dengan skema validasi
   const handleStartDateChange = (val: string) => {
@@ -237,18 +242,23 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
     }
   };
 
-  // Reset berkas resmi (BAST, BAP, BAPP) agar form isian bisa muncul dan diedit kembali (hanya jika status draft)
-  const handleResetDocs = async (doc: PaymentDocument) => {
-    if (!confirm(`Reset semua berkas resmi (BAST, BAP, BAPP) untuk dokumen "${doc.nomor_surat}"? Form isian akan dapat diedit kembali.`)) {
-      return;
-    }
+  // Buka konfirmasi reset berkas resmi (BAST, BAP, BAPP)
+  const handleOpenResetDialog = (doc: PaymentDocument) => {
+    setOpenDropdownId(null);
+    setDocToReset(doc);
+  };
+
+  // Konfirmasi eksekusi reset berkas resmi
+  const handleConfirmResetDocs = async () => {
+    if (!docToReset) return;
     try {
-      const res = await sipanduApi.resetOfficialDocs(doc.id, {
+      setIsResetting(true);
+      const res = await sipanduApi.resetOfficialDocs(docToReset.id, {
         user_name: currentUser?.full_name,
         user_role: currentUser?.role,
       });
       if (res.success) {
-        setOpenDropdownId(null);
+        setDocToReset(null);
         await fetchDocumentsFromApi();
         if (onRefresh) onRefresh();
         if (onShowToast) {
@@ -263,6 +273,8 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
       if (onShowToast) {
         onShowToast("error", "Error", err.message || "Terjadi kesalahan");
       }
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -714,7 +726,7 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
                                   currentUser?.role === "ppk" && (
                                   <button
                                     type="button"
-                                    onClick={() => handleResetDocs(doc)}
+                                    onClick={() => handleOpenResetDialog(doc)}
                                     className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                                   >
                                     <RefreshCw className="h-3.5 w-3.5 text-rose-500" />
@@ -822,6 +834,20 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
           fetchDocumentsFromApi();
           if (onRefresh) onRefresh();
         }}
+      />
+
+      {/* AlertDialog Konfirmasi Reset Berkas Resmi (BAST, BAP, BAPP) */}
+      <AlertDialog
+        isOpen={Boolean(docToReset)}
+        title="Reset Berkas Resmi"
+        description={`Apakah Anda yakin ingin mereset seluruh berkas resmi (BAST, BAP, BAPP) untuk dokumen "${docToReset?.nomor_surat}"? Form isian parameter akan dikosongkan dan dapat di-generate ulang.`}
+        confirmText="Ya, Reset Berkas"
+        cancelText="Batal"
+        variant="danger"
+        showCancel={true}
+        loading={isResetting}
+        onConfirm={handleConfirmResetDocs}
+        onCancel={() => setDocToReset(null)}
       />
     </div>
   );
