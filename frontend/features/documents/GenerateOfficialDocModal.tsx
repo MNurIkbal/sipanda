@@ -126,11 +126,11 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
 
     const invoiceParams = (invoiceAtt?.params || invoiceAtt?.metadata || {}) as Record<string, any>;
 
-    // Helper untuk mencari nilai dari invoice metadata
-    const getInvoiceValue = (keys: string[]): string => {
+    // Helper untuk mencari nilai dari metadata
+    const getParamValue = (paramsObj: Record<string, any>, keys: string[]): string => {
       for (const k of keys) {
         const normK = k.toLowerCase();
-        for (const [paramK, paramV] of Object.entries(invoiceParams)) {
+        for (const [paramK, paramV] of Object.entries(paramsObj)) {
           if (paramK.toLowerCase() === normK && paramV) {
             return String(paramV).trim();
           }
@@ -138,6 +138,58 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       }
       return "";
     };
+
+    // Helper untuk mencari nilai dari invoice metadata
+    const getInvoiceValue = (keys: string[]): string => getParamValue(invoiceParams, keys);
+
+    // Cari lampiran kuitansi / bukti pembayaran untuk BAP
+    const kwitansiAtt = (currentDoc.attachments || []).find((att) => {
+      const docTypeLower = (att.document_type || "").toLowerCase();
+      const fileNameLower = (att.file_name || "").toLowerCase();
+      return (
+        docTypeLower.includes("kuitansi") ||
+        docTypeLower.includes("kwitansi") ||
+        fileNameLower.includes("kuitansi") ||
+        fileNameLower.includes("kwitansi")
+      );
+    });
+
+    const kwitansiParams = (kwitansiAtt?.params || kwitansiAtt?.metadata || {}) as Record<string, any>;
+    const getKwitansiValue = (keys: string[]): string => getParamValue(kwitansiParams, keys);
+
+    // Metadata dari Kuitansi
+    const kwitansiPerusahaan =
+      getKwitansiValue(["Perusahaan / Pihak Eksternal", "Nama Perusahaan", "Perusahaan", "Company", "Pihak Eksternal", "Nama Toko / Rekanan", "PT"]) ||
+      kwitansiAtt?.nama_perusahaan ||
+      currentDoc.pihak_eksternal ||
+      "";
+
+    const kwitansiPimpinan =
+      getKwitansiValue(["Admin", "Direktur", "Approved By", "Nama Pimpinan", "Nama Direktur", "Pimpinan", "Penandatangan", "Penerima Uang"]) ||
+      "";
+
+    const kwitansiJabatan =
+      getKwitansiValue(["Jabatan", "Position", "Title"]) ||
+      (kwitansiPerusahaan ? `Direktur ${kwitansiPerusahaan}` : "Direktur");
+
+    const kwitansiJabatanPerusahaan =
+      kwitansiPimpinan && kwitansiJabatan
+        ? kwitansiJabatan
+        : kwitansiPerusahaan
+        ? `Direktur ${kwitansiPerusahaan}`
+        : "Direktur";
+
+    const kwitansiAlamat =
+      getKwitansiValue(["Alamat Perusahaan", "Alamat Kantor", "Alamat", "Address", "Alamat Kantor Penyedia"]) ||
+      "";
+
+    const kwitansiAtasNama = kwitansiPerusahaan
+      ? `${kwitansiPerusahaan}, yang untuk selanjutnya disebut PENYEDIA`
+      : "";
+
+    const kwitansiTtdKananInstansi = kwitansiPerusahaan;
+    const kwitansiTtdKananJabatan = kwitansiJabatan || "Direktur";
+    const kwitansiTtdKananNama = kwitansiPimpinan;
 
     // Ekstrak metadata invoice untuk pihak penyedia
     const invoicePerusahaan =
@@ -189,10 +241,15 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       setPihak1AtasNama(savedData.pihak1AtasNama || "");
 
       // Pihak 2 (Penyedia)
-      setPihak2Nama(savedData.pihak2Nama || invoicePimpinan || "");
-      setPihak2Jabatan(savedData.pihak2Jabatan || invoiceJabatanPerusahaan || "");
-      setPihak2Alamat(savedData.pihak2Alamat || invoiceAlamat || "");
-      setPihak2AtasNama(savedData.pihak2AtasNama || invoiceAtasNama || "");
+      const p2Nama = savedData.pihak2Nama || (type === "BAP" ? (kwitansiPimpinan || invoicePimpinan) : invoicePimpinan) || "";
+      const p2Jabatan = savedData.pihak2Jabatan || (type === "BAP" ? (kwitansiJabatanPerusahaan || invoiceJabatanPerusahaan) : invoiceJabatanPerusahaan) || "";
+      const p2Alamat = savedData.pihak2Alamat || (type === "BAP" ? (kwitansiAlamat || invoiceAlamat) : invoiceAlamat) || "";
+      const p2AtasNama = savedData.pihak2AtasNama || (type === "BAP" ? (kwitansiAtasNama || invoiceAtasNama) : invoiceAtasNama) || "";
+
+      setPihak2Nama(p2Nama);
+      setPihak2Jabatan(p2Jabatan);
+      setPihak2Alamat(p2Alamat);
+      setPihak2AtasNama(p2AtasNama);
 
       setSuratPerjanjian(savedData.suratPerjanjian || "");
       setBuktiKerja(savedData.buktiKerja || "");
@@ -204,9 +261,13 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       setPihak1Nama(savedData.ttdKiriNama || savedData.pihak1Nama || "");
       setTtdKiriNama(savedData.ttdKiriNama || savedData.pihak1Nama || "");
 
-      setTtdKananInstansi(savedData.ttdKananInstansi || invoiceTtdKananInstansi || "");
-      setTtdKananJabatan(savedData.ttdKananJabatan || invoiceTtdKananJabatan || "Direktur");
-      setTtdKananNama(savedData.ttdKananNama || invoiceTtdKananNama || "");
+      const ttdKananInst = savedData.ttdKananInstansi || (type === "BAP" ? (kwitansiTtdKananInstansi || invoiceTtdKananInstansi) : invoiceTtdKananInstansi) || "";
+      const ttdKananJab = savedData.ttdKananJabatan || (type === "BAP" ? (kwitansiTtdKananJabatan || invoiceTtdKananJabatan) : invoiceTtdKananJabatan) || "Direktur";
+      const ttdKananNm = savedData.ttdKananNama || (type === "BAP" ? (kwitansiTtdKananNama || invoiceTtdKananNama) : invoiceTtdKananNama) || "";
+
+      setTtdKananInstansi(ttdKananInst);
+      setTtdKananJabatan(ttdKananJab);
+      setTtdKananNama(ttdKananNm);
 
       setBastPenyelesaianNomor(savedData.bastPenyelesaianNomor || "");
       setBastPenyelesaianTanggal(savedData.bastPenyelesaianTanggal || "");
@@ -262,23 +323,57 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
         setTtdKananInstansi(invoiceTtdKananInstansi);
         setTtdKananJabatan(invoiceTtdKananJabatan);
         setTtdKananNama(invoiceTtdKananNama);
+      } else if (type === "BAP") {
+        // Untuk form BAP (Berita Acara Pembayaran)
+        // Kosongkan: Nomor Dokumen, Beban DIPA, Nama Pekerjaan (Tentang), Hari & Tanggal Pelaksanaan, Pihak 1: PPK, 3. Dasar Pembayaran & Rincian Pembayaran (BAP), Tanda Tangan Kiri (PPK)
+        setNomorDokumen("");
+        setNamaPekerjaan("");
+        setBebanDipa("");
+        setHari("");
+        setTanggalTerbilang("");
+        setBulanTerbilang("");
+        setTahunTerbilang("");
+        setPihak1Nama("");
+        setPihak1Jabatan("");
+        setPihak1Alamat("");
+        setPihak1AtasNama("");
+        setTtdKiriNama("");
+
+        // 3. Dasar Pembayaran & Rincian Pembayaran (BAP) dikosongkan
+        setBapDasarList(["", "", "", "", ""]);
+        setBapPeriodePembayaran("");
+        setBapNilaiPembayaranAngka("");
+        setBapNilaiPembayaranTerbilang("");
+        setBapKppn("");
+        setBapNilaiKontrak("");
+        setBapNilaiBapLalu("");
+        setBapNilaiPekerjaanSaatIni("");
+        setBapDikurangiLalu("");
+        setBapSisaPembayaran("");
+        setBapNilaiDibayarkan("");
+        setBapTotalBapIni("");
+
+        // Pihak 2: Penyedia & Tanda Tangan Kanan (Penyedia) diambil dari metadata kwitansi (fallback invoice)
+        setPihak2Nama(kwitansiPimpinan || invoicePimpinan);
+        setPihak2Jabatan(kwitansiJabatanPerusahaan || invoiceJabatanPerusahaan);
+        setPihak2Alamat(kwitansiAlamat || invoiceAlamat);
+        setPihak2AtasNama(kwitansiAtasNama || invoiceAtasNama);
+        setTtdKananInstansi(kwitansiTtdKananInstansi || invoiceTtdKananInstansi);
+        setTtdKananJabatan(kwitansiTtdKananJabatan || invoiceTtdKananJabatan);
+        setTtdKananNama(kwitansiTtdKananNama || invoiceTtdKananNama);
       } else {
-        // Untuk selain BAST (BAP/BAPP)
-        setNomorDokumen(type === "BAP" ? "BAP- 2026/ XII / 2024" : `${type}-${currentDoc.id || "2079"} / IX / 2024`);
+        // Untuk BAPP
+        setNomorDokumen(`${type}-${currentDoc.id || "2079"} / IX / 2024`);
         setNamaPekerjaan(currentDoc.perihal || currentDoc.nama_kegiatan || "");
         setBebanDipa("ATAS BEBAN DIPA BIN TAHUN ANGGARAN 2024");
         setHari("Senin");
-        setTanggalTerbilang(type === "BAP" ? "Dua" : "Tiga Puluh");
-        setBulanTerbilang(type === "BAP" ? "Desember" : "September");
+        setTanggalTerbilang("Tiga Puluh");
+        setBulanTerbilang("September");
         setTahunTerbilang("Dua Ribu Dua Puluh Empat");
         setPihak1Nama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
         setPihak1Jabatan("Pejabat Pembuat Komitmen BIN");
         setPihak1Alamat("Jalan Seno Raya Pejaten Timur Pasar Minggu Jakarta Selatan");
-        setPihak1AtasNama(
-          type === "BAP"
-            ? "Badan Intelijen Negara, yang untuk selanjutnya disebut PPK"
-            : "Badan Intelijen Negara, selanjutnya disebut PPK."
-        );
+        setPihak1AtasNama("Badan Intelijen Negara, selanjutnya disebut PPK.");
         setPihak2Nama(invoicePimpinan);
         setPihak2Jabatan(invoiceJabatanPerusahaan || (currentDoc.pihak_eksternal ? `Direktur ${currentDoc.pihak_eksternal}` : ""));
         setPihak2Alamat(invoiceAlamat || "Gedung Sentral Senayan II Lt. 16, Jl. Asia Afrika No. 8, Jakarta Pusat 10270");
@@ -306,6 +401,19 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
         setBapNilaiPembayaranTerbilang("");
         setBapKppn("Kantor Pelayanan Perbendaharaan Negara (KPPN) Jakarta V");
         setBapNilaiKontrak("");
+        setBapNilaiBapLalu("");
+        setBapNilaiPekerjaanSaatIni("");
+        setBapDikurangiLalu("");
+        setBapSisaPembayaran("");
+        setBapNilaiDibayarkan("");
+        setBapTotalBapIni("");
+        setTtdKiriJabatan1("Kepala Badan Intelijen Negara");
+        setTtdKiriJabatan2("Pejabat Pembuat Komitmen");
+        setTtdKiriNama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
+        setTtdKananInstansi(invoiceTtdKananInstansi || currentDoc.pihak_eksternal || "");
+        setTtdKananJabatan(invoiceTtdKananJabatan || "Direktur");
+        setTtdKananNama(invoiceTtdKananNama);
+      }
         setBapNilaiBapLalu("");
         setBapNilaiPekerjaanSaatIni("");
         setBapDikurangiLalu("");
@@ -351,6 +459,53 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       if (!pihak2Jabatan.trim()) newErrors.pihak2Jabatan = "Jabatan & Perusahaan wajib diisi";
       if (!pihak2Alamat.trim()) newErrors.pihak2Alamat = "Alamat Kantor Penyedia wajib diisi";
       if (!pihak2AtasNama.trim()) newErrors.pihak2AtasNama = "Bertindak untuk dan atas nama (Penyedia) wajib diisi";
+      if (!ttdKananNama.trim()) newErrors.ttdKananNama = "Tanda Tangan Kanan (Penyedia) wajib diisi";
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+    }
+
+    // Validasi input khusus dokumen BAP (Berita Acara Pembayaran - semua input wajib diisi)
+    if (docType === "BAP") {
+      const newErrors: Record<string, string> = {};
+
+      if (!nomorDokumen.trim()) newErrors.nomorDokumen = "Nomor Dokumen wajib diisi";
+      if (!bebanDipa.trim()) newErrors.bebanDipa = "Beban DIPA wajib diisi";
+      if (!namaPekerjaan.trim()) newErrors.namaPekerjaan = "Nama Pekerjaan (Tentang) wajib diisi";
+      if (!hari.trim()) newErrors.hari = "Hari wajib diisi";
+      if (!tanggalTerbilang.trim()) newErrors.tanggalTerbilang = "Tanggal (Terbilang) wajib diisi";
+      if (!bulanTerbilang.trim()) newErrors.bulanTerbilang = "Bulan wajib diisi";
+      if (!tahunTerbilang.trim()) newErrors.tahunTerbilang = "Tahun (Terbilang) wajib diisi";
+      if (!pihak1Nama.trim()) newErrors.pihak1Nama = "Nama Lengkap & Gelar PPK wajib diisi";
+      if (!pihak1Jabatan.trim()) newErrors.pihak1Jabatan = "Jabatan PPK wajib diisi";
+      if (!pihak1Alamat.trim()) newErrors.pihak1Alamat = "Alamat Kantor PPK wajib diisi";
+      if (!pihak1AtasNama.trim()) newErrors.pihak1AtasNama = "Bertindak untuk dan atas nama (PPK) wajib diisi";
+      if (!pihak2Nama.trim()) newErrors.pihak2Nama = "Nama Pimpinan / Direktur (Penyedia) wajib diisi";
+      if (!pihak2Jabatan.trim()) newErrors.pihak2Jabatan = "Jabatan & Perusahaan wajib diisi";
+      if (!pihak2Alamat.trim()) newErrors.pihak2Alamat = "Alamat Kantor Penyedia wajib diisi";
+      if (!pihak2AtasNama.trim()) newErrors.pihak2AtasNama = "Bertindak untuk dan atas nama (Penyedia) wajib diisi";
+
+      // 3. Dasar Pembayaran & Rincian Pembayaran (BAP)
+      const emptyDasar = bapDasarList.some((d) => !d.trim());
+      if (bapDasarList.length === 0 || emptyDasar) {
+        newErrors.bapDasarList = "Semua daftar dasar berkas wajib diisi";
+      }
+      if (!bapPeriodePembayaran.trim()) newErrors.bapPeriodePembayaran = "Periode Pembayaran Penyedia wajib diisi";
+      if (!bapNilaiPembayaranAngka.trim()) newErrors.bapNilaiPembayaranAngka = "Nilai Pembayaran (Rp) wajib diisi";
+      if (!bapNilaiPembayaranTerbilang.trim()) newErrors.bapNilaiPembayaranTerbilang = "Nilai Terbilang wajib diisi";
+      if (!bapKppn.trim()) newErrors.bapKppn = "Tujuan Pembayaran KPPN wajib diisi";
+      if (!bapNilaiKontrak.trim()) newErrors.bapNilaiKontrak = "Nilai Kontrak wajib diisi";
+      if (!bapNilaiBapLalu.trim()) newErrors.bapNilaiBapLalu = "Nilai Pembayaran s/d BAP Lalu wajib diisi";
+      if (!bapNilaiPekerjaanSaatIni.trim()) newErrors.bapNilaiPekerjaanSaatIni = "Nilai Pekerjaan pada BAP ini wajib diisi";
+      if (!bapDikurangiLalu.trim()) newErrors.bapDikurangiLalu = "Nilai pekerjaan Berita Acara lalu wajib diisi";
+      if (!bapSisaPembayaran.trim()) newErrors.bapSisaPembayaran = "Nilai Sisa Pembayaran wajib diisi";
+      if (!bapNilaiDibayarkan.trim()) newErrors.bapNilaiDibayarkan = "Nilai Dibayarkan wajib diisi";
+      if (!bapTotalBapIni.trim()) newErrors.bapTotalBapIni = "Nilai Pembayaran s/d BAP Ini wajib diisi";
+
+      // Penandatanganan
+      if (!ttdKiriNama.trim()) newErrors.ttdKiriNama = "Tanda Tangan Kiri (PPK) wajib diisi";
       if (!ttdKananNama.trim()) newErrors.ttdKananNama = "Tanda Tangan Kanan (Penyedia) wajib diisi";
 
       if (Object.keys(newErrors).length > 0) {

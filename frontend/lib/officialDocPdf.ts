@@ -266,45 +266,45 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
     }
 
       <div class="p-intro">
-        &mdash;&mdash;&mdash;&mdash;&mdash; Pada hari ini <strong>${hari}</strong> tanggal <strong>${tanggalTerbilang}</strong> bulan <strong>${bulanTerbilang}</strong> tahun <strong>${tahunTerbilang}</strong>, yang bertanda tangan di bawah ini : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Pada hari ini <strong>${hari}</strong> tanggal <strong>${tanggalTerbilang}</strong> bulan <strong>${bulanTerbilang}</strong> tahun <strong>${tahunTerbilang}</strong>, yang bertanda tangan di bawah ini :
       </div>
 
       <table class="party-table">
         <tr>
-          <td class="col-num">&mdash;&mdash; 1. Nama</td>
+          <td class="col-num">1. Nama</td>
           <td class="col-colon">:</td>
-          <td><strong>${pihak1Nama}</strong> &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+          <td><strong>${pihak1Nama}</strong></td>
         </tr>
         <tr>
           <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Jabatan</td>
           <td class="col-colon">:</td>
-          <td>${pihak1Jabatan} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+          <td>${pihak1Jabatan}</td>
         </tr>
         <tr>
           <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alamat</td>
           <td class="col-colon">:</td>
-          <td>${pihak1Alamat} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+          <td>${pihak1Alamat}</td>
         </tr>
       </table>
       <div class="party-closing">
-        Dalam hal ini bertindak untuk dan atas nama <strong>${pihak1AtasNama}</strong> &mdash;&mdash;&mdash;&mdash;
+        Dalam hal ini bertindak untuk dan atas nama <strong>${pihak1AtasNama}</strong>
       </div>
 
       <table class="party-table">
         <tr>
-          <td class="col-num">&mdash;&mdash; 2. Nama</td>
+          <td class="col-num">2. Nama</td>
           <td class="col-colon">:</td>
-          <td><strong>${pihak2Nama}</strong> &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+          <td><strong>${pihak2Nama}</strong></td>
         </tr>
         <tr>
           <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Jabatan</td>
           <td class="col-colon">:</td>
-          <td>${pihak2Jabatan} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+          <td>${pihak2Jabatan}</td>
         </tr>
         <tr>
           <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alamat</td>
           <td class="col-colon">:</td>
-          <td>${pihak2Alamat} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+          <td>${pihak2Alamat}</td>
         </tr>
       </table>
       <div class="party-closing">
@@ -314,25 +314,25 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
       ${type === "BAST"
       ? `
       <div class="paragraph" style="margin-top: 10px; margin-bottom: 8px;">
-        &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; Dengan ini <strong>PPK</strong> dan <strong>PENYEDIA</strong> menyatakan sebagai berikut : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Dengan ini <strong>PPK</strong> dan <strong>PENYEDIA</strong> menyatakan sebagai berikut :
       </div>
 
       <div class="paragraph" style="margin-left: 5px; margin-bottom: 8px;">
-        1. <strong>PENYEDIA</strong> menyerahkan kepada <strong>PPK</strong> sebesar <strong>${presentasePenyedia}</strong> <strong>${namaPekerjaan}</strong>, ${bastPeriodePekerjaan} berdasarkan Berita Acara Penyelesaian Pekerjaan Nomor : ${bastPenyelesaianNomor} tanggal ${bastPenyelesaianTanggal}. &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        1. <strong>PENYEDIA</strong> menyerahkan kepada <strong>PPK</strong> sebesar <strong>${presentasePenyedia}</strong> <strong>${namaPekerjaan}</strong>, ${bastPeriodePekerjaan} berdasarkan Berita Acara Penyelesaian Pekerjaan Nomor : ${bastPenyelesaianNomor} tanggal ${bastPenyelesaianTanggal}.
       </div>
 
       <div class="paragraph" style="margin-left: 5px; margin-bottom: 12px;">
-        2. <strong>PPK</strong> menerima dari <strong>PENYEDIA</strong> sebesar <strong>${presentasePenyedia}</strong> dan telah diperiksa dalam keadaan baik pekerjaan tersebut yang dilaksanakan berdasarkan Berita Acara Penyelesaian Pekerjaan Nomor : ${bastPenyelesaianNomor} tanggal ${bastPenyelesaianTanggal}. &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        2. <strong>PPK</strong> menerima dari <strong>PENYEDIA</strong> sebesar <strong>${presentasePenyedia}</strong> dan telah diperiksa dalam keadaan baik pekerjaan tersebut yang dilaksanakan berdasarkan Berita Acara Penyelesaian Pekerjaan Nomor : ${bastPenyelesaianNomor} tanggal ${bastPenyelesaianTanggal}.
       </div>
 
       <div class="paragraph">
-        &mdash;&mdash;&mdash;&mdash;&mdash; Demikian Berita Acara Serah Terima Pekerjaan ini dibuat dengan sesungguhnya dan ditanda tangani oleh kedua pihak untuk dipergunakan sebagaimana mestinya. &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Demikian Berita Acara Serah Terima Pekerjaan ini dibuat dengan sesungguhnya dan ditanda tangani oleh kedua pihak untuk dipergunakan sebagaimana mestinya.
       </div>
       `
       : type === "BAP"
         ? `
       <div class="paragraph" style="margin-bottom: 4px;">
-        Berdasarkan hal-hal sebagai berikut: &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Berdasarkan hal-hal sebagai berikut:
       </div>
 
       <div style="margin-left: 5px; margin-bottom: 6px; font-size: 9.5pt;">
@@ -340,7 +340,7 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
           .map(
             (dasar, idx) => `
           <div style="margin-bottom: 2px;">
-            ${idx + 1}. ${dasar} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+            ${idx + 1}. ${dasar}
           </div>
         `
           )
@@ -348,11 +348,11 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
       </div>
 
       <div class="paragraph" style="margin-bottom: 6px;">
-        Bahwa kedua belah pihak menyatakan sebagai berikut: &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Bahwa kedua belah pihak menyatakan sebagai berikut:
       </div>
 
       <div class="paragraph" style="margin-bottom: 4px;">
-        1. <strong>PENYEDIA</strong> berdasarkan hal-hal tersebut di atas berhak menerima pembayaran ${bapPeriodePembayaran} sebesar Rp${bapNilaiPembayaranAngka},- (${bapNilaiPembayaranTerbilang}) dari <strong>PPK</strong>, dengan rincian pembayaran sebagai berikut : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        1. <strong>PENYEDIA</strong> berdasarkan hal-hal tersebut di atas berhak menerima pembayaran ${bapPeriodePembayaran} sebesar Rp${bapNilaiPembayaranAngka},- (${bapNilaiPembayaranTerbilang}) dari <strong>PPK</strong>, dengan rincian pembayaran sebagai berikut :
       </div>
 
       <table class="table-bap">
@@ -403,29 +403,29 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
       </table>
 
       <div class="paragraph" style="margin-top: 6px; margin-bottom: 6px;">
-        2. <strong>PPK</strong> akan melakukan pembayaran sebagaimana dimaksud pada poin 1 kepada <strong>PENYEDIA</strong> melalui ${bapKppn} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        2. <strong>PPK</strong> akan melakukan pembayaran sebagaimana dimaksud pada poin 1 kepada <strong>PENYEDIA</strong> melalui ${bapKppn}
       </div>
 
       <div class="paragraph">
-        Demikian Berita Acara Pembayaran ini dibuat untuk dipergunakan sebagaimana mestinya. &mdash;&mdash;&mdash;&mdash;&mdash;
+        Demikian Berita Acara Pembayaran ini dibuat untuk dipergunakan sebagaimana mestinya.
       </div>
       `
         : `
       <div class="paragraph">
-        Berdasarkan hal-hal sebagai berikut : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Berdasarkan hal-hal sebagai berikut :
       </div>
 
       <ul class="list-dasar" style="list-style-type: circle;">
-        <li>${suratPerjanjian} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</li>
-        <li>${buktiKerja} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</li>
+        <li>${suratPerjanjian}</li>
+        <li>${buktiKerja}</li>
       </ul>
 
       <div class="paragraph">
-        Dengan ini menyatakan <strong>${namaPekerjaan}</strong> untuk bulan <strong>${bulanTerbilang} ${tahunTerbilang.includes("Empat") ? "2024" : ""}</strong> telah selesai dilaksanakan dengan presentase sebesar <strong>${presentasePenyedia}</strong> dari target 100% yang akan dicapai pada bulan Desember 2024. &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Dengan ini menyatakan <strong>${namaPekerjaan}</strong> untuk bulan <strong>${bulanTerbilang} ${tahunTerbilang.includes("Empat") ? "2024" : ""}</strong> telah selesai dilaksanakan dengan presentase sebesar <strong>${presentasePenyedia}</strong> dari target 100% yang akan dicapai pada bulan Desember 2024.
       </div>
 
       <div class="paragraph">
-        <strong>PENYEDIA</strong> telah menyelesaikan pekerjaan dengan presentase sebesar <strong>${presentasePenyedia}</strong> dan <strong>PPK</strong> menyatakan menerima dari <strong>PENYEDIA</strong> atas hasil pekerjaan yang telah selesai sebagai berikut : &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        <strong>PENYEDIA</strong> telah menyelesaikan pekerjaan dengan presentase sebesar <strong>${presentasePenyedia}</strong> dan <strong>PPK</strong> menyatakan menerima dari <strong>PENYEDIA</strong> atas hasil pekerjaan yang telah selesai sebagai berikut :
       </div>
 
       <div class="item-summary">
@@ -433,23 +433,23 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
           <tr>
             <td style="width: 100px;">1. Pekerjaan</td>
             <td style="width: 15px; text-align: center;">:</td>
-            <td><strong>${namaPekerjaan}</strong>; &mdash;&mdash;</td>
+            <td><strong>${namaPekerjaan}</strong>;</td>
           </tr>
           <tr>
             <td>2. Lokasi</td>
             <td style="text-align: center;">:</td>
-            <td>${lokasiPekerjaan}; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+            <td>${lokasiPekerjaan};</td>
           </tr>
           <tr>
             <td>3. Instansi</td>
             <td style="text-align: center;">:</td>
-            <td>${instansiPenerima} &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</td>
+            <td>${instansiPenerima}</td>
           </tr>
         </table>
       </div>
 
       <div class="paragraph">
-        &mdash;&mdash;&mdash;&mdash;&mdash; Demikian ${judulSurat} ini dibuat dengan sesungguhnya dan ditanda tangani oleh kedua pihak untuk dipergunakan sebagaimana mestinya. &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+        Demikian ${judulSurat} ini dibuat dengan sesungguhnya dan ditanda tangani oleh kedua pihak untuk dipergunakan sebagaimana mestinya.
       </div>
       `
     }
