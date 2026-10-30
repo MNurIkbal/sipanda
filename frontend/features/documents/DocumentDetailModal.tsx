@@ -1225,7 +1225,7 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                             <p className="text-[11px] text-rose-700 mt-1.5 leading-relaxed bg-rose-50/50 p-2.5 rounded-lg border border-rose-100">
                               {document.catatan_revisi}
                               <span className="block text-[10px] text-rose-500 font-semibold mt-1">
-                                Catatan dari Biro 01 Keuangan
+                                Catatan dari Biro 01
                               </span>
                             </p>
                           ) : null}

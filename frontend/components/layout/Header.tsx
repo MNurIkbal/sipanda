@@ -352,7 +352,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
                       <span className="text-[10px] text-slate-400 font-medium">
                         {currentUser?.role === "biro_01"
-                          ? "Role: Biro 01 Keuangan"
+                          ? "Role: Biro 01"
                           : currentUser?.role === "ppk"
                           ? "Role: PPK Pengadaan"
                           : "Role: Superadmin"}
@@ -420,7 +420,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[9px] font-extrabold uppercase border border-blue-200">
                         <ShieldCheck className="h-3 w-3" />
                         {currentUser?.role === "biro_01"
-                          ? "Biro 01 Keuangan"
+                          ? "Biro 01"
                           : currentUser?.role === "superadmin"
                           ? "Superadmin"
                           : "PPK"}

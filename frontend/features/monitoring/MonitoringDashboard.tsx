@@ -223,8 +223,8 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
         </div>
       </div>
 
-      {/* 2. GRID KPI CARDS UTAMA (6 Tahapan Lengkap: Draft -> Submit -> Review -> Ditolak -> Pengajuan Ulang -> Disetujui) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* 2. GRID KPI CARDS UTAMA (Tahapan: Draft -> Submit -> Review -> [Ditolak jika bukan biro_01] -> Pengajuan Ulang -> Disetujui) */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${currentUser?.role === "biro_01" ? "xl:grid-cols-5" : "xl:grid-cols-6"} gap-4`}>
         {/* Card 1: Draft Dokumen */}
         <div
           onClick={onNavigateToDocuments}
@@ -314,34 +314,36 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
           </div>
         </div>
 
-        {/* Card 4: Ditolak (Perlu Revisi) */}
-        <div
-          onClick={onNavigateToDocuments}
-          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-50/60 via-white to-white p-4 border border-rose-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-rose-400 transition-all duration-300 cursor-pointer"
-        >
-          <div className="absolute -right-6 -top-6 w-20 h-20 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all"></div>
-          <div className="flex items-center justify-between mb-2.5 relative z-10">
-            <span className="text-[11px] font-extrabold text-rose-800 uppercase tracking-wider">
-              4. Ditolak
-            </span>
-            <div className="h-9 w-9 rounded-xl bg-rose-100/80 text-rose-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 shadow-2xs">
-              <AlertTriangle className="h-4 w-4" />
+        {/* Card 4: Ditolak (Perlu Revisi) - Disembunyikan untuk role biro_01 */}
+        {currentUser?.role !== "biro_01" && (
+          <div
+            onClick={onNavigateToDocuments}
+            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-50/60 via-white to-white p-4 border border-rose-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-rose-400 transition-all duration-300 cursor-pointer"
+          >
+            <div className="absolute -right-6 -top-6 w-20 h-20 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all"></div>
+            <div className="flex items-center justify-between mb-2.5 relative z-10">
+              <span className="text-[11px] font-extrabold text-rose-800 uppercase tracking-wider">
+                4. Ditolak
+              </span>
+              <div className="h-9 w-9 rounded-xl bg-rose-100/80 text-rose-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 shadow-2xs">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5 relative z-10">
+              <span className="text-2xl font-black text-rose-600 tracking-tight">
+                {rejectedCount}
+              </span>
+              <span className="text-[11px] font-semibold text-rose-700/70">perlu revisi</span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-rose-100/80 flex items-center justify-between text-[10px] text-rose-800/80 relative z-10">
+              <span className="flex items-center gap-1 font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                Dikembalikan ke PPK
+              </span>
+              <span className="font-bold text-rose-600">Revisi</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-1.5 relative z-10">
-            <span className="text-2xl font-black text-rose-600 tracking-tight">
-              {rejectedCount}
-            </span>
-            <span className="text-[11px] font-semibold text-rose-700/70">perlu revisi</span>
-          </div>
-          <div className="mt-2.5 pt-2 border-t border-rose-100/80 flex items-center justify-between text-[10px] text-rose-800/80 relative z-10">
-            <span className="flex items-center gap-1 font-medium">
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-              Dikembalikan ke PPK
-            </span>
-            <span className="font-bold text-rose-600">Revisi</span>
-          </div>
-        </div>
+        )}
 
         {/* Card 5: Pengajuan Ulang */}
         <div
@@ -351,7 +353,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
           <div className="absolute -right-6 -top-6 w-20 h-20 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all"></div>
           <div className="flex items-center justify-between mb-2.5 relative z-10">
             <span className="text-[11px] font-extrabold text-orange-800 uppercase tracking-wider">
-              5. Pengajuan Ulang
+              {currentUser?.role === "biro_01" ? "4. Pengajuan Ulang" : "5. Pengajuan Ulang"}
             </span>
             <div className="h-9 w-9 rounded-xl bg-orange-100/80 text-orange-700 flex items-center justify-center group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white transition-all duration-300 shadow-2xs">
               <RotateCcw className="h-4 w-4" />
@@ -380,7 +382,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
           <div className="flex items-center justify-between mb-2.5 relative z-10">
             <span className="text-[11px] font-extrabold text-emerald-100 uppercase tracking-wider">
-              6. Disetujui
+              {currentUser?.role === "biro_01" ? "5. Disetujui" : "6. Disetujui"}
             </span>
             <div className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-white group-hover:text-emerald-600 transition-all duration-300 shadow-2xs">
               <CheckCircle2 className="h-4 w-4" />
@@ -490,26 +492,28 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Bar 4: Ditolak (Perlu Revisi) */}
-              <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-                    <span>Ditolak (Perlu Revisi)</span>
-                  </span>
-                  <span className="font-black text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200">
-                    {rejectedCount} Berkas
-                  </span>
+              {/* Bar 4: Ditolak (Perlu Revisi) - Disembunyikan untuk role biro_01 */}
+              {currentUser?.role !== "biro_01" && (
+                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                  <div className="flex items-center justify-between font-bold mb-1.5 text-slate-700">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                      <span>Ditolak (Perlu Revisi)</span>
+                    </span>
+                    <span className="font-black text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200">
+                      {rejectedCount} Berkas
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, (rejectedCount / Math.max(1, totalDocs)) * 100)}%`,
+                      }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="h-2 rounded-full bg-slate-200/80 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (rejectedCount / Math.max(1, totalDocs)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
+              )}
 
               {/* Bar 5: Pengajuan Ulang */}
               <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
@@ -555,8 +559,8 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
             </div>
           </div>
 
-          {/* Mini Stepper 6 Tahapan Timeline Proses di Bagian Bawah Panel Kiri */}
-          <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 text-center">
+          {/* Mini Stepper Tahapan Timeline Proses di Bagian Bawah Panel Kiri */}
+          <div className={`mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 ${currentUser?.role === "biro_01" ? "xl:grid-cols-5" : "xl:grid-cols-6"} gap-2 text-center`}>
             <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/70">
               <div className="text-[9px] font-bold text-slate-500 uppercase truncate">1. Draft</div>
               <div className="text-sm font-black text-slate-800 mt-0.5">{draftCount}</div>
@@ -569,16 +573,22 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
               <div className="text-[9px] font-bold text-blue-600 uppercase truncate">3. Review</div>
               <div className="text-sm font-black text-blue-700 mt-0.5">{reviewCount}</div>
             </div>
-            <div className="p-2 rounded-xl bg-rose-50/60 border border-rose-200/70">
-              <div className="text-[9px] font-bold text-rose-600 uppercase truncate">4. Ditolak</div>
-              <div className="text-sm font-black text-rose-700 mt-0.5">{rejectedCount}</div>
-            </div>
+            {currentUser?.role !== "biro_01" && (
+              <div className="p-2 rounded-xl bg-rose-50/60 border border-rose-200/70">
+                <div className="text-[9px] font-bold text-rose-600 uppercase truncate">4. Ditolak</div>
+                <div className="text-sm font-black text-rose-700 mt-0.5">{rejectedCount}</div>
+              </div>
+            )}
             <div className="p-2 rounded-xl bg-orange-50/60 border border-orange-200/70">
-              <div className="text-[9px] font-bold text-orange-600 uppercase truncate">5. Pengajuan Ulang</div>
+              <div className="text-[9px] font-bold text-orange-600 uppercase truncate">
+                {currentUser?.role === "biro_01" ? "4. Pengajuan Ulang" : "5. Pengajuan Ulang"}
+              </div>
               <div className="text-sm font-black text-orange-700 mt-0.5">{resubmittedCount}</div>
             </div>
             <div className="p-2 rounded-xl bg-emerald-50/60 border border-emerald-200/70">
-              <div className="text-[9px] font-bold text-emerald-600 uppercase truncate">6. Disetujui</div>
+              <div className="text-[9px] font-bold text-emerald-600 uppercase truncate">
+                {currentUser?.role === "biro_01" ? "5. Disetujui" : "6. Disetujui"}
+              </div>
               <div className="text-sm font-black text-emerald-700 mt-0.5">{approvedCount}</div>
             </div>
           </div>

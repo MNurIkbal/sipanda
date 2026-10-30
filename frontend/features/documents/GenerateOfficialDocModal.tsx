@@ -718,7 +718,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Hari {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                  Hari <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -736,7 +736,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Tanggal (Terbilang) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                  Tanggal (Terbilang) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -754,7 +754,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Bulan {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                  Bulan <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -772,7 +772,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Tahun (Terbilang) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                  Tahun (Terbilang) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -802,7 +802,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               <div className="space-y-2.5">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Nama Lengkap & Gelar {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Nama Lengkap & Gelar <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -820,7 +820,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Jabatan {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Jabatan <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -838,7 +838,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Alamat Kantor {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Alamat Kantor <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -856,7 +856,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Bertindak untuk dan atas nama {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Bertindak untuk dan atas nama <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -884,7 +884,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               <div className="space-y-2.5">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Nama Pimpinan / Direktur {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Nama Pimpinan / Direktur <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -893,7 +893,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                       setPihak2Nama(e.target.value);
                       if (errors.pihak2Nama) setErrors((prev) => ({ ...prev, pihak2Nama: "" }));
                     }}
-                    placeholder={docType === "BAP" ? "Diambil dari Metadata Kwitansi..." : "Diambil dari Approved By / Pimpinan Invoice..."}
+                    placeholder={docType === "BAST" ? "Diambil dari Approved By / Pimpinan Invoice..." : "Diambil dari Metadata Kwitansi..."}
                     className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
                       errors.pihak2Nama ? "border-red-500 bg-red-50/20" : "border-slate-200"
                     }`}
@@ -902,7 +902,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Jabatan & Perusahaan {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Jabatan & Perusahaan <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -911,7 +911,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                       setPihak2Jabatan(e.target.value);
                       if (errors.pihak2Jabatan) setErrors((prev) => ({ ...prev, pihak2Jabatan: "" }));
                     }}
-                    placeholder={docType === "BAP" ? "Diambil dari Metadata Kwitansi..." : "Diambil dari Jabatan / Perusahaan Invoice..."}
+                    placeholder={docType === "BAST" ? "Diambil dari Jabatan / Perusahaan Invoice..." : "Diambil dari Metadata Kwitansi..."}
                     className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
                       errors.pihak2Jabatan ? "border-red-500 bg-red-50/20" : "border-slate-200"
                     }`}
@@ -920,7 +920,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Alamat Kantor Penyedia {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Alamat Kantor Penyedia <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -929,7 +929,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                       setPihak2Alamat(e.target.value);
                       if (errors.pihak2Alamat) setErrors((prev) => ({ ...prev, pihak2Alamat: "" }));
                     }}
-                    placeholder={docType === "BAP" ? "Diambil dari Metadata Kwitansi..." : "Diambil dari Alamat Invoice..."}
+                    placeholder={docType === "BAST" ? "Diambil dari Alamat Invoice..." : "Diambil dari Metadata Kwitansi..."}
                     className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
                       errors.pihak2Alamat ? "border-red-500 bg-red-50/20" : "border-slate-200"
                     }`}
@@ -938,7 +938,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Bertindak untuk dan atas nama {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                    Bertindak untuk dan atas nama <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1312,54 +1312,99 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
             <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
               <h3 className="font-extrabold text-slate-900 text-xs tracking-wide uppercase flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-blue-600"></span>
-                3. Dasar & Uraian Penyelesaian Pekerjaan
+                3. Dasar & Uraian Penyelesaian Pekerjaan (BAPP)
               </h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Dasar 1: Surat Perjanjian</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Dasar 1: Surat Perjanjian <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={suratPerjanjian}
-                    onChange={(e) => setSuratPerjanjian(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    onChange={(e) => {
+                      setSuratPerjanjian(e.target.value);
+                      if (errors.suratPerjanjian) setErrors((prev) => ({ ...prev, suratPerjanjian: "" }));
+                    }}
+                    placeholder="Contoh: Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;"
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.suratPerjanjian ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.suratPerjanjian && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.suratPerjanjian}</p>}
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Dasar 2: Bukti Kerja</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Dasar 2: Bukti Kerja <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={buktiKerja}
-                    onChange={(e) => setBuktiKerja(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    onChange={(e) => {
+                      setBuktiKerja(e.target.value);
+                      if (errors.buktiKerja) setErrors((prev) => ({ ...prev, buktiKerja: "" }));
+                    }}
+                    placeholder="Contoh: Bukti Kerja Pekerjaan Pemeliharaan dan Perawatan..."
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.buktiKerja ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.buktiKerja && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.buktiKerja}</p>}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Presentase Selesai</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Presentase Selesai <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={presentasePenyedia}
-                      onChange={(e) => setPresentasePenyedia(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setPresentasePenyedia(e.target.value);
+                        if (errors.presentasePenyedia) setErrors((prev) => ({ ...prev, presentasePenyedia: "" }));
+                      }}
+                      placeholder="Contoh: 75%"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.presentasePenyedia ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.presentasePenyedia && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.presentasePenyedia}</p>}
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Lokasi Pekerjaan</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Lokasi Pekerjaan <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={lokasiPekerjaan}
-                      onChange={(e) => setLokasiPekerjaan(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setLokasiPekerjaan(e.target.value);
+                        if (errors.lokasiPekerjaan) setErrors((prev) => ({ ...prev, lokasiPekerjaan: "" }));
+                      }}
+                      placeholder="Contoh: Jakarta"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.lokasiPekerjaan ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.lokasiPekerjaan && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.lokasiPekerjaan}</p>}
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Instansi Penerima</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Instansi Penerima <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={instansiPenerima}
-                      onChange={(e) => setInstansiPenerima(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setInstansiPenerima(e.target.value);
+                        if (errors.instansiPenerima) setErrors((prev) => ({ ...prev, instansiPenerima: "" }));
+                      }}
+                      placeholder="Contoh: Badan Intelijen Negara"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.instansiPenerima ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.instansiPenerima && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.instansiPenerima}</p>}
                   </div>
                 </div>
               </div>
@@ -1377,7 +1422,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <span className="font-extrabold text-slate-800">
-                  Tanda Tangan Kiri (PPK) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                  Tanda Tangan Kiri (PPK) <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="text"
@@ -1410,7 +1455,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
 
               <div className="space-y-2">
                 <span className="font-extrabold text-slate-800">
-                  Tanda Tangan Kanan (Penyedia) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
+                  Tanda Tangan Kanan (Penyedia) <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="text"
@@ -1433,7 +1478,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                     setTtdKananNama(e.target.value);
                     if (errors.ttdKananNama) setErrors((prev) => ({ ...prev, ttdKananNama: "" }));
                   }}
-                  placeholder={docType === "BAP" ? "Nama Terang Penyedia (Diambil dari Kwitansi)..." : "Nama Terang Penyedia (Diambil dari Invoice)..."}
+                  placeholder={docType === "BAST" ? "Nama Terang Penyedia (Diambil dari Invoice)..." : "Nama Terang Penyedia (Diambil dari Kwitansi)..."}
                   className={`w-full px-3 py-1.5 rounded-lg border bg-white font-bold ${
                     errors.ttdKananNama ? "border-red-500 bg-red-50/20" : "border-slate-200"
                   }`}
