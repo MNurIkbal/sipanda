@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Printer, Download, Sparkles, Building2, User, FileText, Calendar, Lock } from "lucide-react";
+import { X, Printer, Download, Sparkles, Building2, User, FileText, Calendar, Lock, Plus, Trash2 } from "lucide-react";
 import { PaymentDocument } from "@/types/sipandu.types";
 import { sipanduApi } from "@/services/api.service";
 import { GeneratorType, getDefaultTitle, printOfficialDoc } from "@/lib/officialDocPdf";
@@ -362,79 +362,42 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
         setTtdKananJabatan(kwitansiTtdKananJabatan || invoiceTtdKananJabatan);
         setTtdKananNama(kwitansiTtdKananNama || invoiceTtdKananNama);
       } else {
-        // Untuk BAPP
-        setNomorDokumen(`${type}-${currentDoc.id || "2079"} / IX / 2024`);
-        setNamaPekerjaan(currentDoc.perihal || currentDoc.nama_kegiatan || "");
-        setBebanDipa("ATAS BEBAN DIPA BIN TAHUN ANGGARAN 2024");
-        setHari("Senin");
-        setTanggalTerbilang("Tiga Puluh");
-        setBulanTerbilang("September");
-        setTahunTerbilang("Dua Ribu Dua Puluh Empat");
-        setPihak1Nama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
-        setPihak1Jabatan("Pejabat Pembuat Komitmen BIN");
-        setPihak1Alamat("Jalan Seno Raya Pejaten Timur Pasar Minggu Jakarta Selatan");
-        setPihak1AtasNama("Badan Intelijen Negara, selanjutnya disebut PPK.");
-        setPihak2Nama(invoicePimpinan);
-        setPihak2Jabatan(invoiceJabatanPerusahaan || (currentDoc.pihak_eksternal ? `Direktur ${currentDoc.pihak_eksternal}` : ""));
-        setPihak2Alamat(invoiceAlamat || "Gedung Sentral Senayan II Lt. 16, Jl. Asia Afrika No. 8, Jakarta Pusat 10270");
-        setPihak2AtasNama(
-          invoiceAtasNama || (currentDoc.pihak_eksternal ? `${currentDoc.pihak_eksternal}, yang selanjutnya disebut PENYEDIA.` : "")
-        );
-        setSuratPerjanjian(currentDoc.nomor_surat ? `Surat Perjanjian Nomor : ${currentDoc.nomor_surat} tanggal 8 Januari 2024;` : "");
+        // Untuk form BAPP (Berita Acara Penyelesaian Pekerjaan)
+        // Kosongkan: Nomor Dokumen, Beban DIPA, Nama Pekerjaan (Tentang), Hari & Tanggal Pelaksanaan, Pihak 1: PPK, 3. Dasar & Uraian Penyelesaian Pekerjaan, Tanda Tangan Kiri (PPK)
+        setNomorDokumen("");
+        setNamaPekerjaan("");
+        setBebanDipa("");
+        setHari("");
+        setTanggalTerbilang("");
+        setBulanTerbilang("");
+        setTahunTerbilang("");
+        setPihak1Nama("");
+        setPihak1Jabatan("");
+        setPihak1Alamat("");
+        setPihak1AtasNama("");
+        setSuratPerjanjian("");
         setBuktiKerja("");
-        setPresentasePenyedia("75%");
-        setLokasiPekerjaan("Jakarta");
-        setInstansiPenerima("Badan Intelijen Negara");
-        setBastPenyelesaianNomor("");
-        setBastPenyelesaianTanggal("");
-        setBastPeriodePekerjaan("");
-        setBapTanggalSurat("02 Desember 2024");
-        setBapDasarList([
-          "Surat Perjanjian Nomor : SP-1177 / I /2024 tanggal 8 Januari 2024;",
-          "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2079/IX/2024 tanggal 30 September 2024;",
-          "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2249/X/2024 tanggal 31 Oktober 2024;",
-          "Berita Acara Penyelesaian Pekerjaan Nomor : BAPP-2406/XI/2024 tanggal 29 November 2024;",
-          "Berita Acara Serah Terima Pekerjaan Nomor : BAST-1969/XI/2024 tanggal 29 November 2024.",
-        ]);
-        setBapPeriodePembayaran("bulan September s/d November 2024");
-        setBapNilaiPembayaranAngka(currentDoc.nilai_pembayaran ? new Intl.NumberFormat("id-ID").format(currentDoc.nilai_pembayaran) : "");
-        setBapNilaiPembayaranTerbilang("");
-        setBapKppn("Kantor Pelayanan Perbendaharaan Negara (KPPN) Jakarta V");
-        setBapNilaiKontrak("");
-        setBapNilaiBapLalu("");
-        setBapNilaiPekerjaanSaatIni("");
-        setBapDikurangiLalu("");
-        setBapSisaPembayaran("");
-        setBapNilaiDibayarkan("");
-        setBapTotalBapIni("");
-        setTtdKiriJabatan1("Kepala Badan Intelijen Negara");
-        setTtdKiriJabatan2("Pejabat Pembuat Komitmen");
-        setTtdKiriNama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
-        setTtdKananInstansi(invoiceTtdKananInstansi || currentDoc.pihak_eksternal || "");
-        setTtdKananJabatan(invoiceTtdKananJabatan || "Direktur");
-        setTtdKananNama(invoiceTtdKananNama);
-      }
-        setBapNilaiBapLalu("");
-        setBapNilaiPekerjaanSaatIni("");
-        setBapDikurangiLalu("");
-        setBapSisaPembayaran("");
-        setBapNilaiDibayarkan("");
-        setBapTotalBapIni("");
-        setTtdKiriJabatan1("Kepala Badan Intelijen Negara");
-        setTtdKiriJabatan2("Pejabat Pembuat Komitmen");
-        setTtdKiriNama(currentDoc.ppk_name || "Edy Susanto, S.H., M.H.");
-        setTtdKananInstansi(invoiceTtdKananInstansi || currentDoc.pihak_eksternal || "");
-        setTtdKananJabatan(invoiceTtdKananJabatan || "Direktur");
-        setTtdKananNama(invoiceTtdKananNama);
+        setPresentasePenyedia("");
+        setLokasiPekerjaan("");
+        setInstansiPenerima("");
+        setTtdKiriNama("");
+
+        // Pihak 2: Penyedia & Tanda Tangan Kanan (Penyedia) diambil dari metadata kwitansi (fallback invoice)
+        setPihak2Nama(kwitansiPimpinan || invoicePimpinan);
+        setPihak2Jabatan(kwitansiJabatanPerusahaan || invoiceJabatanPerusahaan);
+        setPihak2Alamat(kwitansiAlamat || invoiceAlamat);
+        setPihak2AtasNama(kwitansiAtasNama || invoiceAtasNama);
+        setTtdKananInstansi(kwitansiTtdKananInstansi || invoiceTtdKananInstansi);
+        setTtdKananJabatan(kwitansiTtdKananJabatan || invoiceTtdKananJabatan);
+        setTtdKananNama(kwitansiTtdKananNama || invoiceTtdKananNama);
       }
       setIncludeMaterai(true);
     }
   };
 
-  if (!isOpen || !doc) return null;
-
   // Handler Generate Dokumen & Buka PDF Langsung dengan Skema Validasi
   const handleGenerateAndExport = async () => {
+    if (!doc) return;
     // Validasi input khusus dokumen BAST (semua input wajib diisi)
     if (docType === "BAST") {
       const newErrors: Record<string, string> = {};
@@ -488,9 +451,9 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       if (!pihak2AtasNama.trim()) newErrors.pihak2AtasNama = "Bertindak untuk dan atas nama (Penyedia) wajib diisi";
 
       // 3. Dasar Pembayaran & Rincian Pembayaran (BAP)
-      const emptyDasar = bapDasarList.some((d) => !d.trim());
-      if (bapDasarList.length === 0 || emptyDasar) {
-        newErrors.bapDasarList = "Semua daftar dasar berkas wajib diisi";
+      const validDasarList = bapDasarList.filter((d) => d.trim());
+      if (validDasarList.length === 0) {
+        newErrors.bapDasarList = "Minimal 1 daftar dasar berkas wajib diisi";
       }
       if (!bapPeriodePembayaran.trim()) newErrors.bapPeriodePembayaran = "Periode Pembayaran Penyedia wajib diisi";
       if (!bapNilaiPembayaranAngka.trim()) newErrors.bapNilaiPembayaranAngka = "Nilai Pembayaran (Rp) wajib diisi";
@@ -503,6 +466,43 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       if (!bapSisaPembayaran.trim()) newErrors.bapSisaPembayaran = "Nilai Sisa Pembayaran wajib diisi";
       if (!bapNilaiDibayarkan.trim()) newErrors.bapNilaiDibayarkan = "Nilai Dibayarkan wajib diisi";
       if (!bapTotalBapIni.trim()) newErrors.bapTotalBapIni = "Nilai Pembayaran s/d BAP Ini wajib diisi";
+
+      // Penandatanganan
+      if (!ttdKiriNama.trim()) newErrors.ttdKiriNama = "Tanda Tangan Kiri (PPK) wajib diisi";
+      if (!ttdKananNama.trim()) newErrors.ttdKananNama = "Tanda Tangan Kanan (Penyedia) wajib diisi";
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+    }
+
+    // Validasi input khusus dokumen BAPP (Berita Acara Penyelesaian Pekerjaan - semua input wajib diisi)
+    if (docType === "BAPP") {
+      const newErrors: Record<string, string> = {};
+
+      if (!nomorDokumen.trim()) newErrors.nomorDokumen = "Nomor Dokumen wajib diisi";
+      if (!bebanDipa.trim()) newErrors.bebanDipa = "Beban DIPA wajib diisi";
+      if (!namaPekerjaan.trim()) newErrors.namaPekerjaan = "Nama Pekerjaan (Tentang) wajib diisi";
+      if (!hari.trim()) newErrors.hari = "Hari wajib diisi";
+      if (!tanggalTerbilang.trim()) newErrors.tanggalTerbilang = "Tanggal (Terbilang) wajib diisi";
+      if (!bulanTerbilang.trim()) newErrors.bulanTerbilang = "Bulan wajib diisi";
+      if (!tahunTerbilang.trim()) newErrors.tahunTerbilang = "Tahun (Terbilang) wajib diisi";
+      if (!pihak1Nama.trim()) newErrors.pihak1Nama = "Nama Lengkap & Gelar PPK wajib diisi";
+      if (!pihak1Jabatan.trim()) newErrors.pihak1Jabatan = "Jabatan PPK wajib diisi";
+      if (!pihak1Alamat.trim()) newErrors.pihak1Alamat = "Alamat Kantor PPK wajib diisi";
+      if (!pihak1AtasNama.trim()) newErrors.pihak1AtasNama = "Bertindak untuk dan atas nama (PPK) wajib diisi";
+      if (!pihak2Nama.trim()) newErrors.pihak2Nama = "Nama Pimpinan / Direktur (Penyedia) wajib diisi";
+      if (!pihak2Jabatan.trim()) newErrors.pihak2Jabatan = "Jabatan & Perusahaan wajib diisi";
+      if (!pihak2Alamat.trim()) newErrors.pihak2Alamat = "Alamat Kantor Penyedia wajib diisi";
+      if (!pihak2AtasNama.trim()) newErrors.pihak2AtasNama = "Bertindak untuk dan atas nama (Penyedia) wajib diisi";
+
+      // 3. Dasar & Uraian Penyelesaian Pekerjaan (BAPP)
+      if (!suratPerjanjian.trim()) newErrors.suratPerjanjian = "Dasar 1: Surat Perjanjian wajib diisi";
+      if (!buktiKerja.trim()) newErrors.buktiKerja = "Dasar 2: Bukti Kerja wajib diisi";
+      if (!presentasePenyedia.trim()) newErrors.presentasePenyedia = "Presentase Selesai wajib diisi";
+      if (!lokasiPekerjaan.trim()) newErrors.lokasiPekerjaan = "Lokasi Pekerjaan wajib diisi";
+      if (!instansiPenerima.trim()) newErrors.instansiPenerima = "Instansi Penerima wajib diisi";
 
       // Penandatanganan
       if (!ttdKiriNama.trim()) newErrors.ttdKiriNama = "Tanda Tangan Kiri (PPK) wajib diisi";
@@ -654,7 +654,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Nomor Dokumen {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Nomor Dokumen <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -672,7 +672,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Beban DIPA {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Beban DIPA <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -690,7 +690,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div className="md:col-span-2">
                 <label className="block font-bold text-slate-700 mb-1">
-                  Nama Pekerjaan (Tentang) {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Nama Pekerjaan (Tentang) <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   rows={2}
@@ -718,7 +718,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Hari {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Hari {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="text"
@@ -736,7 +736,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Tanggal (Terbilang) {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Tanggal (Terbilang) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="text"
@@ -754,7 +754,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Bulan {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Bulan {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="text"
@@ -772,7 +772,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Tahun (Terbilang) {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Tahun (Terbilang) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="text"
@@ -802,7 +802,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               <div className="space-y-2.5">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Nama Lengkap & Gelar {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Nama Lengkap & Gelar {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -820,7 +820,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Jabatan {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Jabatan {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -838,7 +838,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Alamat Kantor {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Alamat Kantor {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -856,7 +856,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Bertindak untuk dan atas nama {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Bertindak untuk dan atas nama {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -884,7 +884,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               <div className="space-y-2.5">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Nama Pimpinan / Direktur {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Nama Pimpinan / Direktur {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -893,7 +893,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                       setPihak2Nama(e.target.value);
                       if (errors.pihak2Nama) setErrors((prev) => ({ ...prev, pihak2Nama: "" }));
                     }}
-                    placeholder="Diambil dari Approved By / Pimpinan Invoice..."
+                    placeholder={docType === "BAP" ? "Diambil dari Metadata Kwitansi..." : "Diambil dari Approved By / Pimpinan Invoice..."}
                     className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
                       errors.pihak2Nama ? "border-red-500 bg-red-50/20" : "border-slate-200"
                     }`}
@@ -902,7 +902,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Jabatan & Perusahaan {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Jabatan & Perusahaan {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -911,7 +911,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                       setPihak2Jabatan(e.target.value);
                       if (errors.pihak2Jabatan) setErrors((prev) => ({ ...prev, pihak2Jabatan: "" }));
                     }}
-                    placeholder="Diambil dari Jabatan / Perusahaan Invoice..."
+                    placeholder={docType === "BAP" ? "Diambil dari Metadata Kwitansi..." : "Diambil dari Jabatan / Perusahaan Invoice..."}
                     className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
                       errors.pihak2Jabatan ? "border-red-500 bg-red-50/20" : "border-slate-200"
                     }`}
@@ -920,7 +920,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Alamat Kantor Penyedia {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Alamat Kantor Penyedia {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -929,7 +929,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                       setPihak2Alamat(e.target.value);
                       if (errors.pihak2Alamat) setErrors((prev) => ({ ...prev, pihak2Alamat: "" }));
                     }}
-                    placeholder="Diambil dari Alamat Invoice..."
+                    placeholder={docType === "BAP" ? "Diambil dari Metadata Kwitansi..." : "Diambil dari Alamat Invoice..."}
                     className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
                       errors.pihak2Alamat ? "border-red-500 bg-red-50/20" : "border-slate-200"
                     }`}
@@ -938,7 +938,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Bertindak untuk dan atas nama {docType === "BAST" && <span className="text-red-500">*</span>}
+                    Bertindak untuk dan atas nama {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -1054,7 +1054,23 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
 
               {/* Dasar-dasar Berdasarkan hal-hal sebagai berikut */}
               <div className="space-y-2">
-                <label className="block font-bold text-slate-700">Daftar Dasar Berkas (Surat Perjanjian, BAPP, BAST):</label>
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-700">
+                    Daftar Dasar Berkas (Surat Perjanjian, BAPP, BAST) <span className="text-red-500">*</span>:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBapDasarList([...bapDasarList, ""]);
+                      if (errors.bapDasarList) setErrors((prev) => ({ ...prev, bapDasarList: "" }));
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] border border-emerald-200 transition cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Tambah Dasar Berkas</span>
+                  </button>
+                </div>
+
                 {bapDasarList.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <span className="w-5 text-center font-bold text-slate-500">{idx + 1}.</span>
@@ -1065,54 +1081,104 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                         const updated = [...bapDasarList];
                         updated[idx] = e.target.value;
                         setBapDasarList(updated);
+                        if (errors.bapDasarList) setErrors((prev) => ({ ...prev, bapDasarList: "" }));
                       }}
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium text-xs"
+                      placeholder={`Dasar berkas ${idx + 1}...`}
+                      className={`flex-1 px-3 py-1.5 rounded-lg border bg-white font-medium text-xs ${
+                        errors.bapDasarList && !item.trim() ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {bapDasarList.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = bapDasarList.filter((_, i) => i !== idx);
+                          setBapDasarList(updated);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition cursor-pointer"
+                        title="Hapus baris ini"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
+                {errors.bapDasarList && <p className="text-[10px] text-red-500 font-semibold">{errors.bapDasarList}</p>}
               </div>
 
               {/* Uraian Hak Pembayaran Penyedia */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Periode Pembayaran Penyedia</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Periode Pembayaran Penyedia <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={bapPeriodePembayaran}
-                    onChange={(e) => setBapPeriodePembayaran(e.target.value)}
+                    onChange={(e) => {
+                      setBapPeriodePembayaran(e.target.value);
+                      if (errors.bapPeriodePembayaran) setErrors((prev) => ({ ...prev, bapPeriodePembayaran: "" }));
+                    }}
                     placeholder="Contoh: bulan September s/d November 2024"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.bapPeriodePembayaran ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.bapPeriodePembayaran && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.bapPeriodePembayaran}</p>}
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Nilai Pembayaran (Rp)</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Nilai Pembayaran (Rp) <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={bapNilaiPembayaranAngka}
-                    onChange={(e) => setBapNilaiPembayaranAngka(e.target.value)}
+                    onChange={(e) => {
+                      setBapNilaiPembayaranAngka(e.target.value);
+                      if (errors.bapNilaiPembayaranAngka) setErrors((prev) => ({ ...prev, bapNilaiPembayaranAngka: "" }));
+                    }}
                     placeholder="Contoh: 134.259.000"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.bapNilaiPembayaranAngka ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.bapNilaiPembayaranAngka && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.bapNilaiPembayaranAngka}</p>}
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Nilai Terbilang</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Nilai Terbilang <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={bapNilaiPembayaranTerbilang}
-                    onChange={(e) => setBapNilaiPembayaranTerbilang(e.target.value)}
+                    onChange={(e) => {
+                      setBapNilaiPembayaranTerbilang(e.target.value);
+                      if (errors.bapNilaiPembayaranTerbilang) setErrors((prev) => ({ ...prev, bapNilaiPembayaranTerbilang: "" }));
+                    }}
                     placeholder="Seratus tiga puluh empat juta dua ratus lima puluh sembilan ribu rupiah"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.bapNilaiPembayaranTerbilang ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.bapNilaiPembayaranTerbilang && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.bapNilaiPembayaranTerbilang}</p>}
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Tujuan Pembayaran KPPN</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Tujuan Pembayaran KPPN <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={bapKppn}
-                    onChange={(e) => setBapKppn(e.target.value)}
+                    onChange={(e) => {
+                      setBapKppn(e.target.value);
+                      if (errors.bapKppn) setErrors((prev) => ({ ...prev, bapKppn: "" }));
+                    }}
                     placeholder="Kantor Pelayanan Perbendaharaan Negara (KPPN) Jakarta V"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                      errors.bapKppn ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                    }`}
                   />
+                  {errors.bapKppn && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.bapKppn}</p>}
                 </div>
               </div>
 
@@ -1121,67 +1187,123 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                 <label className="block font-bold text-slate-700">Tabel Rincian Pembayaran (Jumlah Rp):</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-600">1. Nilai Kontrak</label>
+                    <label className="text-[11px] font-semibold text-slate-600">
+                      1. Nilai Kontrak <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={bapNilaiKontrak}
-                      onChange={(e) => setBapNilaiKontrak(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setBapNilaiKontrak(e.target.value);
+                        if (errors.bapNilaiKontrak) setErrors((prev) => ({ ...prev, bapNilaiKontrak: "" }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border bg-white font-medium ${
+                        errors.bapNilaiKontrak ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.bapNilaiKontrak && <p className="text-[10px] text-red-500 mt-0.5 font-semibold">{errors.bapNilaiKontrak}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-600">2. Nilai Pembayaran s/d BAP Lalu</label>
+                    <label className="text-[11px] font-semibold text-slate-600">
+                      2. Nilai Pembayaran s/d BAP Lalu <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={bapNilaiBapLalu}
-                      onChange={(e) => setBapNilaiBapLalu(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setBapNilaiBapLalu(e.target.value);
+                        if (errors.bapNilaiBapLalu) setErrors((prev) => ({ ...prev, bapNilaiBapLalu: "" }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border bg-white font-medium ${
+                        errors.bapNilaiBapLalu ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.bapNilaiBapLalu && <p className="text-[10px] text-red-500 mt-0.5 font-semibold">{errors.bapNilaiBapLalu}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-600">3a. Nilai Pekerjaan pada BAP ini</label>
+                    <label className="text-[11px] font-semibold text-slate-600">
+                      3a. Nilai Pekerjaan pada BAP ini <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={bapNilaiPekerjaanSaatIni}
-                      onChange={(e) => setBapNilaiPekerjaanSaatIni(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setBapNilaiPekerjaanSaatIni(e.target.value);
+                        if (errors.bapNilaiPekerjaanSaatIni) setErrors((prev) => ({ ...prev, bapNilaiPekerjaanSaatIni: "" }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border bg-white font-medium ${
+                        errors.bapNilaiPekerjaanSaatIni ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.bapNilaiPekerjaanSaatIni && <p className="text-[10px] text-red-500 mt-0.5 font-semibold">{errors.bapNilaiPekerjaanSaatIni}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-600">3a. Dikurangi Nilai Pekerjaan Berita Acara Lalu</label>
+                    <label className="text-[11px] font-semibold text-slate-600">
+                      3a. Dikurangi Nilai Pekerjaan Berita Acara Lalu <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={bapDikurangiLalu}
-                      onChange={(e) => setBapDikurangiLalu(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setBapDikurangiLalu(e.target.value);
+                        if (errors.bapDikurangiLalu) setErrors((prev) => ({ ...prev, bapDikurangiLalu: "" }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border bg-white font-medium ${
+                        errors.bapDikurangiLalu ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.bapDikurangiLalu && <p className="text-[10px] text-red-500 mt-0.5 font-semibold">{errors.bapDikurangiLalu}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-600">3a. Nilai Sisa Pembayaran s.d Pekerjaan Saat Ini</label>
+                    <label className="text-[11px] font-semibold text-slate-600">
+                      3a. Nilai Sisa Pembayaran s.d Pekerjaan Saat Ini <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={bapSisaPembayaran}
-                      onChange={(e) => setBapSisaPembayaran(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setBapSisaPembayaran(e.target.value);
+                        if (errors.bapSisaPembayaran) setErrors((prev) => ({ ...prev, bapSisaPembayaran: "" }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border bg-white font-medium ${
+                        errors.bapSisaPembayaran ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.bapSisaPembayaran && <p className="text-[10px] text-red-500 mt-0.5 font-semibold">{errors.bapSisaPembayaran}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-600">3b. Nilai Dibayarkan (Termasuk Pajak)</label>
+                    <label className="text-[11px] font-semibold text-slate-600">
+                      3b. Nilai Dibayarkan (Termasuk Pajak) <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={bapNilaiDibayarkan}
-                      onChange={(e) => setBapNilaiDibayarkan(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setBapNilaiDibayarkan(e.target.value);
+                        if (errors.bapNilaiDibayarkan) setErrors((prev) => ({ ...prev, bapNilaiDibayarkan: "" }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border bg-white font-medium ${
+                        errors.bapNilaiDibayarkan ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.bapNilaiDibayarkan && <p className="text-[10px] text-red-500 mt-0.5 font-semibold">{errors.bapNilaiDibayarkan}</p>}
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-[11px] font-semibold text-slate-600">4. Nilai Pembayaran s/d BAP Ini (Termasuk Pajak)</label>
+                    <label className="text-[11px] font-semibold text-slate-600">
+                      4. Nilai Pembayaran s/d BAP Ini (Termasuk Pajak) <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={bapTotalBapIni}
-                      onChange={(e) => setBapTotalBapIni(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-medium"
+                      onChange={(e) => {
+                        setBapTotalBapIni(e.target.value);
+                        if (errors.bapTotalBapIni) setErrors((prev) => ({ ...prev, bapTotalBapIni: "" }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border bg-white font-medium ${
+                        errors.bapTotalBapIni ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
                     />
+                    {errors.bapTotalBapIni && <p className="text-[10px] text-red-500 mt-0.5 font-semibold">{errors.bapTotalBapIni}</p>}
                   </div>
                 </div>
               </div>
@@ -1255,7 +1377,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <span className="font-extrabold text-slate-800">
-                  Tanda Tangan Kiri (PPK) {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Tanda Tangan Kiri (PPK) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                 </span>
                 <input
                   type="text"
@@ -1288,7 +1410,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
 
               <div className="space-y-2">
                 <span className="font-extrabold text-slate-800">
-                  Tanda Tangan Kanan (Penyedia) {docType === "BAST" && <span className="text-red-500">*</span>}
+                  Tanda Tangan Kanan (Penyedia) {(docType === "BAST" || docType === "BAP") && <span className="text-red-500">*</span>}
                 </span>
                 <input
                   type="text"
@@ -1311,7 +1433,7 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
                     setTtdKananNama(e.target.value);
                     if (errors.ttdKananNama) setErrors((prev) => ({ ...prev, ttdKananNama: "" }));
                   }}
-                  placeholder="Nama Terang Penyedia (Diambil dari Invoice)..."
+                  placeholder={docType === "BAP" ? "Nama Terang Penyedia (Diambil dari Kwitansi)..." : "Nama Terang Penyedia (Diambil dari Invoice)..."}
                   className={`w-full px-3 py-1.5 rounded-lg border bg-white font-bold ${
                     errors.ttdKananNama ? "border-red-500 bg-red-50/20" : "border-slate-200"
                   }`}

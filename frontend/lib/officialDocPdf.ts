@@ -336,9 +336,10 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
       </div>
 
       <div style="margin-left: 5px; margin-bottom: 6px; font-size: 9.5pt;">
-        ${bapDasarList
+        ${(bapDasarList || [])
+          .filter((d: string) => d && d.trim())
           .map(
-            (dasar, idx) => `
+            (dasar: string, idx: number) => `
           <div style="margin-bottom: 2px;">
             ${idx + 1}. ${dasar}
           </div>
