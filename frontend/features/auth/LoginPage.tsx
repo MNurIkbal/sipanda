@@ -388,22 +388,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         <div className="col-span-1 lg:col-span-5 p-8 sm:p-12 xl:p-14 flex flex-col justify-between bg-white order-1 lg:order-2">
 
           <div className="w-full max-w-md mx-auto my-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 shadow-sm flex items-center justify-center">
+            <div className="flex items-center gap-3.5 mb-8">
+              <div className="p-2 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
                 <Image
-                  src="/bg.png"
+                  src="/logoin.png"
                   alt="Logo SIPANDA"
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 object-contain"
+                  width={64}
+                  height={64}
+                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
                   priority
                 />
               </div>
               <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">
                   SIPANDA
                 </h1>
-                <p className="text-xs text-slate-500 font-medium mt-1">
+                <p className="text-xs text-slate-500 font-medium mt-1 leading-snug">
                   Sistem Informasi Pengelolaan Monitoring Dokumen Pembayaran
                 </p>
               </div>

@@ -23,6 +23,7 @@ class PaymentDocument {
     bast_generated = false,
     bap_generated = false,
     bapp_generated = false,
+    ppd_generated = false,
     official_docs_data = {},
     status = 'menunggu_verifikasi',
     catatan_revisi = '',
@@ -54,6 +55,7 @@ class PaymentDocument {
     this.bast_generated = Boolean(bast_generated);
     this.bap_generated = Boolean(bap_generated);
     this.bapp_generated = Boolean(bapp_generated);
+    this.ppd_generated = Boolean(ppd_generated);
     this.official_docs_data = official_docs_data || {};
     this.catatan_revisi = catatan_revisi;
     this.catatan_verifikasi = catatan_verifikasi;

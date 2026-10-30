@@ -13,6 +13,7 @@ const STATUS_CONFIG = {
   menunggu_verifikasi_ulang: { label: 'Pengajuan Ulang', color: 'orange' },
   disetujui: { label: 'Disetujui', color: 'emerald' },
   lengkap_valid: { label: 'Disetujui', color: 'emerald' },
+  selesai: { label: 'Selesai', color: 'emerald' },
   sedang_diproses: { label: 'Sedang Diproses', color: 'blue' },
   pengajuan_kppn: { label: 'Pengajuan ke KPPN', color: 'indigo' },
   menunggu_pencairan: { label: 'Menunggu Pencairan', color: 'amber' },

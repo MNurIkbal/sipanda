@@ -276,6 +276,7 @@ class DocumentRepository {
       'bast_generated',
       'bap_generated',
       'bapp_generated',
+      'ppd_generated',
       'official_docs_data',
     ];
 

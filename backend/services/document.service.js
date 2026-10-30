@@ -296,6 +296,7 @@ class DocumentService {
     if (upperType === 'BAST') updatePayload.bast_generated = true;
     if (upperType === 'BAP') updatePayload.bap_generated = true;
     if (upperType === 'BAPP') updatePayload.bapp_generated = true;
+    if (upperType === 'PPD') updatePayload.ppd_generated = true;
 
     const updated = await documentRepository.update(id, updatePayload);
 
@@ -336,13 +337,23 @@ class DocumentService {
     const doc = await documentRepository.findById(id);
     if (!doc) throw new Error('Dokumen tidak ditemukan!');
 
-    // Tentukan status berikutnya:
-    // Jika dokumen sebelumnya ditolak (dikembalikan / ditolak), maka saat dikirim ulang menjadi 'pengajuan_ulang' (menunggu_verifikasi_ulang)
-    // Jika dokumen baru (draft), maka menjadi 'submit_dokumen'
-    const isResubmission = doc.status === 'dikembalikan' || doc.status === 'ditolak';
-    const targetStatus = isResubmission ? 'menunggu_verifikasi_ulang' : 'submit_dokumen';
-    const targetLegend = isResubmission ? 'Pengajuan Ulang' : 'Submit Dokumen';
-    const targetColor = isResubmission ? 'orange' : 'amber';
+    // Cek apakah ini pengiriman pasca PPD (kategori pengadaan dan sudah disetujui / lengkap_valid / disetujui)
+    const isApprovedState = doc.status === 'lengkap_valid' || doc.status === 'disetujui';
+    const isPpdSubmit = Boolean(doc.ppd_generated && isApprovedState);
+
+    let targetStatus = 'submit_dokumen';
+    let targetLegend = 'Submit Dokumen';
+    let targetColor = 'amber';
+
+    if (isPpdSubmit) {
+      targetStatus = 'selesai';
+      targetLegend = 'Selesai';
+      targetColor = 'emerald';
+    } else if (doc.status === 'dikembalikan' || doc.status === 'ditolak') {
+      targetStatus = 'menunggu_verifikasi_ulang';
+      targetLegend = 'Pengajuan Ulang';
+      targetColor = 'orange';
+    }
 
     const updated = await documentRepository.update(id, {
       status: targetStatus,
@@ -355,10 +366,12 @@ class DocumentService {
       nomor_surat: doc.nomor_surat,
       user_name: user_name || 'Petugas PPK',
       user_role: user_role || 'ppk',
-      action: isResubmission ? 'RESUBMIT_DOKUMEN' : 'SUBMIT_DOKUMEN',
-      description: isResubmission
-        ? `PPK mengirim ulang dokumen ${doc.nomor_surat} ke Biro 01 (Status: Pengajuan Ulang)`
-        : `PPK mengirim dokumen ${doc.nomor_surat} ke Biro 01 (Status: Submit Dokumen)`,
+      action: isPpdSubmit ? 'SUBMIT_PPD_SELESAI' : (doc.status === 'dikembalikan' || doc.status === 'ditolak' ? 'RESUBMIT_DOKUMEN' : 'SUBMIT_DOKUMEN'),
+      description: isPpdSubmit
+        ? `PPK mengirim berkas PPD dokumen ${doc.nomor_surat} ke Biro 01 (Status: Selesai)`
+        : (doc.status === 'dikembalikan' || doc.status === 'ditolak'
+            ? `PPK mengirim ulang dokumen ${doc.nomor_surat} ke Biro 01 (Status: Pengajuan Ulang)`
+            : `PPK mengirim dokumen ${doc.nomor_surat} ke Biro 01 (Status: Submit Dokumen)`),
       previous_status: doc.status,
       new_status: targetStatus,
     });

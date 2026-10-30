@@ -49,6 +49,7 @@ export interface PaymentDocument {
   bast_generated?: boolean;
   bap_generated?: boolean;
   bapp_generated?: boolean;
+  ppd_generated?: boolean;
   official_docs_data?: Record<string, any>;
   catatan_revisi?: string;
   catatan_verifikasi?: string;

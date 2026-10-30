@@ -585,7 +585,7 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
                         </span>
                       </td>
 
-                      {/* Status Berkas Resmi (BAST, BAP, BAPP) */}
+                      {/* Status Berkas Resmi (BAST, BAP, BAPP, PPD) */}
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <span
@@ -615,6 +615,20 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
                           >
                             BAPP {doc.bapp_generated ? "✓" : "-"}
                           </span>
+                          {(doc.kategori_pengadaan === "Pengadaan Barang / Jasa" ||
+                            (doc.kategori || "").toLowerCase().includes("pengadaan") ||
+                            (doc.jenis_dokumen || "").toLowerCase().includes("pengadaan") ||
+                            doc.ppd_generated) && (
+                            <span
+                              className={`px-2.5 py-1 rounded-lg font-bold text-[10px] tracking-wide transition shadow-2xs border ${
+                                doc.ppd_generated
+                                  ? "bg-purple-50 text-purple-700 border-purple-300 ring-1 ring-purple-400/20"
+                                  : "bg-slate-100 text-slate-400 border-slate-200"
+                              }`}
+                            >
+                              PPD {doc.ppd_generated ? "✓" : "-"}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -718,6 +732,33 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
                                   </div>
                                 </button>
 
+                                {/* Generate PPD: Tambahan untuk kategori pengadaan jika sudah disetujui (lengkap_valid / disetujui).
+                                    Jika belum di-generate maka form muncul. Jika sudah di-generate form tidak muncul lagi dan opsi jadi Cetak PPD */}
+                                {(doc.kategori_pengadaan === "Pengadaan Barang / Jasa" ||
+                                  (doc.kategori || "").toLowerCase().includes("pengadaan") ||
+                                  (doc.jenis_dokumen || "").toLowerCase().includes("pengadaan") ||
+                                  doc.ppd_generated) &&
+                                  (doc.status === "lengkap_valid" || doc.status === "disetujui" || doc.status === "selesai") && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (doc.ppd_generated) {
+                                        // Jika sudah di-generate, form tidak muncul lagi, langsung cetak PPD
+                                        handlePrintDoc(doc, "PPD");
+                                      } else {
+                                        // Jika belum di-generate, buka formulir PPD kosong
+                                        handleOpenGenerator(doc, "PPD");
+                                      }
+                                    }}
+                                    className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-bold text-purple-700 bg-purple-50/60 hover:bg-purple-100 transition cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Printer className="h-3.5 w-3.5 text-purple-600" />
+                                      <span>{doc.ppd_generated ? "Cetak PPD" : "Generate PPD"}</span>
+                                    </div>
+                                  </button>
+                                )}
+
                                 <div className="my-1 border-t border-slate-100" />
 
                                 {/* Tombol Reset Berkas: Muncul jika dokumen berstatus draft atau ditolak dan ada berkas resmi yang sudah di-generate */}
@@ -734,13 +775,17 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
                                   </button>
                                 )}
 
-                                {/* Tombol Kirim ke Biro 01: Muncul jika BAST, BAP, BAPP sudah di-generate dan status dokumen draft atau ditolak */}
-                                {allThreeGenerated &&
+                                {/* Tombol Kirim ke Biro 01:
+                                    1. Alur Awal: Muncul jika BAST, BAP, BAPP sudah di-generate dan status dokumen draft atau ditolak.
+                                    2. Alur PPD: Muncul jika PPD sudah di-generate pada dokumen pengadaan yang sudah disetujui (lengkap_valid / disetujui), untuk dikirim ke Biro 01 dengan status menjadi Selesai */}
+                                {((allThreeGenerated &&
                                   (doc.status === "draft" ||
                                     doc.status === "dikembalikan" ||
                                     doc.status === "ditolak" ||
                                     doc.status === "menunggu_verifikasi" ||
-                                    !isSubmitted) &&
+                                    !isSubmitted)) ||
+                                  (doc.ppd_generated &&
+                                    (doc.status === "lengkap_valid" || doc.status === "disetujui"))) &&
                                   currentUser?.role === "ppk" && (
                                     <button
                                       type="button"
@@ -752,6 +797,8 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
                                       <span>
                                         {submittingDocId === doc.id
                                           ? "Mengirim..."
+                                          : doc.ppd_generated && (doc.status === "lengkap_valid" || doc.status === "disetujui")
+                                          ? "Kirim ke Biro 01 (Selesai)"
                                           : doc.status === "dikembalikan" || doc.status === "ditolak"
                                           ? "Kirim Ulang ke Biro 01"
                                           : "Kirim ke Biro 01"}

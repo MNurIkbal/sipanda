@@ -1,10 +1,11 @@
 import { PaymentDocument } from "@/types/sipandu.types";
 
-export type GeneratorType = "BAST" | "BAP" | "BAPP";
+export type GeneratorType = "BAST" | "BAP" | "BAPP" | "PPD";
 
 export function getDefaultTitle(type: GeneratorType) {
   if (type === "BAST") return "BERITA ACARA SERAH TERIMA PEKERJAAN";
   if (type === "BAP") return "BERITA ACARA PEMBAYARAN";
+  if (type === "PPD") return "SURAT PERMINTAAN PENCAIRAN DANA";
   return "BERITA ACARA PENYELESAIAN PEKERJAAN";
 }
 
@@ -66,6 +67,31 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
   const ttdKananInstansi = savedData.ttdKananInstansi || doc.pihak_eksternal || "";
   const ttdKananJabatan = savedData.ttdKananJabatan || "";
   const ttdKananNama = savedData.ttdKananNama || "";
+
+  // Data khusus PPD (Surat Permintaan Pencairan Dana)
+  const ppdKopInstansi = savedData.ppdKopInstansi || "";
+  const ppdAlamatInstansi = savedData.ppdAlamatInstansi || "";
+  const ppdTelpInstansi = savedData.ppdTelpInstansi || "";
+  const ppdEmailInstansi = savedData.ppdEmailInstansi || "";
+  const ppdNomorSurat = savedData.ppdNomorSurat || nomorDokumen;
+  const ppdTujuanPejabat = savedData.ppdTujuanPejabat || "";
+  const ppdTujuanInstansi = savedData.ppdTujuanInstansi || "";
+  const ppdNamaKegiatan = savedData.ppdNamaKegiatan || namaPekerjaan;
+  const ppdNomorKontrakSpk = savedData.ppdNomorKontrakSpk || "";
+  const ppdNamaPemohon = savedData.ppdNamaPemohon || "";
+  const ppdUraianKegiatan = savedData.ppdUraianKegiatan || "";
+  const ppdNomorInvoice = savedData.ppdNomorInvoice || "";
+  const ppdTanggalInvoice = savedData.ppdTanggalInvoice || "";
+  const ppdJumlahDiminta = savedData.ppdJumlahDiminta || (doc.nilai_pembayaran ? new Intl.NumberFormat("id-ID").format(doc.nilai_pembayaran) : "");
+  const ppdTerbilang = savedData.ppdTerbilang || "";
+  const ppdNamaBank = savedData.ppdNamaBank || "";
+  const ppdNomorRekening = savedData.ppdNomorRekening || "";
+  const ppdNamaPemilikRekening = savedData.ppdNamaPemilikRekening || "";
+  const ppdKotaTtd = savedData.ppdKotaTtd || "Jakarta";
+  const ppdTanggalTtd = savedData.ppdTanggalTtd || "";
+  const ppdJabatanPemohonTtd = savedData.ppdJabatanPemohonTtd || "";
+  const ppdNamaLengkapTtd = savedData.ppdNamaLengkapTtd || "";
+  const ppdNipJabatanTtd = savedData.ppdNipJabatanTtd || "";
 
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
@@ -213,6 +239,19 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
           padding: 6px 10px;
           vertical-align: middle;
         }
+        .table-ppd {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+          margin-bottom: 12px;
+          font-size: 10pt;
+        }
+        .table-ppd th, .table-ppd td {
+          border: 1px solid #000;
+          padding: 4px 8px;
+          vertical-align: top;
+          line-height: 1.35;
+        }
         .ttd-section {
           width: 100%;
           margin-top: 24px;
@@ -230,6 +269,123 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
       </style>
     </head>
     <body>
+      ${type === "PPD"
+      ? `
+      <!-- FORMAT KHUSUS SURAT PERMINTAAN PENCAIRAN DANA (PPD) SESUAI TEMPLATE GAMBAR -->
+      <div style="text-align: center; margin-bottom: 12px;">
+        <div style="font-weight: bold; font-size: 11pt; text-transform: uppercase;">
+          ${ppdKopInstansi || "[KOP SURAT INSTANSI / PERUSAHAAN]"}
+        </div>
+        <div style="font-size: 9pt; margin-top: 3px;">
+          Alamat: ${ppdAlamatInstansi || "[Alamat Lengkap]"} | Telp: ${ppdTelpInstansi || "[Nomor Telepon]"} | Email: ${ppdEmailInstansi || "[Email Resmi]"}
+        </div>
+        <hr style="border: 0; border-top: 1.5px solid #000; margin: 10px 0 16px 0;" />
+      </div>
+
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-weight: bold; font-size: 11pt; text-transform: uppercase; letter-spacing: 0.5px;">
+          SURAT PERMINTAAN PENCAIRAN DANA
+        </div>
+        <div style="font-size: 10pt; margin-top: 4px;">
+          Nomor: ${ppdNomorSurat || "[Nomor Surat]"}
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px; font-size: 10pt; line-height: 1.4;">
+        <div>Kepada Yth.</div>
+        <div style="font-weight: bold;">${ppdTujuanPejabat || "[Nama Pejabat/Bagian Keuangan]"}</div>
+        <div style="font-weight: bold;">${ppdTujuanInstansi || "[Nama Instansi/Perusahaan]"}</div>
+        <div>di tempat</div>
+      </div>
+
+      <div style="margin-bottom: 8px; font-size: 10pt;">
+        Dengan hormat,
+      </div>
+
+      <div style="margin-bottom: 10px; font-size: 10pt; text-align: justify; line-height: 1.4;">
+        Sehubungan dengan ${ppdNamaKegiatan || "[nama kegiatan/pekerjaan/transaksi]"} berdasarkan ${ppdNomorKontrakSpk || "[nomor dan tanggal kontrak/SPK/surat pesanan, jika ada]"}, bersama ini kami mengajukan permintaan pencairan dana dengan rincian sebagai berikut:
+      </div>
+
+      <table class="table-ppd">
+        <tbody>
+          <tr>
+            <td style="width: 40%;">Nama pemohon/penyedia</td>
+            <td style="width: 60%;">${ppdNamaPemohon || "[Nama lengkap / nama perusahaan]"}</td>
+          </tr>
+          <tr>
+            <td>Nomor kontrak/SPK/pesanan</td>
+            <td>${ppdNomorKontrakSpk || "[Nomor dokumen atau tidak berlaku]"}</td>
+          </tr>
+          <tr>
+            <td>Uraian kegiatan/barang/jasa</td>
+            <td>${ppdUraianKegiatan || "[Uraian singkat]"}</td>
+          </tr>
+          <tr>
+            <td>Nomor invoice/tagihan</td>
+            <td>${ppdNomorInvoice || "[Nomor invoice, jika ada]"}</td>
+          </tr>
+          <tr>
+            <td>Tanggal invoice/tagihan</td>
+            <td>${ppdTanggalInvoice || "[Tanggal]"}</td>
+          </tr>
+          <tr>
+            <td>Jumlah yang diminta</td>
+            <td style="font-weight: bold;">Rp ${ppdJumlahDiminta || "[Nomor]"}</td>
+          </tr>
+          <tr>
+            <td>Terbilang</td>
+            <td style="font-style: italic;">${ppdTerbilang || "[Nominal dalam huruf]"}</td>
+          </tr>
+          <tr>
+            <td>Nama bank</td>
+            <td>${ppdNamaBank || "[Nama bank]"}</td>
+          </tr>
+          <tr>
+            <td>Nomor rekening</td>
+            <td>${ppdNomorRekening || "[Nomor rekening]"}</td>
+          </tr>
+          <tr>
+            <td>Nama pemilik rekening</td>
+            <td>${ppdNamaPemilikRekening || "[Nama sesuai rekening]"}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top: 10px; margin-bottom: 8px; font-size: 10pt; line-height: 1.4;">
+        Sebagai bahan pemeriksaan dan kelengkapan administrasi, bersama surat ini kami lampirkan dokumen pendukung sesuai ketentuan yang berlaku, yaitu:
+      </div>
+
+      <ul style="margin: 4px 0 12px 18px; padding: 0; font-size: 10pt; line-height: 1.5;">
+        <li>Invoice/tagihan;</li>
+        <li>Kwitansi, apabila dipersyaratkan;</li>
+        <li>Kontrak/SPK/surat pesanan, apabila ada;</li>
+        <li>BAST atau berita acara pemeriksaan, apabila dipersyaratkan;</li>
+        <li>Dokumen pendukung lainnya: [sebutkan].</li>
+      </ul>
+
+      <div style="margin-bottom: 10px; font-size: 10pt; text-align: justify; line-height: 1.4;">
+        Kami mohon agar permintaan pencairan dana tersebut dapat diperiksa dan diproses sesuai prosedur yang berlaku. Apabila terdapat dokumen atau informasi tambahan yang diperlukan, kami siap melengkapinya.
+      </div>
+
+      <div style="margin-bottom: 24px; font-size: 10pt; text-align: justify; line-height: 1.4;">
+        Demikian surat permintaan ini kami sampaikan. Atas perhatian dan kerja samanya, kami ucapkan terima kasih.
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; page-break-inside: avoid; font-size: 10pt;">
+        <tr>
+          <td style="width: 50%;"></td>
+          <td style="width: 50%; text-align: right; vertical-align: top;">
+            <div>${ppdKotaTtd || "[Kota]"}, ${ppdTanggalTtd || "[Tanggal Bulan Tahun]"}</div>
+            <div style="margin-top: 4px;">Hormat kami,</div>
+            <div style="font-weight: bold;">${ppdJabatanPemohonTtd || "[Jabatan pemohon/penyedia]"}</div>
+            <div style="height: 60px;"></div>
+            <div style="font-weight: bold; text-decoration: underline;">${ppdNamaLengkapTtd || "[Nama lengkap]"}</div>
+            <div>${ppdNipJabatanTtd || "[NIP / Jabatan, jika berlaku]"}</div>
+          </td>
+        </tr>
+      </table>
+      `
+      : `
       <div class="header-instansi">${instansi}</div>
 
       ${type === "BAP"
@@ -473,6 +629,8 @@ export function printOfficialDoc(doc: PaymentDocument, type: GeneratorType, cust
           </td>
         </tr>
       </table>
+      `
+    }
 
       <script>
         window.onload = function() {

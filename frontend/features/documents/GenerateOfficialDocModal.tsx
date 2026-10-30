@@ -98,6 +98,32 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
   const [ttdKananInstansi, setTtdKananInstansi] = useState("");
   const [ttdKananJabatan, setTtdKananJabatan] = useState("");
   const [ttdKananNama, setTtdKananNama] = useState("");
+
+  // Field Spesifik PPD (Surat Permintaan Pencairan Dana)
+  const [ppdKopInstansi, setPpdKopInstansi] = useState("");
+  const [ppdAlamatInstansi, setPpdAlamatInstansi] = useState("");
+  const [ppdTelpInstansi, setPpdTelpInstansi] = useState("");
+  const [ppdEmailInstansi, setPpdEmailInstansi] = useState("");
+  const [ppdNomorSurat, setPpdNomorSurat] = useState("");
+  const [ppdTujuanPejabat, setPpdTujuanPejabat] = useState("");
+  const [ppdTujuanInstansi, setPpdTujuanInstansi] = useState("");
+  const [ppdNamaKegiatan, setPpdNamaKegiatan] = useState("");
+  const [ppdNomorKontrakSpk, setPpdNomorKontrakSpk] = useState("");
+  const [ppdNamaPemohon, setPpdNamaPemohon] = useState("");
+  const [ppdUraianKegiatan, setPpdUraianKegiatan] = useState("");
+  const [ppdNomorInvoice, setPpdNomorInvoice] = useState("");
+  const [ppdTanggalInvoice, setPpdTanggalInvoice] = useState("");
+  const [ppdJumlahDiminta, setPpdJumlahDiminta] = useState("");
+  const [ppdTerbilang, setPpdTerbilang] = useState("");
+  const [ppdNamaBank, setPpdNamaBank] = useState("");
+  const [ppdNomorRekening, setPpdNomorRekening] = useState("");
+  const [ppdNamaPemilikRekening, setPpdNamaPemilikRekening] = useState("");
+  const [ppdKotaTtd, setPpdKotaTtd] = useState("");
+  const [ppdTanggalTtd, setPpdTanggalTtd] = useState("");
+  const [ppdJabatanPemohonTtd, setPpdJabatanPemohonTtd] = useState("");
+  const [ppdNamaLengkapTtd, setPpdNamaLengkapTtd] = useState("");
+  const [ppdNipJabatanTtd, setPpdNipJabatanTtd] = useState("");
+
   const [includeMaterai, setIncludeMaterai] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -291,13 +317,63 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       setBapSisaPembayaran(savedData.bapSisaPembayaran || "");
       setBapNilaiDibayarkan(savedData.bapNilaiDibayarkan || "");
       setBapTotalBapIni(savedData.bapTotalBapIni || "");
+
+      // Data PPD
+      setPpdKopInstansi(savedData.ppdKopInstansi || "");
+      setPpdAlamatInstansi(savedData.ppdAlamatInstansi || "");
+      setPpdTelpInstansi(savedData.ppdTelpInstansi || "");
+      setPpdEmailInstansi(savedData.ppdEmailInstansi || "");
+      setPpdNomorSurat(savedData.ppdNomorSurat || "");
+      setPpdTujuanPejabat(savedData.ppdTujuanPejabat || "");
+      setPpdTujuanInstansi(savedData.ppdTujuanInstansi || "");
+      setPpdNamaKegiatan(savedData.ppdNamaKegiatan || "");
+      setPpdNomorKontrakSpk(savedData.ppdNomorKontrakSpk || "");
+      setPpdNamaPemohon(savedData.ppdNamaPemohon || "");
+      setPpdUraianKegiatan(savedData.ppdUraianKegiatan || "");
+      setPpdNomorInvoice(savedData.ppdNomorInvoice || "");
+      setPpdTanggalInvoice(savedData.ppdTanggalInvoice || "");
+      setPpdJumlahDiminta(savedData.ppdJumlahDiminta || "");
+      setPpdTerbilang(savedData.ppdTerbilang || "");
+      setPpdNamaBank(savedData.ppdNamaBank || "");
+      setPpdNomorRekening(savedData.ppdNomorRekening || "");
+      setPpdNamaPemilikRekening(savedData.ppdNamaPemilikRekening || "");
+      setPpdKotaTtd(savedData.ppdKotaTtd || "");
+      setPpdTanggalTtd(savedData.ppdTanggalTtd || "");
+      setPpdJabatanPemohonTtd(savedData.ppdJabatanPemohonTtd || "");
+      setPpdNamaLengkapTtd(savedData.ppdNamaLengkapTtd || "");
+      setPpdNipJabatanTtd(savedData.ppdNipJabatanTtd || "");
+
       setIncludeMaterai(savedData.includeMaterai !== false);
     } else {
       setInstansi("BADAN INTELIJEN NEGARA");
       setJudulSurat(getDefaultTitle(type));
 
-      // Untuk form BAST, kosongkan seluruh field berikut sesuai instruksi pengguna:
-      if (type === "BAST") {
+      if (type === "PPD") {
+        // Form PPD: Kosongkan semua isinya sesuai permintaan pengguna
+        setPpdKopInstansi("");
+        setPpdAlamatInstansi("");
+        setPpdTelpInstansi("");
+        setPpdEmailInstansi("");
+        setPpdNomorSurat("");
+        setPpdTujuanPejabat("");
+        setPpdTujuanInstansi("");
+        setPpdNamaKegiatan("");
+        setPpdNomorKontrakSpk("");
+        setPpdNamaPemohon("");
+        setPpdUraianKegiatan("");
+        setPpdNomorInvoice("");
+        setPpdTanggalInvoice("");
+        setPpdJumlahDiminta("");
+        setPpdTerbilang("");
+        setPpdNamaBank("");
+        setPpdNomorRekening("");
+        setPpdNamaPemilikRekening("");
+        setPpdKotaTtd("");
+        setPpdTanggalTtd("");
+        setPpdJabatanPemohonTtd("");
+        setPpdNamaLengkapTtd("");
+        setPpdNipJabatanTtd("");
+      } else if (type === "BAST") {
         setNomorDokumen("");
         setNamaPekerjaan("");
         setBebanDipa("");
@@ -514,6 +590,39 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       }
     }
 
+    // Validasi input khusus dokumen PPD (Surat Permintaan Pencairan Dana - semua input wajib diisi)
+    if (docType === "PPD") {
+      const newErrors: Record<string, string> = {};
+
+      if (!ppdKopInstansi.trim()) newErrors.ppdKopInstansi = "Kop Surat Instansi / Perusahaan wajib diisi";
+      if (!ppdAlamatInstansi.trim()) newErrors.ppdAlamatInstansi = "Alamat Instansi wajib diisi";
+      if (!ppdTelpInstansi.trim()) newErrors.ppdTelpInstansi = "Nomor Telepon wajib diisi";
+      if (!ppdEmailInstansi.trim()) newErrors.ppdEmailInstansi = "Email Resmi wajib diisi";
+      if (!ppdNomorSurat.trim()) newErrors.ppdNomorSurat = "Nomor Surat wajib diisi";
+      if (!ppdTujuanPejabat.trim()) newErrors.ppdTujuanPejabat = "Nama Pejabat / Bagian Keuangan wajib diisi";
+      if (!ppdTujuanInstansi.trim()) newErrors.ppdTujuanInstansi = "Nama Instansi / Perusahaan Tujuan wajib diisi";
+      if (!ppdNamaKegiatan.trim()) newErrors.ppdNamaKegiatan = "Nama Kegiatan / Pekerjaan wajib diisi";
+      if (!ppdNomorKontrakSpk.trim()) newErrors.ppdNomorKontrakSpk = "Nomor Kontrak / SPK / Pesanan wajib diisi";
+      if (!ppdNamaPemohon.trim()) newErrors.ppdNamaPemohon = "Nama Pemohon / Penyedia wajib diisi";
+      if (!ppdUraianKegiatan.trim()) newErrors.ppdUraianKegiatan = "Uraian Kegiatan / Barang / Jasa wajib diisi";
+      if (!ppdNomorInvoice.trim()) newErrors.ppdNomorInvoice = "Nomor Invoice / Tagihan wajib diisi";
+      if (!ppdTanggalInvoice.trim()) newErrors.ppdTanggalInvoice = "Tanggal Invoice / Tagihan wajib diisi";
+      if (!ppdJumlahDiminta.trim()) newErrors.ppdJumlahDiminta = "Jumlah yang Diminta (Rp) wajib diisi";
+      if (!ppdTerbilang.trim()) newErrors.ppdTerbilang = "Nominal Terbilang wajib diisi";
+      if (!ppdNamaBank.trim()) newErrors.ppdNamaBank = "Nama Bank wajib diisi";
+      if (!ppdNomorRekening.trim()) newErrors.ppdNomorRekening = "Nomor Rekening wajib diisi";
+      if (!ppdNamaPemilikRekening.trim()) newErrors.ppdNamaPemilikRekening = "Nama Pemilik Rekening wajib diisi";
+      if (!ppdKotaTtd.trim()) newErrors.ppdKotaTtd = "Kota Penandatanganan wajib diisi";
+      if (!ppdTanggalTtd.trim()) newErrors.ppdTanggalTtd = "Tanggal Penandatanganan wajib diisi";
+      if (!ppdJabatanPemohonTtd.trim()) newErrors.ppdJabatanPemohonTtd = "Jabatan Pemohon Penandatangan wajib diisi";
+      if (!ppdNamaLengkapTtd.trim()) newErrors.ppdNamaLengkapTtd = "Nama Lengkap Penandatangan wajib diisi";
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+    }
+
     setErrors({});
 
     const currentFormData = {
@@ -561,6 +670,29 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
       ttdKananInstansi,
       ttdKananJabatan,
       ttdKananNama,
+      ppdKopInstansi,
+      ppdAlamatInstansi,
+      ppdTelpInstansi,
+      ppdEmailInstansi,
+      ppdNomorSurat,
+      ppdTujuanPejabat,
+      ppdTujuanInstansi,
+      ppdNamaKegiatan,
+      ppdNomorKontrakSpk,
+      ppdNamaPemohon,
+      ppdUraianKegiatan,
+      ppdNomorInvoice,
+      ppdTanggalInvoice,
+      ppdJumlahDiminta,
+      ppdTerbilang,
+      ppdNamaBank,
+      ppdNomorRekening,
+      ppdNamaPemilikRekening,
+      ppdKotaTtd,
+      ppdTanggalTtd,
+      ppdJabatanPemohonTtd,
+      ppdNamaLengkapTtd,
+      ppdNipJabatanTtd,
       includeMaterai,
     };
 
@@ -628,6 +760,462 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
         </div>
 
         <div className="p-6 overflow-y-auto flex-1 space-y-6 text-xs text-slate-700">
+          {docType === "PPD" ? (
+            /* =========================================================================
+               FORMULIR SPESIFIK SURAT PERMINTAAN PENCAIRAN DANA (PPD)
+               SESUAI TEMPLATE GAMBAR PENGGUNA (SEMUA INPUT DIKOSONGKAN & VALIDASI WAJIB)
+               ========================================================================= */
+            <div className="space-y-6">
+              {/* Bagian 1: Kop Surat Instansi / Perusahaan */}
+              <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                <h3 className="font-extrabold text-slate-900 text-xs tracking-wide uppercase flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-blue-600"></span>
+                  1. Kop Surat Instansi / Perusahaan
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="md:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Instansi / Perusahaan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdKopInstansi}
+                      onChange={(e) => {
+                        setPpdKopInstansi(e.target.value);
+                        if (errors.ppdKopInstansi) setErrors((prev) => ({ ...prev, ppdKopInstansi: "" }));
+                      }}
+                      placeholder="Contoh: PT. MULTI TEKNOLOGI NUSANTARA"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdKopInstansi ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdKopInstansi && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdKopInstansi}</p>}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Alamat Lengkap <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdAlamatInstansi}
+                      onChange={(e) => {
+                        setPpdAlamatInstansi(e.target.value);
+                        if (errors.ppdAlamatInstansi) setErrors((prev) => ({ ...prev, ppdAlamatInstansi: "" }));
+                      }}
+                      placeholder="Contoh: Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdAlamatInstansi ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdAlamatInstansi && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdAlamatInstansi}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nomor Telepon <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdTelpInstansi}
+                      onChange={(e) => {
+                        setPpdTelpInstansi(e.target.value);
+                        if (errors.ppdTelpInstansi) setErrors((prev) => ({ ...prev, ppdTelpInstansi: "" }));
+                      }}
+                      placeholder="Contoh: (021) 57901234"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdTelpInstansi ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdTelpInstansi && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdTelpInstansi}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Email Resmi <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdEmailInstansi}
+                      onChange={(e) => {
+                        setPpdEmailInstansi(e.target.value);
+                        if (errors.ppdEmailInstansi) setErrors((prev) => ({ ...prev, ppdEmailInstansi: "" }));
+                      }}
+                      placeholder="Contoh: finance@multiteknologi.co.id"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdEmailInstansi ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdEmailInstansi && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdEmailInstansi}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bagian 2: Nomor Surat & Tujuan Surat */}
+              <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                <h3 className="font-extrabold text-slate-900 text-xs tracking-wide uppercase flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-blue-600"></span>
+                  2. Nomor Surat & Tujuan Permintaan
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nomor Surat Permintaan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNomorSurat}
+                      onChange={(e) => {
+                        setPpdNomorSurat(e.target.value);
+                        if (errors.ppdNomorSurat) setErrors((prev) => ({ ...prev, ppdNomorSurat: "" }));
+                      }}
+                      placeholder="Contoh: 045/MTN/PPD/XI/2024"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNomorSurat ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNomorSurat && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNomorSurat}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Pejabat / Bagian Keuangan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdTujuanPejabat}
+                      onChange={(e) => {
+                        setPpdTujuanPejabat(e.target.value);
+                        if (errors.ppdTujuanPejabat) setErrors((prev) => ({ ...prev, ppdTujuanPejabat: "" }));
+                      }}
+                      placeholder="Contoh: Pejabat Pembuat Komitmen (PPK)"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdTujuanPejabat ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdTujuanPejabat && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdTujuanPejabat}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Instansi / Perusahaan Tujuan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdTujuanInstansi}
+                      onChange={(e) => {
+                        setPpdTujuanInstansi(e.target.value);
+                        if (errors.ppdTujuanInstansi) setErrors((prev) => ({ ...prev, ppdTujuanInstansi: "" }));
+                      }}
+                      placeholder="Contoh: Badan Intelijen Negara"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdTujuanInstansi ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdTujuanInstansi && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdTujuanInstansi}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bagian 3: Rincian Permintaan Pencairan Dana (Tabel) */}
+              <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                <h3 className="font-extrabold text-slate-900 text-xs tracking-wide uppercase flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-blue-600"></span>
+                  3. Rincian Permintaan Pencairan Dana
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Kegiatan / Transaksi <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNamaKegiatan}
+                      onChange={(e) => {
+                        setPpdNamaKegiatan(e.target.value);
+                        if (errors.ppdNamaKegiatan) setErrors((prev) => ({ ...prev, ppdNamaKegiatan: "" }));
+                      }}
+                      placeholder="Contoh: Pengadaan Perangkat Keras JDIH"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNamaKegiatan ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNamaKegiatan && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNamaKegiatan}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nomor Kontrak / SPK / Pesanan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNomorKontrakSpk}
+                      onChange={(e) => {
+                        setPpdNomorKontrakSpk(e.target.value);
+                        if (errors.ppdNomorKontrakSpk) setErrors((prev) => ({ ...prev, ppdNomorKontrakSpk: "" }));
+                      }}
+                      placeholder="Contoh: SP-1177 / I / 2024"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNomorKontrakSpk ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNomorKontrakSpk && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNomorKontrakSpk}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Pemohon / Penyedia <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNamaPemohon}
+                      onChange={(e) => {
+                        setPpdNamaPemohon(e.target.value);
+                        if (errors.ppdNamaPemohon) setErrors((prev) => ({ ...prev, ppdNamaPemohon: "" }));
+                      }}
+                      placeholder="Contoh: PT. Multi Teknologi Nusantara"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNamaPemohon ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNamaPemohon && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNamaPemohon}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Uraian Kegiatan / Barang / Jasa <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdUraianKegiatan}
+                      onChange={(e) => {
+                        setPpdUraianKegiatan(e.target.value);
+                        if (errors.ppdUraianKegiatan) setErrors((prev) => ({ ...prev, ppdUraianKegiatan: "" }));
+                      }}
+                      placeholder="Contoh: Pengadaan 5 Unit Server dan Lisensi Aplikasi"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdUraianKegiatan ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdUraianKegiatan && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdUraianKegiatan}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nomor Invoice / Tagihan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNomorInvoice}
+                      onChange={(e) => {
+                        setPpdNomorInvoice(e.target.value);
+                        if (errors.ppdNomorInvoice) setErrors((prev) => ({ ...prev, ppdNomorInvoice: "" }));
+                      }}
+                      placeholder="Contoh: INV-2024-0988"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNomorInvoice ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNomorInvoice && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNomorInvoice}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Tanggal Invoice / Tagihan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdTanggalInvoice}
+                      onChange={(e) => {
+                        setPpdTanggalInvoice(e.target.value);
+                        if (errors.ppdTanggalInvoice) setErrors((prev) => ({ ...prev, ppdTanggalInvoice: "" }));
+                      }}
+                      placeholder="Contoh: 15 November 2024"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdTanggalInvoice ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdTanggalInvoice && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdTanggalInvoice}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Jumlah yang Diminta (Rp) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdJumlahDiminta}
+                      onChange={(e) => {
+                        setPpdJumlahDiminta(e.target.value);
+                        if (errors.ppdJumlahDiminta) setErrors((prev) => ({ ...prev, ppdJumlahDiminta: "" }));
+                      }}
+                      placeholder="Contoh: 150.000.000"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdJumlahDiminta ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdJumlahDiminta && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdJumlahDiminta}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Terbilang <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdTerbilang}
+                      onChange={(e) => {
+                        setPpdTerbilang(e.target.value);
+                        if (errors.ppdTerbilang) setErrors((prev) => ({ ...prev, ppdTerbilang: "" }));
+                      }}
+                      placeholder="Contoh: Seratus lima puluh juta rupiah"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdTerbilang ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdTerbilang && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdTerbilang}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Bank <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNamaBank}
+                      onChange={(e) => {
+                        setPpdNamaBank(e.target.value);
+                        if (errors.ppdNamaBank) setErrors((prev) => ({ ...prev, ppdNamaBank: "" }));
+                      }}
+                      placeholder="Contoh: Bank Mandiri KCP Jakarta Thamrin"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNamaBank ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNamaBank && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNamaBank}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nomor Rekening <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNomorRekening}
+                      onChange={(e) => {
+                        setPpdNomorRekening(e.target.value);
+                        if (errors.ppdNomorRekening) setErrors((prev) => ({ ...prev, ppdNomorRekening: "" }));
+                      }}
+                      placeholder="Contoh: 123-00-9876543-2"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNomorRekening ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNomorRekening && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNomorRekening}</p>}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Pemilik Rekening <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNamaPemilikRekening}
+                      onChange={(e) => {
+                        setPpdNamaPemilikRekening(e.target.value);
+                        if (errors.ppdNamaPemilikRekening) setErrors((prev) => ({ ...prev, ppdNamaPemilikRekening: "" }));
+                      }}
+                      placeholder="Contoh: PT Multi Teknologi Nusantara"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNamaPemilikRekening ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNamaPemilikRekening && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNamaPemilikRekening}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bagian 4: Penandatanganan PPD */}
+              <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                <h3 className="font-extrabold text-slate-900 text-xs tracking-wide uppercase flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-blue-600"></span>
+                  4. Penandatanganan Pemohon / Penyedia
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Kota Tempat Penandatanganan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdKotaTtd}
+                      onChange={(e) => {
+                        setPpdKotaTtd(e.target.value);
+                        if (errors.ppdKotaTtd) setErrors((prev) => ({ ...prev, ppdKotaTtd: "" }));
+                      }}
+                      placeholder="Contoh: Jakarta"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdKotaTtd ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdKotaTtd && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdKotaTtd}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Tanggal Surat Penandatanganan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdTanggalTtd}
+                      onChange={(e) => {
+                        setPpdTanggalTtd(e.target.value);
+                        if (errors.ppdTanggalTtd) setErrors((prev) => ({ ...prev, ppdTanggalTtd: "" }));
+                      }}
+                      placeholder="Contoh: 18 November 2024"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdTanggalTtd ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdTanggalTtd && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdTanggalTtd}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Jabatan Pemohon / Penyedia <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdJabatanPemohonTtd}
+                      onChange={(e) => {
+                        setPpdJabatanPemohonTtd(e.target.value);
+                        if (errors.ppdJabatanPemohonTtd) setErrors((prev) => ({ ...prev, ppdJabatanPemohonTtd: "" }));
+                      }}
+                      placeholder="Contoh: Direktur Utama PT. Multi Teknologi Nusantara"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdJabatanPemohonTtd ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdJabatanPemohonTtd && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdJabatanPemohonTtd}</p>}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Lengkap Penandatangan <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNamaLengkapTtd}
+                      onChange={(e) => {
+                        setPpdNamaLengkapTtd(e.target.value);
+                        if (errors.ppdNamaLengkapTtd) setErrors((prev) => ({ ...prev, ppdNamaLengkapTtd: "" }));
+                      }}
+                      placeholder="Contoh: Ir. Bambang Hermanto"
+                      className={`w-full px-3 py-2 rounded-xl border bg-white font-medium ${
+                        errors.ppdNamaLengkapTtd ? "border-red-500 bg-red-50/20" : "border-slate-200"
+                      }`}
+                    />
+                    {errors.ppdNamaLengkapTtd && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.ppdNamaLengkapTtd}</p>}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">
+                      NIP / Keterangan Jabatan Lainnya (Jika ada)
+                    </label>
+                    <input
+                      type="text"
+                      value={ppdNipJabatanTtd}
+                      onChange={(e) => setPpdNipJabatanTtd(e.target.value)}
+                      placeholder="Contoh: NIP. 19800512 200501 1 002 (Opsional)"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
           <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
             <h3 className="font-extrabold text-slate-900 text-xs tracking-wide uppercase flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-blue-600"></span>
@@ -1487,6 +2075,8 @@ export const GenerateOfficialDocModal: React.FC<GenerateOfficialDocModalProps> =
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
 
         {/* Footer Actions */}
