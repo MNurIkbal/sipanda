@@ -157,7 +157,6 @@ export const SupportingDocumentList: React.FC<SupportingDocumentListProps> = ({
     fetchDocumentsFromApi();
   }, [debouncedSearch, statusFilter, startDate, endDate, page, limit, currentUser?.role]);
 
-  // Sinkronisasi real-time dengan perubahan status dari context parent (misal: saat Biro 01 verifikasi/tolak atau buka detail -> status jadi 'review')
   useEffect(() => {
     if (!initialDocuments) return;
     setDocuments((prev) => {

@@ -24,24 +24,24 @@ interface LoginPageProps {
 const LIGHT_SLIDES = [
   {
     image: "/slide-light-1.jpg",
-    badge: "Enterprise Security",
-    title: "Sistem Terpadu Verifikasi Dokumen",
+    badge: "Monitoring & Transparansi",
+    title: "Platform Monitoring dan Pengendalian Pembayaran",
     description:
-      "Monitoring real-time alur berkas pembayaran, rekonsiliasi SP2D, dan sinkronisasi data antar PPK  secara akurat.",
+      "Pantau seluruh tahapan proses pembayaran secara terintegrasi dan real-time untuk memastikan transparansi, akurasi data, serta pengendalian yang optimal.",
   },
   {
     image: "/slide-light-2.jpg",
-    badge: "Digital Invoicing & Approval",
-    title: "Validasi Digital & Integritas Berkas",
+    badge: "Kepatuhan & Akuntabilitas",
+    title: "Kepatuhan dan Validasi Dokumen Pembayaran",
     description:
-      "Pemeriksaan kelengkapan dokumen pengadaan barang dan jasa secara sistematis dengan audit trail aktivitas terenkripsi penuh.",
+      "Pastikan setiap proses pembayaran memenuhi ketentuan yang berlaku melalui validasi dokumen, pemantauan kelengkapan berkas, dan pencatatan aktivitas yang akuntabel.",
   },
   {
     image: "/slide-light-3.jpg",
-    badge: "Treasury Disbursement",
-    title: "Pelacakan Pencairan Dana KPPN",
+    badge: "Tata Kelola Pembayaran",
+    title: "Tata Kelola Pembayaran yang Terintegrasi",
     description:
-      "Pantau tahapan realisasi pembayaran mulai dari pengujian dokumen, pengajuan ke KPPN, hingga dana cair ke rekening tujuan.",
+      "Wujudkan pengelolaan pembayaran yang tertib, transparan, dan terukur melalui pemantauan proses, pengendalian risiko, serta koordinasi antarunit kerja.",
   },
 ];
 
@@ -389,13 +389,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
           <div className="w-full max-w-md mx-auto my-auto">
             <div className="flex items-center gap-3.5 mb-8">
-              <div className="p-2 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-white border border-slate-200/90 shadow-md p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
                 <Image
-                  src="/logoin.png"
+                  src="/logo-sipanda.png"
                   alt="Logo SIPANDA"
-                  width={64}
-                  height={64}
-                  className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-contain"
                   priority
                 />
               </div>
@@ -404,7 +404,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   SIPANDA
                 </h1>
                 <p className="text-xs text-slate-500 font-medium mt-1 leading-snug">
-                  Sistem Informasi Pengelolaan Monitoring Dokumen Pembayaran
+                  Platoform Monitoring, Pengendalian, Kepatuhan dan Tata Kelola Pembayaran
                 </p>
               </div>
             </div>
@@ -414,7 +414,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 Selamat Datang
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
-                Silakan masuk dengan akun email terdaftar untuk mengakses portal monitoring dan verifikasi.
+                Silakan masuk dengan akun email terdaftar untuk mengakses sistem.
               </p>
             </div>
 

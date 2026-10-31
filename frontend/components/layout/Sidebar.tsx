@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -166,11 +167,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
             onClick={() => onMobileClose && onMobileClose()}
             className="flex items-center gap-3 group cursor-pointer"
           >
-            <div className="relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-500 rounded-xl blur-xs opacity-75 group-hover:opacity-100 transition duration-300"></div>
-              <div className="relative rounded-xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 p-2 text-white shadow-md border border-white/20">
-                <FileCheck2 className="h-5 w-5" />
-              </div>
+            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-all duration-200 overflow-hidden">
+              <Image
+                src="/logo-sipanda.png"
+                alt="Logo SIPANDA"
+                width={44}
+                height={44}
+                className="h-full w-full object-contain"
+                priority
+              />
             </div>
             <div className="min-w-0">
               <div className="text-base font-black text-white tracking-tight leading-tight">
@@ -206,10 +211,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
             <div className="min-w-0">
               <div className="font-extrabold text-xs text-white truncate tracking-tight">
                 {currentUser?.role === "biro_01"
-                  ? "Biro 01 Verifikator"
+                  ? "Biro 01"
                   : currentUser?.role === "superadmin"
                   ? "Super Administrator"
-                  : "PPK Operasional"}
+                  : "PPK "}
               </div>
               <div className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
                 {currentUser?.full_name || "Petugas"}
@@ -218,7 +223,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
           </div>
         </div>
 
-        {/* Navigation Items */}
         <div>
           <div className="px-3 mb-2.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-400/80">
             Menu Utama

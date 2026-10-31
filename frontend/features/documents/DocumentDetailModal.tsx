@@ -478,14 +478,14 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
         </div>
 
         {/* Modal Body - 2 Columns: Kiri Lebar (9-10 Cols), Kanan Ramping (2-3 Cols) */}
-        <div className="p-4 md:p-6 overflow-y-auto space-y-6 flex-1">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div className="p-4 md:p-6 overflow-y-auto space-y-6 flex-1 flex flex-col">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch flex-1">
             
             {/* LEFT COLUMN (Diperlebar menjadi 9 atau 10 cols): Informasi Dokumen & Dokumen Pendukung */}
-            <div className="lg:col-span-9 xl:col-span-10 space-y-6">
+            <div className="lg:col-span-9 xl:col-span-10 flex flex-col space-y-6 flex-1">
               
               {/* Card 1: Informasi Dokumen */}
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-6">
+              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-6 shrink-0">
                 <h3 className="font-bold text-slate-800 text-sm mb-5 pb-3 border-b border-slate-100 flex items-center justify-between">
                   <span>Informasi Dokumen</span>
                 </h3>
@@ -580,20 +580,20 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
               </div>
 
               {/* Card 2: Dokumen Pendukung — Desain Document Intelligence (Gambar 1) */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-1 flex flex-col">
                 {attachmentsList.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 text-xs">
+                  <div className="p-8 text-center text-slate-400 text-xs flex-1 flex flex-col items-center justify-center">
                     <FolderOpen className="h-10 w-10 text-slate-300 mx-auto mb-2" />
                     <span>Tidak ada dokumen pendukung yang dilampirkan.</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 xl:grid-cols-12 divide-y xl:divide-y-0 xl:divide-x divide-slate-200/80">
+                  <div className="grid grid-cols-1 xl:grid-cols-12 divide-y xl:divide-y-0 xl:divide-x divide-slate-200/80 flex-1">
                     
                     {/* ======================================================== */}
                     {/* PANEL KIRI (3 Cols): Daftar Kartu Dokumen Pendukung       */}
                     {/* ======================================================== */}
-                    <div className="xl:col-span-3 p-4 bg-slate-50/40 flex flex-col">
-                      <div className="mb-3.5">
+                    <div className="xl:col-span-3 p-4 bg-slate-50/40 flex flex-col h-full">
+                      <div className="mb-3.5 shrink-0">
                         <h3 className="font-extrabold text-slate-800 text-sm tracking-tight">
                           Dokumen Pendukung ({attachmentsList.length})
                         </h3>
@@ -602,7 +602,7 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                         </p>
                       </div>
 
-                      <div className="space-y-3 overflow-y-auto max-h-[680px] pr-0.5">
+                      <div className="space-y-3 overflow-y-auto flex-1 pr-0.5">
                         {attachmentsList.map((file, idx) => {
                           const metaSummary = groupAttachmentParams(file);
                           const isSelected = idx === selectedAttachmentIdx;
@@ -713,11 +713,11 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                     {/* ======================================================== */}
                     {/* PANEL KANAN (9 Cols): Preview & Data Teridentifikasi     */}
                     {/* ======================================================== */}
-                    <div className="xl:col-span-9 flex flex-col bg-white">
+                    <div className="xl:col-span-9 flex flex-col bg-white h-full">
                       {activeAttachment && activeGroupedMeta && (
                         <>
                           {/* Top Bar: Tabs (Preview Dokumen | Data Teridentifikasi) + Unduh Dokumen */}
-                          <div className="px-5 pt-3.5 pb-0 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-white">
+                          <div className="px-5 pt-3.5 pb-0 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-white shrink-0">
                             <div className="flex items-center gap-6">
                               <button
                                 type="button"
@@ -765,12 +765,12 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
 
                           {/* Body Konten Panel Kanan */}
                           {activeDocTab === "preview" ? (
-                            <div className="p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                            <div className="p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch flex-1">
                               
                               {/* KIRI DALAM (6 Cols): Visual Preview Dokumen (Paper Style / PDF Viewer) */}
-                              <div className="lg:col-span-6 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden shadow-inner flex flex-col">
+                              <div className="lg:col-span-6 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden shadow-inner flex flex-col h-full min-h-[500px]">
                                 {/* Toolbar Gelap ala PDF Viewer */}
-                                <div className="px-3.5 py-2.5 bg-slate-900 text-slate-200 text-[11px] flex items-center justify-between border-b border-slate-700/80">
+                                <div className="px-3.5 py-2.5 bg-slate-900 text-slate-200 text-[11px] flex items-center justify-between border-b border-slate-700/80 shrink-0">
                                   <span className="font-semibold truncate max-w-[180px]" title={activeAttachment.file_name}>
                                     {activeAttachment.file_name}
                                   </span>
@@ -792,22 +792,22 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                                 </div>
 
                                 {/* Isi Preview: Jika PDF/Gambar tampilkan atau simulasikan lembar dokumen dari metadata */}
-                                <div className="p-3.5 bg-slate-800/95 max-h-[560px] overflow-y-auto">
+                                <div className="p-3.5 bg-slate-800/95 flex-1 flex flex-col overflow-y-auto">
                                   {/\.(pdf)$/i.test(activeAttachment.file_name || "") ? (
                                     <iframe
                                       src={`${BACKEND_URL}${activeAttachment.file_path}`}
-                                      className="w-full h-[480px] rounded-lg bg-white border-0"
+                                      className="w-full h-full min-h-[480px] rounded-lg bg-white border-0 flex-1"
                                       title={activeAttachment.file_name}
                                     />
                                   ) : /\.(png|jpg|jpeg|webp)$/i.test(activeAttachment.file_name || "") ? (
                                     <img
                                       src={`${BACKEND_URL}${activeAttachment.file_path}`}
                                       alt={activeAttachment.file_name}
-                                      className="w-full h-auto rounded-lg bg-white object-contain max-h-[480px]"
+                                      className="w-full h-full rounded-lg bg-white object-contain flex-1"
                                     />
                                   ) : (
                                     /* Lembar Dokumen Digital Otomatis (Untuk DOCX / XLSX / Berkas lainnya) */
-                                    <div className="bg-white rounded-lg shadow-lg p-5 text-[11px] text-slate-800 space-y-4 border border-slate-200 min-h-[440px] flex flex-col justify-between">
+                                    <div className="bg-white rounded-lg shadow-lg p-5 text-[11px] text-slate-800 space-y-4 border border-slate-200 min-h-[440px] flex flex-col justify-between flex-1">
                                       <div className="space-y-3.5">
                                         {/* Kop Dokumen */}
                                         <div className="flex items-start justify-between gap-2 pb-3 border-b-2 border-slate-800">

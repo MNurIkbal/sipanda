@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   FileCheck2,
   LogOut,
@@ -167,15 +168,21 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <div className="md:hidden flex items-center gap-2">
-              <div className="rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-2 text-white shadow-xs">
-                <FileCheck2 className="h-4 w-4" />
+              <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                <Image
+                  src="/logo-sipanda.png"
+                  alt="Logo SIPANDA"
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-contain"
+                />
               </div>
               <span className="font-black text-slate-900 text-sm tracking-tight">SIPANDA</span>
             </div>
 
             <div className="hidden md:block">
               <h2 className="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                <span>Sistem Informasi Pengelolaan Monitoring Dokumen Pembayaran</span>
+                <span>Platoform Monitoring, Pengendalian, Kepatuhan dan Tata Kelola Pembayaran</span>
               </h2>
             </div>
           </div>
@@ -389,10 +396,10 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                   <div className="text-[10px] text-slate-400 font-semibold leading-tight">
                     {currentUser?.role === "biro_01"
-                      ? "Biro 01 Verifikator"
+                      ? "Biro 01"
                       : currentUser?.role === "superadmin"
                       ? "Superadmin"
-                      : "PPK Operasional"}
+                      : "PPK"}
                   </div>
                 </div>
 
